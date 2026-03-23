@@ -4,7 +4,26 @@ import { getTableStatus, expandItems, copyToClipboard, formatTicketText, formatO
 import { S } from "./styles/appStyles";
 
 export default function App() {
-  const [orders, setOrders] = useState({});
+  // Active orders with localStorage persistence
+  const [orders, setOrders] = useState(() => {
+    try {
+      const stored = localStorage.getItem("orders");
+      return stored ? JSON.parse(stored) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  // Seated tables with localStorage persistence
+  const [seatedTables, setSeatedTables] = useState(() => {
+    try {
+      const stored = localStorage.getItem("seatedTables");
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
+
   const [activeTable, setActiveTable] = useState(null);
   const [view, setView] = useState("tables");
   const [activeCategory, setActiveCategory] = useState("Food");
@@ -13,7 +32,6 @@ export default function App() {
   const [closedReceipt, setClosedReceipt] = useState(null);
   const [activeTab, setActiveTab] = useState("order"); // "order" or "bill"
   const [searchQuery, setSearchQuery] = useState("");
-  const [seatedTables, setSeatedTables] = useState(new Set());
   const [seatConfirmTable, setSeatConfirmTable] = useState(null);
 
   // Split state
@@ -38,6 +56,16 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem("paidBills", JSON.stringify(paidBills));
   }, [paidBills]);
+
+  // Save to localStorage whenever orders change
+  useEffect(() => {
+    localStorage.setItem("orders", JSON.stringify(orders));
+  }, [orders]);
+
+  // Save to localStorage whenever seatedTables changes
+  useEffect(() => {
+    localStorage.setItem("seatedTables", JSON.stringify(Array.from(seatedTables)));
+  }, [seatedTables]);
 
   const showToast = (msg) => {
     setToast(msg);
