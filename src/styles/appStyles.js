@@ -157,6 +157,17 @@ export const S = {
     maxHeight: "300px",
     overflowY: "auto"
   },
+  subcategorySeparator: {
+    padding: "12px 20px 8px",
+    fontSize: 13,
+    fontWeight: 600,
+    color: "#6b6b6a",
+    background: "#faf7f2",
+    borderBottom: "1px solid #e8e8e6",
+    position: "sticky",
+    top: 0,
+    zIndex: 1
+  },
   menuItem: {
     display: "flex",
     justifyContent: "space-between",

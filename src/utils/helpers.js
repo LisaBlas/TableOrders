@@ -17,9 +17,10 @@ export function getTableStatus(tableId, orders, seatedTables = new Set()) {
 // Expand items so qty > 1 becomes N individual lines for per-item splitting
 export function expandItems(items) {
   const expanded = [];
-  items.forEach((item) => {
+  let uniqueCounter = 0;
+  items.forEach((item, itemIndex) => {
     for (let i = 0; i < item.qty; i++) {
-      expanded.push({ ...item, _uid: `${item.id}_${i}`, qty: 1 });
+      expanded.push({ ...item, _uid: `${item.id}_${itemIndex}_${i}_${uniqueCounter++}`, qty: 1 });
     }
   });
   return expanded;

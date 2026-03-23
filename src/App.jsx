@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { TABLES, MENU, STATUS_CONFIG } from "./data/constants";
+import { TABLES, MENU, STATUS_CONFIG, FOOD_SUBCATEGORIES } from "./data/constants";
 import { getTableStatus, expandItems, copyToClipboard, formatTicketText, formatOrderText } from "./utils/helpers";
 import { S } from "./styles/appStyles";
 
@@ -193,8 +193,8 @@ export default function App() {
   };
 
   // ── SPLIT ──────────────────────────────────────────────
-  const initiateSplit = (mode) => {
-    const items = orders[ticketTable] || [];
+  const initiateSplit = (mode, tableId = ticketTable) => {
+    const items = orders[tableId] || [];
     setSplitRemaining(expandItems(items));
     setSplitSelected(new Set());
     setSplitPayments([]);
@@ -449,6 +449,67 @@ export default function App() {
                     }));
                   }
 
+                  // For Food category without search, group by subcategory
+                  if (activeCategory === "Food" && !searchQuery) {
+                    // Group items by subcategory
+                    const groupedItems = {};
+                    FOOD_SUBCATEGORIES.forEach(({ id }) => {
+                      groupedItems[id] = [];
+                    });
+
+                    itemsToShow.forEach((item) => {
+                      const subcat = item.subcategory || "other";
+                      if (!groupedItems[subcat]) groupedItems[subcat] = [];
+                      groupedItems[subcat].push(item);
+                    });
+
+                    // Render with separators
+                    return FOOD_SUBCATEGORIES.map(({ id, label }) => {
+                      const items = groupedItems[id] || [];
+                      if (items.length === 0) return null;
+
+                      return (
+                        <div key={id}>
+                          <div style={S.subcategorySeparator}>{label}</div>
+                          {items.map((item) => {
+                            const inOrder = unsentItems.find((o) => o.id === item.id);
+                            return (
+                              <div key={item.id} style={S.menuItem}>
+                                <div style={S.menuItemInfo}>
+                                  <span style={S.menuItemName}>{item.name}</span>
+                                  <span style={S.menuItemPrice}>
+                                    {item.price.toFixed(2)}€
+                                  </span>
+                                </div>
+                                <div style={S.qtyControl}>
+                                  {inOrder ? (
+                                    <>
+                                      <button
+                                        style={S.qtyBtn}
+                                        onClick={() => removeItem(item.id)}
+                                      >
+                                        −
+                                      </button>
+                                      <span style={S.qtyNum}>{inOrder.qty}</span>
+                                      <button style={S.qtyBtn} onClick={() => addItem(item)}>
+                                        +
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <button style={S.addBtn} onClick={() => addItem(item)}>
+                                      Add
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    });
+                  }
+
+                  // Default rendering (search results or non-Food categories)
                   return itemsToShow.length > 0 ? (
                     itemsToShow.map((item) => {
                       const inOrder = unsentItems.find((o) => o.id === item.id);
@@ -579,7 +640,7 @@ export default function App() {
                       style={S.splitOptionBtn}
                       onClick={() => {
                         setTicketTable(activeTable);
-                        initiateSplit("equal");
+                        initiateSplit("equal", activeTable);
                       }}
                     >
                       <span style={S.splitOptionIcon}>⚖</span>
@@ -590,7 +651,7 @@ export default function App() {
                       style={S.splitOptionBtn}
                       onClick={() => {
                         setTicketTable(activeTable);
-                        initiateSplit("item");
+                        initiateSplit("item", activeTable);
                       }}
                     >
                       <span style={S.splitOptionIcon}>☰</span>

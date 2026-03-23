@@ -15,27 +15,27 @@ export const TABLES = [
 export const MENU = {
   Food: [
     // Cheese & Charcuterie
-    { id: "f1", name: "Small Cheese Plate", price: 8 },
-    { id: "f2", name: "Cheese Plate", price: 14 },
-    { id: "f3", name: "Small Charcuterie Plate", price: 8 },
-    { id: "f4", name: "Charcuterie Plate", price: 14 },
-    { id: "f5", name: "Mixed Plate", price: 16 },
+    { id: "f1", name: "Small Cheese Plate", price: 8, subcategory: "cheese" },
+    { id: "f2", name: "Cheese Plate", price: 14, subcategory: "cheese" },
+    { id: "f3", name: "Small Charcuterie Plate", price: 8, subcategory: "cheese" },
+    { id: "f4", name: "Charcuterie Plate", price: 14, subcategory: "cheese" },
+    { id: "f5", name: "Mixed Plate", price: 16, subcategory: "cheese" },
     // Hot Dishes
-    { id: "f6", name: "Marcelin Chaud", price: 12 },
-    { id: "f7", name: "Camembert Rôti", price: 12 },
-    { id: "f8", name: "Mont d'Or", price: 18 },
-    { id: "f9", name: "Tartiflette", price: 14 },
-    { id: "f10", name: "Tartiflette + Speck", price: 16 },
-    { id: "f11", name: "Raclette", price: 16 },
-    { id: "f12", name: "Fondue", price: 20 },
+    { id: "f6", name: "Marcelin Chaud", price: 12, subcategory: "warm" },
+    { id: "f7", name: "Camembert Rôti", price: 12, subcategory: "warm" },
+    { id: "f8", name: "Mont d'Or", price: 18, subcategory: "warm" },
+    { id: "f9", name: "Tartiflette", price: 14, subcategory: "warm" },
+    { id: "f10", name: "Tartiflette + Speck", price: 16, subcategory: "warm" },
+    { id: "f11", name: "Raclette", price: 16, subcategory: "warm" },
+    { id: "f12", name: "Fondue", price: 20, subcategory: "warm" },
     // Salads
-    { id: "f13", name: "Salad Seguin", price: 10 },
-    { id: "f14", name: "Salad Papillon", price: 11 },
-    { id: "f15", name: "Salad Bauern", price: 10 },
-    { id: "f16", name: "Salad Porthos", price: 12 },
-    { id: "f17", name: "Salad Basic", price: 8 },
+    { id: "f13", name: "Salad Seguin", price: 10, subcategory: "salads" },
+    { id: "f14", name: "Salad Papillon", price: 11, subcategory: "salads" },
+    { id: "f15", name: "Salad Bauern", price: 10, subcategory: "salads" },
+    { id: "f16", name: "Salad Porthos", price: 12, subcategory: "salads" },
+    { id: "f17", name: "Salad Basic", price: 8, subcategory: "salads" },
     // Dessert
-    { id: "f18", name: "Tarte Tatin", price: 8 },
+    { id: "f18", name: "Tarte Tatin", price: 8, subcategory: "snacks" },
   ],
   "Drinks🍷": [
     // Wines by Glass - White
@@ -123,3 +123,10 @@ export const STATUS_CONFIG = {
   taken:   { label: "Seated",  dot: "#f5c84a", bg: "#fffdf0", border: "#f0e0a0", text: "#7a5c00" },
   ordered: { label: "Ordered", dot: "#e07b5a", bg: "#fdf7f5", border: "#edc9be", text: "#7a3320" },
 };
+
+export const FOOD_SUBCATEGORIES = [
+  { id: "cheese", label: "🧀 Cheese Counter" },
+  { id: "salads", label: "🥗 Salads" },
+  { id: "warm", label: "🍽️ Warm Dishes" },
+  { id: "snacks", label: "🫒 Snacks" },
+];
