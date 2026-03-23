@@ -162,7 +162,7 @@ export const S = {
     fontSize: 13,
     fontWeight: 600,
     color: "#6b6b6a",
-    background: "#faf7f2",
+    background: "#fcf6ebff",
     borderBottom: "1px solid #e8e8e6",
     position: "sticky",
     top: 0,

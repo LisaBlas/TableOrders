@@ -123,7 +123,7 @@ npm run preview    # Preview production build
 - **Copy > integrate** — Clipboard export for rapid prototyping
 
 ## Notes
-- Restaurant name ("Le Comptoir") hardcoded in ticket view
+- Restaurant name ("Käserei Camidi") hardcoded in ticket view
 - 11 tables hardcoded (easy to change in constants.js)
 - Euro currency symbol hardcoded (€)
 - Menu structured as 4 categories: Starters, Mains, Desserts, Drinks

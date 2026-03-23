@@ -630,7 +630,7 @@ export default function App() {
             <>
               <div style={S.ticket}>
                 <div style={S.ticketHeader}>
-                  <span style={S.ticketRestaurant}>Le Comptoir</span>
+                  <span style={S.ticketRestaurant}>Käserei Camidi</span>
                   <span style={S.ticketDate}>
                     {new Date().toLocaleString("en-GB")}
                   </span>
@@ -727,7 +727,7 @@ export default function App() {
           </header>
           <div style={S.ticket}>
             <div style={S.ticketHeader}>
-              <span style={S.ticketRestaurant}>Le Comptoir</span>
+              <span style={S.ticketRestaurant}>Käserei Camidi</span>
               <span style={S.ticketDate}>
                 {new Date().toLocaleString("en-GB")}
               </span>
