@@ -42,6 +42,7 @@ export const MENU = {
     { id: "f18", name: "Tarte Tatin", price: 7, subcategory: "snacks" },
     { id: "f19", name: "Olives", price: 3, subcategory: "snacks" },
     { id: "f20", name: "Olives + Grissini", price: 5, subcategory: "snacks" },
+    { id: "f26", name: "Cornichons", price: 2.5, subcategory: "snacks" },
   ],
   "Drinks🍷": [
     // Wines by Glass - White
