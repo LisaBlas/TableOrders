@@ -33,6 +33,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState("order"); // "order" or "bill"
   const [searchQuery, setSearchQuery] = useState("");
   const [seatConfirmTable, setSeatConfirmTable] = useState(null);
+  const [dailySalesTab, setDailySalesTab] = useState("chronological");
 
   // Custom item state
   const [customName, setCustomName] = useState("");
@@ -1132,6 +1133,22 @@ export default function App() {
             </div>
           ) : (
             <>
+              {/* Tabs */}
+              <div style={S.tabs}>
+                <button
+                  style={{ ...S.tab, ...(dailySalesTab === "chronological" ? S.tabActive : {}) }}
+                  onClick={() => setDailySalesTab("chronological")}
+                >
+                  Chronological
+                </button>
+                <button
+                  style={{ ...S.tab, ...(dailySalesTab === "total" ? S.tabActive : {}) }}
+                  onClick={() => setDailySalesTab("total")}
+                >
+                  Total
+                </button>
+              </div>
+
               <div style={S.salesSummary}>
                 <div style={S.salesSummaryRow}>
                   <span style={S.salesLabel}>Bills closed</span>
@@ -1155,37 +1172,168 @@ export default function App() {
                 </div>
               </div>
 
-              <div style={S.billsList}>
-                {[...paidBills].reverse().map((bill, idx) => (
-                  <div key={idx} style={S.billCard}>
-                    <div style={S.billCardHeader}>
-                      <span style={S.billTableNum}>Table {bill.tableId}</span>
-                      <span style={S.billTotal}>{bill.total.toFixed(2)}€</span>
+              {/* Chronological Tab Content */}
+              {dailySalesTab === "chronological" && (
+                <div style={S.billsList}>
+                  {[...paidBills].reverse().map((bill, idx) => (
+                    <div key={idx} style={S.billCard}>
+                      <div style={S.billCardHeader}>
+                        <span style={S.billTableNum}>Table {bill.tableId}</span>
+                        <span style={S.billTotal}>{bill.total.toFixed(2)}€</span>
+                      </div>
+                      <div style={S.billMeta}>
+                        {new Date(bill.timestamp).toLocaleString("en-GB")} ·{" "}
+                        {bill.paymentMode === "full"
+                          ? "Full payment"
+                          : bill.paymentMode === "equal"
+                          ? `Split ${bill.splitData.guests} ways`
+                          : `Split by item (${bill.splitData.payments.length} guests)`}
+                      </div>
+                      <div style={S.billItemsList}>
+                        {bill.items.map((item) => (
+                          <div key={item.id} style={S.billItem}>
+                            <span style={S.billItemName}>
+                              <span style={S.billItemQty}>{item.qty}×</span>
+                              {item.name}
+                            </span>
+                            <span style={S.billItemPrice}>
+                              {(item.price * item.qty).toFixed(2)}€
+                            </span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                    <div style={S.billMeta}>
-                      {new Date(bill.timestamp).toLocaleString("en-GB")} ·{" "}
-                      {bill.paymentMode === "full"
-                        ? "Full payment"
-                        : bill.paymentMode === "equal"
-                        ? `Split ${bill.splitData.guests} ways`
-                        : `Split by item (${bill.splitData.payments.length} guests)`}
-                    </div>
-                    <div style={S.billItemsList}>
-                      {bill.items.map((item) => (
-                        <div key={item.id} style={S.billItem}>
-                          <span style={S.billItemName}>
-                            <span style={S.billItemQty}>{item.qty}×</span>
-                            {item.name}
-                          </span>
-                          <span style={S.billItemPrice}>
-                            {(item.price * item.qty).toFixed(2)}€
-                          </span>
-                        </div>
-                      ))}
-                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Total Tab Content */}
+              {dailySalesTab === "total" && (() => {
+                // Aggregate items across all bills and enrich with category/subcategory info
+                const itemsMap = new Map();
+                paidBills.forEach((bill) => {
+                  bill.items.forEach((item) => {
+                    if (!itemsMap.has(item.id)) {
+                      // Find item in menu to get category and subcategory
+                      let category = null;
+                      let subcategory = null;
+
+                      for (const [cat, items] of Object.entries(MENU)) {
+                        const found = items.find(i => i.id === item.id);
+                        if (found) {
+                          category = cat;
+                          subcategory = found.subcategory;
+                          break;
+                        }
+                      }
+
+                      itemsMap.set(item.id, {
+                        name: item.name,
+                        qty: 0,
+                        revenue: 0,
+                        category,
+                        subcategory
+                      });
+                    }
+
+                    const existing = itemsMap.get(item.id);
+                    existing.qty += item.qty;
+                    existing.revenue += item.price * item.qty;
+                  });
+                });
+
+                // Convert to array
+                const aggregatedItems = Array.from(itemsMap.values());
+
+                // Group by category and subcategory
+                const categorizedItems = {};
+                Object.keys(MENU).forEach(cat => {
+                  categorizedItems[cat] = {};
+                });
+
+                aggregatedItems.forEach(item => {
+                  const cat = item.category || "Other";
+                  const subcat = item.subcategory || "other";
+
+                  if (!categorizedItems[cat]) categorizedItems[cat] = {};
+                  if (!categorizedItems[cat][subcat]) categorizedItems[cat][subcat] = [];
+
+                  categorizedItems[cat][subcat].push(item);
+                });
+
+                // Sort items within each subcategory by quantity (descending)
+                Object.values(categorizedItems).forEach(subcats => {
+                  Object.values(subcats).forEach(items => {
+                    items.sort((a, b) => b.qty - a.qty);
+                  });
+                });
+
+                // Get subcategory configs
+                const subcatConfigs = {
+                  "Food": FOOD_SUBCATEGORIES,
+                  "Drinks🍷": DRINKS_SUBCATEGORIES,
+                  "Wines 🍾": WINES_SUBCATEGORIES
+                };
+
+                return (
+                  <div style={S.billsList}>
+                    {Object.keys(MENU).map(category => {
+                      const categoryItems = categorizedItems[category];
+                      const subcatConfig = subcatConfigs[category];
+
+                      // Check if category has any items
+                      const hasItems = Object.values(categoryItems).some(items => items.length > 0);
+                      if (!hasItems) return null;
+
+                      if (subcatConfig) {
+                        // Render with subcategory separators
+                        return subcatConfig.map(({ id, label }) => {
+                          const items = categoryItems[id] || [];
+                          if (items.length === 0) return null;
+
+                          return (
+                            <div key={`${category}-${id}`}>
+                              <div style={S.subcategorySeparator}>{label}</div>
+                              {items.map((item, idx) => (
+                                <div key={idx} style={S.billCard}>
+                                  <div style={S.billCardHeader}>
+                                    <span style={S.billTableNum}>{item.name}</span>
+                                    <span style={S.billTotal}>{item.revenue.toFixed(2)}€</span>
+                                  </div>
+                                  <div style={S.billMeta}>
+                                    {item.qty} unit{item.qty > 1 ? "s" : ""} sold · {(item.revenue / item.qty).toFixed(2)}€ each
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        });
+                      } else {
+                        // Render without subcategory separators (for categories without subcategories)
+                        const allItems = Object.values(categoryItems).flat();
+                        if (allItems.length === 0) return null;
+
+                        return (
+                          <div key={category}>
+                            <div style={S.subcategorySeparator}>{category}</div>
+                            {allItems.map((item, idx) => (
+                              <div key={idx} style={S.billCard}>
+                                <div style={S.billCardHeader}>
+                                  <span style={S.billTableNum}>{item.name}</span>
+                                  <span style={S.billTotal}>{item.revenue.toFixed(2)}€</span>
+                                </div>
+                                <div style={S.billMeta}>
+                                  {item.qty} unit{item.qty > 1 ? "s" : ""} sold · {(item.revenue / item.qty).toFixed(2)}€ each
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      }
+                    })}
                   </div>
-                ))}
-              </div>
+                );
+              })()}
 
               <button style={S.clearDayBtn} onClick={clearDailySales}>
                 Clear Daily Sales
