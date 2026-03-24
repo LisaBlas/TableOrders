@@ -1298,10 +1298,10 @@ export default function App() {
                                 <div key={idx} style={S.billCard}>
                                   <div style={S.billCardHeader}>
                                     <span style={S.billTableNum}>{item.name}</span>
-                                    <span style={S.billTotal}>{item.revenue.toFixed(2)}€</span>
+                                    <span style={S.billTotal}>{item.qty} unit{item.qty > 1 ? "s" : ""}</span>
                                   </div>
                                   <div style={S.billMeta}>
-                                    {item.qty} unit{item.qty > 1 ? "s" : ""} sold · {(item.revenue / item.qty).toFixed(2)}€ each
+                                    {item.revenue.toFixed(2)}€ total · {(item.revenue / item.qty).toFixed(2)}€ each
                                   </div>
                                 </div>
                               ))}
@@ -1320,10 +1320,10 @@ export default function App() {
                               <div key={idx} style={S.billCard}>
                                 <div style={S.billCardHeader}>
                                   <span style={S.billTableNum}>{item.name}</span>
-                                  <span style={S.billTotal}>{item.revenue.toFixed(2)}€</span>
+                                  <span style={S.billTotal}>{item.qty} unit{item.qty > 1 ? "s" : ""}</span>
                                 </div>
                                 <div style={S.billMeta}>
-                                  {item.qty} unit{item.qty > 1 ? "s" : ""} sold · {(item.revenue / item.qty).toFixed(2)}€ each
+                                  {item.revenue.toFixed(2)}€ total · {(item.revenue / item.qty).toFixed(2)}€ each
                                 </div>
                               </div>
                             ))}
