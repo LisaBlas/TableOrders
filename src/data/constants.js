@@ -77,11 +77,16 @@ export const MENU = {
     { id: "dr10", name: "Limo Minze", price: 3.7, subcategory: "soft" },
     { id: "dr11", name: "Limo Pamplemousse", price: 3.7, subcategory: "soft" },
     // Juices & Water
-    { id: "dr12", name: "Rahbarb Saft", price: 4, subcategory: "soft" },
-    { id: "dr13", name: "Rhabarb Schorle", price: 4, subcategory: "soft" },
-    { id: "dr14", name: "Apfel Schorle", price: 4, subcategory: "soft" },
-    { id: "dr15", name: "Apfel Saft", price: 4, subcategory: "soft" },
-    { id: "dr16", name: "Wasser Sprudel", price: 2.8, subcategory: "soft" },
+    { id: "dr12", name: "Rahbarb Saft 0.4 cl", price: 4, subcategory: "soft" },
+    { id: "dr12b", name: "Rahbarb Saft 0.2 cl", price: 3, subcategory: "soft" },
+    { id: "dr13", name: "Rhabarb Schorle 0.4 cl", price: 4, subcategory: "soft" },
+    { id: "dr13b", name: "Rhabarb Schorle 0.2 cl", price: 3, subcategory: "soft" },
+    { id: "dr14", name: "Apfel Schorle 0.4 cl", price: 4, subcategory: "soft" },
+    { id: "dr14b", name: "Apfel Schorle 0.2 cl", price: 3, subcategory: "soft" },
+    { id: "dr15", name: "Apfel Saft 0.4 cl", price: 4, subcategory: "soft" },
+    { id: "dr15b", name: "Apfel Saft 0.2 cl", price: 3, subcategory: "soft" },
+    { id: "dr16", name: "Wasser Sprudel 0.4 cl", price: 2.8, subcategory: "soft" },
+    { id: "dr16b", name: "Wasser Sprudel 0.2 cl", price: 1.8, subcategory: "soft" },
   ],
   "Wines 🍾": [
     // White wines (also available by glass marked with *)
