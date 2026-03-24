@@ -851,7 +851,7 @@ export default function App() {
                 Payment
               </button>
             ) : (
-              <button style={S.closeBtn} onClick={initiateClose}>
+              <button style={S.closeBtn} onClick={() => initiateClose()}>
                 Close table
               </button>
             )}
@@ -928,7 +928,7 @@ export default function App() {
             >
               Copy split
             </button>
-            <button style={S.closeBtn} onClick={initiateClose}>
+            <button style={S.closeBtn} onClick={() => initiateClose()}>
               Close table
             </button>
           </div>
@@ -1197,8 +1197,8 @@ export default function App() {
 
       {/* ── CUSTOM ITEM MODAL ── */}
       {showCustomModal && (
-        <div style={S.modalOverlay} onClick={() => setShowCustomModal(false)}>
-          <div style={S.modalCard} onClick={(e) => e.stopPropagation()}>
+        <div style={S.modalOverlay}>
+          <div style={S.modalCard}>
             <div style={S.modalTitle}>Add Custom Item</div>
             <div style={S.customModalForm}>
               <div style={S.customModalField}>
