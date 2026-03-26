@@ -14,4 +14,66 @@ body {
 
 button {
   font-family: inherit;
+  transition: all 0.35s ease-out; /* Slow return to normal */
+}
+
+/* Green flash feedback on tap/click */
+button:active {
+  background: #e8f3e9 !important;
+  border-color: #2d5a35 !important;
+  transform: scale(0.97);
+  transition: all 0.05s ease-out; /* Fast activation */
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes itemAppear {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+    background: transparent;
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(0);
+    background: transparent;
+  }
+  30% {
+    background: #a5d6a7;
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    background: transparent;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideUpFade {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

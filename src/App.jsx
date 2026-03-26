@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { TABLES, MENU, STATUS_CONFIG, FOOD_SUBCATEGORIES, DRINKS_SUBCATEGORIES, WINES_SUBCATEGORIES } from "./data/constants";
-import { getTableStatus, expandItems, copyToClipboard, formatTicketText, formatOrderText, consolidateItems, getItemDestination } from "./utils/helpers";
+import { TABLES, MENU, STATUS_CONFIG, FOOD_SUBCATEGORIES, DRINKS_SUBCATEGORIES, BOTTLES_SUBCATEGORIES } from "./data/constants";
+import { getTableStatus, copyToClipboard, formatOrderText, consolidateItems, getItemDestination } from "./utils/helpers";
 import { S } from "./styles/appStyles";
 
 export default function App() {
@@ -29,7 +29,6 @@ export default function App() {
   const [activeCategory, setActiveCategory] = useState("Food");
   const [toast, setToast] = useState(null);
   const [ticketTable, setTicketTable] = useState(null);
-  const [closedReceipt, setClosedReceipt] = useState(null);
   const [activeTab, setActiveTab] = useState("order"); // "order" or "bill"
   const [searchQuery, setSearchQuery] = useState("");
   const [seatConfirmTable, setSeatConfirmTable] = useState(null);
@@ -37,6 +36,7 @@ export default function App() {
   const [editingBillIndex, setEditingBillIndex] = useState(null);
   const [billSnapshot, setBillSnapshot] = useState(null);
   const [deletingBillIndex, setDeletingBillIndex] = useState(null);
+  const [confirmingClose, setConfirmingClose] = useState(false);
 
   // Track sent batches (each send creates a new batch with timestamp)
   const [sentBatches, setSentBatches] = useState({});
@@ -46,14 +46,6 @@ export default function App() {
   const [customPrice, setCustomPrice] = useState("");
   const [customQty, setCustomQty] = useState("1");
   const [showCustomModal, setShowCustomModal] = useState(false);
-
-  // Split state
-  const [splitRemaining, setSplitRemaining] = useState([]);
-  const [splitSelected, setSplitSelected] = useState(new Set());
-  const [splitPayments, setSplitPayments] = useState([]);
-  const [splitMode, setSplitMode] = useState(null);
-  const [equalGuests, setEqualGuests] = useState(2);
-  const [showSplitOptions, setShowSplitOptions] = useState(false);
 
   // Paid bills state with localStorage persistence
   const [paidBills, setPaidBills] = useState(() => {
@@ -113,30 +105,56 @@ export default function App() {
   const openTable = (tableId) => {
     setActiveTable(tableId);
     setActiveCategory("Food");
-    setActiveTab("order");
-    setShowSplitOptions(false);
+    // Land on Bill tab if table has orders, Order tab if empty
+    const hasOrders = orders[tableId] && orders[tableId].length > 0;
+    setActiveTab(hasOrders ? "bill" : "order");
     setSearchQuery("");
     setCustomName("");
     setCustomPrice("");
     setCustomQty("1");
+    setConfirmingClose(false);
     setView("order");
   };
 
-  const addItem = (item) => {
+  const addItem = (item, variant = null) => {
+    // Find category for this item
+    let itemCategory = activeCategory;
+    if (!variant && !itemCategory) {
+      for (const [cat, items] of Object.entries(MENU)) {
+        if (items.find(i => i.id === item.id)) {
+          itemCategory = cat;
+          break;
+        }
+      }
+    }
+
+    // Create composite item for variants
+    const orderItem = variant
+      ? {
+          id: `${item.id}-${variant.type}`,
+          name: `${item.name} (${variant.label})`,
+          price: variant.price,
+          baseId: item.id,
+          variantType: variant.type,
+          subcategory: item.subcategory,
+          category: itemCategory,
+        }
+      : { ...item, category: itemCategory };
+
     setOrders((prev) => {
       const current = prev[activeTable] || [];
-      const existing = current.find((o) => o.id === item.id);
+      const existing = current.find((o) => o.id === orderItem.id);
       if (existing) {
         return {
           ...prev,
           [activeTable]: current.map((o) =>
-            o.id === item.id ? { ...o, qty: o.qty + 1 } : o
+            o.id === orderItem.id ? { ...o, qty: o.qty + 1 } : o
           ),
         };
       }
-      return { ...prev, [activeTable]: [...current, { ...item, qty: 1, sentQty: 0 }] };
+      return { ...prev, [activeTable]: [...current, { ...orderItem, qty: 1, sentQty: 0 }] };
     });
-    showToast(`+ ${item.name}`);
+    showToast(`+ ${orderItem.name}`);
   };
 
   const addCustomItem = () => {
@@ -257,25 +275,20 @@ export default function App() {
 
   const openTicket = (tableId) => {
     setTicketTable(tableId);
-    setShowSplitOptions(false);
     setView("ticket");
   };
 
-  const initiateClose = (tableId = ticketTable) => {
+  const confirmClose = (tableId) => {
     const items = orders[tableId] || [];
     const total = items.reduce((s, o) => s + o.price * o.qty, 0);
-    setClosedReceipt({ tableId, items, total, time: new Date() });
-    setView("close");
-  };
 
-  const confirmClose = () => {
     // Save bill to paid bills
     setPaidBills((prev) => [
       ...prev,
       {
-        tableId: closedReceipt.tableId,
-        items: closedReceipt.items,
-        total: closedReceipt.total,
+        tableId,
+        items,
+        total,
         timestamp: new Date().toISOString(),
         paymentMode: "full",
       },
@@ -283,29 +296,23 @@ export default function App() {
 
     setOrders((prev) => {
       const next = { ...prev };
-      delete next[closedReceipt.tableId];
+      delete next[tableId];
       return next;
     });
     setSeatedTables((prev) => {
       const next = new Set(prev);
-      next.delete(closedReceipt.tableId);
+      next.delete(tableId);
       return next;
     });
     setSentBatches((prev) => {
       const next = { ...prev };
-      delete next[closedReceipt.tableId];
+      delete next[tableId];
       return next;
     });
-    showToast(`Table ${closedReceipt.tableId} closed ✓`);
+    showToast(`Table ${tableId} closed ✓`);
+    setConfirmingClose(false);
     setView("tables");
     setTicketTable(null);
-    setClosedReceipt(null);
-  };
-
-  const copyTicket = (tableId, items) => {
-    const text = formatTicketText(tableId, items);
-    copyToClipboard(text);
-    showToast("Ticket copied!");
   };
 
   const clearDailySales = () => {
@@ -403,85 +410,6 @@ export default function App() {
     setDeletingBillIndex(null);
   };
 
-  // ── SPLIT ──────────────────────────────────────────────
-  const initiateSplit = (mode, tableId = ticketTable) => {
-    const items = orders[tableId] || [];
-    setSplitRemaining(expandItems(items));
-    setSplitSelected(new Set());
-    setSplitPayments([]);
-    setSplitMode(mode);
-    setView("split");
-  };
-
-  const toggleSplitItem = (uid) => {
-    setSplitSelected((prev) => {
-      const next = new Set(prev);
-      next.has(uid) ? next.delete(uid) : next.add(uid);
-      return next;
-    });
-  };
-
-  const selectAllRemaining = () =>
-    setSplitSelected(new Set(splitRemaining.map((i) => i._uid)));
-
-  const confirmSplitPayment = () => {
-    const paid = splitRemaining.filter((i) => splitSelected.has(i._uid));
-    const total = paid.reduce((s, i) => s + i.price, 0);
-    const guestNum = splitPayments.length + 1;
-    const newPayments = [...splitPayments, { guestNum, items: paid, total }];
-    const newRemaining = splitRemaining.filter((i) => !splitSelected.has(i._uid));
-    setSplitPayments(newPayments);
-    setSplitRemaining(newRemaining);
-    setSplitSelected(new Set());
-    setView(newRemaining.length === 0 ? "splitDone" : "splitConfirm");
-  };
-
-  const nextSplitGuest = () => {
-    setSplitSelected(new Set());
-    setView("split");
-  };
-
-  const closeSplitTable = () => {
-    const items = orders[ticketTable] || [];
-    const total = items.reduce((s, o) => s + o.price * o.qty, 0);
-
-    // Save bill to paid bills
-    setPaidBills((prev) => [
-      ...prev,
-      {
-        tableId: ticketTable,
-        items: items,
-        total: total,
-        timestamp: new Date().toISOString(),
-        paymentMode: splitMode === "equal" ? "equal" : "item",
-        splitData: splitMode === "item" ? { payments: splitPayments } : { guests: equalGuests },
-      },
-    ]);
-
-    setOrders((prev) => {
-      const next = { ...prev };
-      delete next[ticketTable];
-      return next;
-    });
-    setSeatedTables((prev) => {
-      const next = new Set(prev);
-      next.delete(ticketTable);
-      return next;
-    });
-    setSentBatches((prev) => {
-      const next = { ...prev };
-      delete next[ticketTable];
-      return next;
-    });
-    showToast(`Table ${ticketTable} closed ✓`);
-    setView("tables");
-    setTicketTable(null);
-    setSplitRemaining([]);
-    setSplitSelected(new Set());
-    setSplitPayments([]);
-    setSplitMode(null);
-  };
-
   const currentOrder = orders[activeTable] || [];
   const unsentItems = currentOrder
     .map((o) => ({ ...o, qty: o.qty - (o.sentQty || 0) }))
@@ -492,14 +420,6 @@ export default function App() {
 
   const ticketItems = orders[ticketTable] || [];
   const ticketTotal = ticketItems.reduce((s, o) => s + o.price * o.qty, 0);
-  const equalShare = equalGuests > 0 ? ticketTotal / equalGuests : 0;
-
-  const currentGuestNum = splitPayments.length + 1;
-  const lastPayment = splitPayments[splitPayments.length - 1];
-  const splitSelectedTotal = splitRemaining
-    .filter((i) => splitSelected.has(i._uid))
-    .reduce((s, i) => s + i.price, 0);
-  const splitRemainingTotal = splitRemaining.reduce((s, i) => s + i.price, 0);
 
   return (
     <div style={S.root}>
@@ -580,7 +500,10 @@ export default function App() {
       {view === "order" && (
         <div style={S.page}>
           <header style={S.header}>
-            <button style={S.back} onClick={() => setView("tables")}>
+            <button style={S.back} onClick={() => {
+              setView("tables");
+              setConfirmingClose(false);
+            }}>
               ← Back
             </button>
             <span style={S.headerTitle}>Table {activeTable}</span>
@@ -589,18 +512,30 @@ export default function App() {
 
           {/* Tabs */}
           <div style={S.tabs}>
-            <button
-              style={{ ...S.tab, ...(activeTab === "order" ? S.tabActive : {}) }}
-              onClick={() => setActiveTab("order")}
-            >
-              Order
-            </button>
-            <button
-              style={{ ...S.tab, ...(activeTab === "bill" ? S.tabActive : {}) }}
-              onClick={() => setActiveTab("bill")}
-            >
-              Bill
-            </button>
+            <div style={S.tabsContainer}>
+              <button
+                style={{ ...S.tab, ...(activeTab === "order" ? S.tabActive : {}) }}
+                onClick={() => {
+                  setActiveTab("order");
+                  setConfirmingClose(false);
+                }}
+              >
+                Order
+              </button>
+              <button
+                style={{ ...S.tab, ...(activeTab === "bill" ? S.tabActive : {}) }}
+                onClick={() => {
+                  setActiveTab("bill");
+                  setConfirmingClose(false);
+                }}
+              >
+                Bill
+              </button>
+              <div style={{
+                ...S.tabIndicator,
+                transform: activeTab === "bill" ? "translateX(100%)" : "translateX(0)"
+              }} />
+            </div>
           </div>
 
           {/* Order Tab Content */}
@@ -679,7 +614,7 @@ export default function App() {
                   let subcategoryConfig = null;
                   if (activeCategory === "Food") subcategoryConfig = FOOD_SUBCATEGORIES;
                   else if (activeCategory === "Drinks🍷") subcategoryConfig = DRINKS_SUBCATEGORIES;
-                  else if (activeCategory === "Wines 🍾") subcategoryConfig = WINES_SUBCATEGORIES;
+                  else if (activeCategory === "Bottles 🍾") subcategoryConfig = BOTTLES_SUBCATEGORIES;
 
                   // Group by subcategory if config exists and no search
                   if (subcategoryConfig && !searchQuery) {
@@ -704,7 +639,32 @@ export default function App() {
                         <div key={id}>
                           <div style={S.subcategorySeparator}>{label}</div>
                           {items.map((item) => {
-                            const inOrder = unsentItems.find((o) => o.id === item.id);
+                            // Check if item has variants
+                            if (item.variants) {
+                              return (
+                                <div key={item.id} style={S.menuItem}>
+                                  <div style={S.menuItemInfo}>
+                                    <span style={S.menuItemName}>{item.name}</span>
+                                  </div>
+                                  <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                                    {item.variants.map((variant) => (
+                                      <button
+                                        key={variant.type}
+                                        style={S.variantBtn}
+                                        onClick={() => addItem(item, variant)}
+                                      >
+                                        <span style={S.variantLabel}>{variant.label}</span>
+                                        <span style={S.variantPrice}>
+                                          {variant.price.toFixed(2)}€
+                                        </span>
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            }
+
+                            // Standard item without variants
                             return (
                               <div key={item.id} style={S.menuItem}>
                                 <div style={S.menuItemInfo}>
@@ -713,26 +673,9 @@ export default function App() {
                                     {item.price.toFixed(2)}€
                                   </span>
                                 </div>
-                                <div style={S.qtyControl}>
-                                  {inOrder ? (
-                                    <>
-                                      <button
-                                        style={S.qtyBtn}
-                                        onClick={() => removeItem(item.id)}
-                                      >
-                                        −
-                                      </button>
-                                      <span style={S.qtyNum}>{inOrder.qty}</span>
-                                      <button style={S.qtyBtn} onClick={() => addItem(item)}>
-                                        +
-                                      </button>
-                                    </>
-                                  ) : (
-                                    <button style={S.addBtn} onClick={() => addItem(item)}>
-                                      Add
-                                    </button>
-                                  )}
-                                </div>
+                                <button style={S.addBtn} onClick={() => addItem(item)}>
+                                  Add
+                                </button>
                               </div>
                             );
                           })}
@@ -744,7 +687,39 @@ export default function App() {
                   // Default rendering (search results or non-Food categories)
                   return itemsToShow.length > 0 ? (
                     itemsToShow.map((item) => {
-                      const inOrder = unsentItems.find((o) => o.id === item.id);
+                      // Check if item has variants
+                      if (item.variants) {
+                        return (
+                          <div key={item.id} style={S.menuItem}>
+                            <div style={S.menuItemInfo}>
+                              <span style={S.menuItemName}>
+                                {item.name}
+                                {searchQuery && (
+                                  <span style={S.menuItemCategory}>
+                                    {" "}· {item.category}
+                                  </span>
+                                )}
+                              </span>
+                            </div>
+                            <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                              {item.variants.map((variant) => (
+                                <button
+                                  key={variant.type}
+                                  style={S.variantBtn}
+                                  onClick={() => addItem(item, variant)}
+                                >
+                                  <span style={S.variantLabel}>{variant.label}</span>
+                                  <span style={S.variantPrice}>
+                                    {variant.price.toFixed(2)}€
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      // Standard item without variants
                       return (
                         <div key={item.id} style={S.menuItem}>
                           <div style={S.menuItemInfo}>
@@ -760,26 +735,9 @@ export default function App() {
                               {item.price.toFixed(2)}€
                             </span>
                           </div>
-                          <div style={S.qtyControl}>
-                            {inOrder ? (
-                              <>
-                                <button
-                                  style={S.qtyBtn}
-                                  onClick={() => removeItem(item.id)}
-                                >
-                                  −
-                                </button>
-                                <span style={S.qtyNum}>{inOrder.qty}</span>
-                                <button style={S.qtyBtn} onClick={() => addItem(item)}>
-                                  +
-                                </button>
-                              </>
-                            ) : (
-                              <button style={S.addBtn} onClick={() => addItem(item)}>
-                                Add
-                              </button>
-                            )}
-                          </div>
+                          <button style={S.addBtn} onClick={() => addItem(item)}>
+                            Add
+                          </button>
                         </div>
                       );
                     })
@@ -863,11 +821,40 @@ export default function App() {
               {/* Order bar - fixed at bottom */}
               {unsentItems.length > 0 && (
                 <div style={S.orderBar}>
-                  <div style={S.orderBarItems}>
-                    {unsentItems.map((o) => (
-                      <span key={o.id} style={S.orderBarChip}>
-                        {o.qty}× {o.name}
-                      </span>
+                  <div style={S.orderBarList}>
+                    {unsentItems.slice().reverse().map((o) => (
+                      <div key={o.id} style={S.orderBarItemWrapper}>
+                        <div style={S.orderBarItem}>
+                          <div style={S.orderBarItemInfo}>
+                            <div style={S.orderBarItemName}>{o.name}</div>
+                            <div style={S.orderBarItemPrice}>
+                              {o.price.toFixed(2)}€
+                            </div>
+                          </div>
+                          <div style={S.orderBarItemControls}>
+                            <button
+                              style={S.orderBarQtyBtn}
+                              onClick={() => removeItem(o.id)}
+                            >
+                              −
+                            </button>
+                            <span style={S.orderBarQtyNum}>{o.qty}</span>
+                            <button
+                              style={S.orderBarQtyBtn}
+                              onClick={() => addItem(
+                                o.baseId
+                                  ? MENU[o.category]?.find(i => i.id === o.baseId) || o
+                                  : o,
+                                o.variantType
+                                  ? MENU[o.category]?.find(i => i.id === o.baseId)?.variants.find(v => v.type === o.variantType)
+                                  : null
+                              )}
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+                      </div>
                     ))}
                   </div>
                   <button style={S.sendBtn} onClick={sendOrder}>
@@ -882,84 +869,48 @@ export default function App() {
           {activeTab === "bill" && (
             <>
               <div style={S.ticket}>
-                <div style={S.ticketHeader}>
-                  <span style={S.ticketRestaurant}>Käserei Camidi</span>
-                  <span style={S.ticketDate}>
-                    {new Date().toLocaleString("en-GB")}
-                  </span>
+                <div style={S.closeReceiptBrand}>Käserei Camidi</div>
+                <div style={S.closeReceiptMeta}>
+                  Table {activeTable} · {new Date().toLocaleString("en-GB", {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
                 </div>
                 <div style={S.divider} />
                 {consolidateItems(currentOrder).map((o) => (
-                  <div key={o.id} style={S.ticketRowEditable}>
+                  <div key={o.id} style={S.closeRowEditable}>
                     <button
-                      style={S.ticketRemoveBtn}
+                      style={S.closeRemoveBtn}
                       onClick={() => removeItemFromBill(o.id)}
                       title="Remove one"
                     >
                       −
                     </button>
-                    <span style={S.ticketQty}>{o.qty}×</span>
-                    <span style={S.ticketName}>{o.name}</span>
-                    <span style={S.ticketPrice}>
+                    <span style={S.closeQty}>{o.qty}×</span>
+                    <span style={S.closeName}>{o.name}</span>
+                    <span style={S.closeLinePrice}>
                       {(o.price * o.qty).toFixed(2)}€
                     </span>
                   </div>
                 ))}
-                <div style={S.divider} />
-                <div style={S.ticketTotal}>
+                <div style={S.perforationDivider} />
+                <div style={S.closeTotalRow}>
                   <span>Total</span>
                   <span>{currentOrder.reduce((s, o) => s + o.price * o.qty, 0).toFixed(2)}€</span>
                 </div>
               </div>
 
-              {/* Split options */}
-              {showSplitOptions && (
-                <div style={S.splitOptions}>
-                  <div style={S.splitOptionsLabel}>Split the bill</div>
-                  <div style={S.splitBtns}>
-                    <button
-                      style={S.splitOptionBtn}
-                      onClick={() => {
-                        setTicketTable(activeTable);
-                        initiateSplit("equal", activeTable);
-                      }}
-                    >
-                      <span style={S.splitOptionIcon}>⚖</span>
-                      <span style={S.splitOptionTitle}>Equal split</span>
-                      <span style={S.splitOptionSub}>Total ÷ guests</span>
-                    </button>
-                    <button
-                      style={S.splitOptionBtn}
-                      onClick={() => {
-                        setTicketTable(activeTable);
-                        initiateSplit("item", activeTable);
-                      }}
-                    >
-                      <span style={S.splitOptionIcon}>☰</span>
-                      <span style={S.splitOptionTitle}>By item</span>
-                      <span style={S.splitOptionSub}>Pay round by round</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-
               <div style={S.ticketActions}>
-                <button
-                  style={S.copyBtn}
-                  onClick={() => copyTicket(activeTable, currentOrder)}
-                >
-                  Copy ticket
-                </button>
-                {!showSplitOptions ? (
-                  <button style={S.closeBtn} onClick={() => setShowSplitOptions(true)}>
-                    Payment
+                {!confirmingClose ? (
+                  <button style={S.closeBtn} onClick={() => setConfirmingClose(true)}>
+                    Close table
                   </button>
                 ) : (
-                  <button style={S.closeBtn} onClick={() => {
-                    setTicketTable(activeTable);
-                    initiateClose(activeTable);
-                  }}>
-                    Close table
+                  <button style={S.confirmCloseBtn} onClick={() => confirmClose(activeTable)}>
+                    Confirm close
                   </button>
                 )}
               </div>
@@ -972,328 +923,53 @@ export default function App() {
       {view === "ticket" && (
         <div style={S.page}>
           <header style={S.header}>
-            <button style={S.back} onClick={() => setView("tables")}>
+            <button style={S.back} onClick={() => {
+              setView("tables");
+              setConfirmingClose(false);
+            }}>
               ← Back
             </button>
             <span style={S.headerTitle}>Table {ticketTable} — Bill</span>
             <span />
           </header>
           <div style={S.ticket}>
-            <div style={S.ticketHeader}>
-              <span style={S.ticketRestaurant}>Käserei Camidi</span>
-              <span style={S.ticketDate}>
-                {new Date().toLocaleString("en-GB")}
-              </span>
+            <div style={S.closeReceiptBrand}>Käserei Camidi</div>
+            <div style={S.closeReceiptMeta}>
+              Table {ticketTable} · {new Date().toLocaleString("en-GB", {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
             </div>
             <div style={S.divider} />
             {consolidateItems(ticketItems).map((o) => (
-              <div key={o.id} style={S.ticketRow}>
-                <span style={S.ticketQty}>{o.qty}×</span>
-                <span style={S.ticketName}>{o.name}</span>
-                <span style={S.ticketPrice}>
+              <div key={o.id} style={S.closeRow}>
+                <span style={S.closeQty}>{o.qty}×</span>
+                <span style={S.closeName}>{o.name}</span>
+                <span style={S.closeLinePrice}>
                   {(o.price * o.qty).toFixed(2)}€
                 </span>
               </div>
             ))}
-            <div style={S.divider} />
-            <div style={S.ticketTotal}>
+            <div style={S.perforationDivider} />
+            <div style={S.closeTotalRow}>
               <span>Total</span>
               <span>{ticketTotal.toFixed(2)}€</span>
             </div>
           </div>
 
-          {/* Split options */}
-          {showSplitOptions && (
-            <div style={S.splitOptions}>
-              <div style={S.splitOptionsLabel}>Split the bill</div>
-              <div style={S.splitBtns}>
-                <button
-                  style={S.splitOptionBtn}
-                  onClick={() => initiateSplit("equal")}
-                >
-                  <span style={S.splitOptionIcon}>⚖</span>
-                  <span style={S.splitOptionTitle}>Equal split</span>
-                  <span style={S.splitOptionSub}>Total ÷ guests</span>
-                </button>
-                <button
-                  style={S.splitOptionBtn}
-                  onClick={() => initiateSplit("item")}
-                >
-                  <span style={S.splitOptionIcon}>☰</span>
-                  <span style={S.splitOptionTitle}>By item</span>
-                  <span style={S.splitOptionSub}>Pay round by round</span>
-                </button>
-              </div>
-            </div>
-          )}
-
           <div style={S.ticketActions}>
-            <button
-              style={S.copyBtn}
-              onClick={() => copyTicket(ticketTable, ticketItems)}
-            >
-              Copy ticket
-            </button>
-            {!showSplitOptions ? (
-              <button style={S.closeBtn} onClick={() => setShowSplitOptions(true)}>
-                Payment
-              </button>
-            ) : (
-              <button style={S.closeBtn} onClick={() => initiateClose()}>
+            {!confirmingClose ? (
+              <button style={S.closeBtn} onClick={() => setConfirmingClose(true)}>
                 Close table
               </button>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ── EQUAL SPLIT ── */}
-      {view === "split" && splitMode === "equal" && (
-        <div style={S.page}>
-          <header style={S.header}>
-            <button style={S.back} onClick={() => setView("ticket")}>
-              ← Back
-            </button>
-            <span style={S.headerTitle}>Equal Split — Table {ticketTable}</span>
-            <span />
-          </header>
-          <div style={S.equalCard}>
-            <div style={S.equalTotalLine}>
-              <span style={S.equalTotalLabel}>Bill total</span>
-              <span style={S.equalTotalAmt}>{ticketTotal.toFixed(2)}€</span>
-            </div>
-            <div style={S.divider} />
-            <div style={S.guestCountRow}>
-              <span style={S.guestCountLabel}>Number of guests</span>
-              <div style={S.guestCounter}>
-                <button
-                  style={S.guestCountBtn}
-                  onClick={() => setEqualGuests(Math.max(1, equalGuests - 1))}
-                >
-                  −
-                </button>
-                <span style={S.guestCountNum}>{equalGuests}</span>
-                <button
-                  style={S.guestCountBtn}
-                  onClick={() => setEqualGuests(equalGuests + 1)}
-                >
-                  +
-                </button>
-              </div>
-            </div>
-            <div style={S.divider} />
-            <div style={S.equalShareRow}>
-              <span style={S.equalShareLabel}>Each guest pays</span>
-              <span style={S.equalShareAmt}>{equalShare.toFixed(2)}€</span>
-            </div>
-            {equalGuests > 1 && (
-              <div style={S.equalBreakdown}>
-                {Array.from({ length: equalGuests }).map((_, i) => (
-                  <div key={i} style={S.equalGuestRow}>
-                    <span style={S.equalGuestChip}>Guest {i + 1}</span>
-                    <span style={S.equalGuestAmt}>
-                      {equalShare.toFixed(2)}€
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          <div style={S.ticketActions}>
-            <button
-              style={S.copyBtn}
-              onClick={() => {
-                const lines = Array.from({ length: equalGuests })
-                  .map((_, i) => `Guest ${i + 1}: ${equalShare.toFixed(2)}€`)
-                  .join("\n");
-                copyToClipboard(
-                  `SPLIT — Table ${ticketTable}\nTotal: ${ticketTotal.toFixed(
-                    2
-                  )}€ ÷ ${equalGuests}\n\n${lines}`
-                );
-                showToast("Split copied!");
-              }}
-            >
-              Copy split
-            </button>
-            <button style={S.closeBtn} onClick={() => initiateClose()}>
-              Close table
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ── ITEM SPLIT: SELECT ── */}
-      {view === "split" && splitMode === "item" && (
-        <div style={S.page}>
-          <header style={S.header}>
-            <button style={S.back} onClick={() => setView("ticket")}>
-              ← Back
-            </button>
-            <span style={S.headerTitle}>Guest {currentGuestNum}</span>
-            <button style={S.selectAllBtn} onClick={selectAllRemaining}>
-              All
-            </button>
-          </header>
-
-          {splitPayments.length > 0 && (
-            <div style={S.splitProgress}>
-              {splitPayments.map((p) => (
-                <span key={p.guestNum} style={S.splitProgressChip}>
-                  G{p.guestNum} — {p.total.toFixed(2)}€
-                </span>
-              ))}
-              <span style={S.splitProgressRemaining}>
-                Left: {splitRemainingTotal.toFixed(2)}€
-              </span>
-            </div>
-          )}
-
-          <div style={S.splitItemList}>
-            {splitRemaining.map((item) => {
-              const selected = splitSelected.has(item._uid);
-              return (
-                <button
-                  key={item._uid}
-                  style={{
-                    ...S.splitItem,
-                    background: selected ? "#f0f7f1" : "#fff",
-                    border: selected
-                      ? "1.5px solid #a3c4a8"
-                      : "1.5px solid #ebe9e3",
-                  }}
-                  onClick={() => toggleSplitItem(item._uid)}
-                >
-                  <span
-                    style={{
-                      ...S.splitItemCheck,
-                      background: selected ? "#2d5a35" : "#e8e8e6",
-                      color: selected ? "#fff" : "transparent",
-                    }}
-                  >
-                    ✓
-                  </span>
-                  <span style={S.splitItemName}>{item.name}</span>
-                  <span style={S.splitItemPrice}>{item.price.toFixed(2)}€</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {splitSelected.size > 0 && (
-            <div style={S.orderBar}>
-              <div style={S.orderBarItems}>
-                <span style={S.orderBarChip}>
-                  {splitSelected.size} item{splitSelected.size > 1 ? "s" : ""}{" "}
-                  selected
-                </span>
-                <span
-                  style={{
-                    ...S.orderBarChip,
-                    background: "#e8f3e9",
-                    color: "#2d5a35",
-                  }}
-                >
-                  Remaining after: {(splitRemainingTotal - splitSelectedTotal).toFixed(2)}€
-                </span>
-              </div>
-              <button style={S.sendBtn} onClick={confirmSplitPayment}>
-                Guest {currentGuestNum} pays — {splitSelectedTotal.toFixed(2)}€
+            ) : (
+              <button style={S.confirmCloseBtn} onClick={() => confirmClose(ticketTable)}>
+                Confirm close
               </button>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── SPLIT CONFIRM ── */}
-      {view === "splitConfirm" && lastPayment && (
-        <div style={S.page}>
-          <header style={S.header}>
-            <span />
-            <span style={S.headerTitle}>Guest {lastPayment.guestNum} — Paid</span>
-            <span />
-          </header>
-          <div style={S.splitConfirmCard}>
-            <div style={S.splitConfirmBadge}>✓</div>
-            <div style={S.splitConfirmAmt}>
-              {lastPayment.total.toFixed(2)}€
-            </div>
-            <div style={S.splitConfirmSub}>
-              Guest {lastPayment.guestNum} paid
-            </div>
-            <div style={S.divider} />
-            {lastPayment.items.map((item, idx) => (
-              <div key={idx} style={S.splitConfirmRow}>
-                <span style={S.splitConfirmName}>{item.name}</span>
-                <span style={S.splitConfirmPrice}>
-                  {item.price.toFixed(2)}€
-                </span>
-              </div>
-            ))}
-          </div>
-          <div style={S.splitRemainingBanner}>
-            <div>
-              <div style={S.splitRemainingLabel}>Still to pay</div>
-              <div style={S.splitRemainingItems}>
-                {splitRemaining.length} item
-                {splitRemaining.length > 1 ? "s" : ""}
-              </div>
-            </div>
-            <span style={S.splitRemainingAmt}>
-              {splitRemainingTotal.toFixed(2)}€
-            </span>
-          </div>
-          <div style={{ padding: "0 16px 24px" }}>
-            <button style={S.sendBtn} onClick={nextSplitGuest}>
-              Next guest →
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ── SPLIT DONE ── */}
-      {view === "splitDone" && (
-        <div style={S.page}>
-          <header style={S.header}>
-            <span />
-            <span style={S.headerTitle}>
-              Bill Settled — Table {ticketTable}
-            </span>
-            <span />
-          </header>
-          <div style={S.splitDoneCard}>
-            <div style={S.splitDoneBadge}>✓</div>
-            <div style={S.splitDoneTitle}>All paid</div>
-            <div style={S.splitDoneSub}>
-              {splitPayments.length} guest{splitPayments.length > 1 ? "s" : ""} ·{" "}
-              {ticketTotal.toFixed(2)}€ total
-            </div>
-            <div style={S.divider} />
-            {splitPayments.map((p) => (
-              <div key={p.guestNum} style={S.splitDoneRow}>
-                <span style={S.splitDoneGuest}>Guest {p.guestNum}</span>
-                <div style={S.splitDoneItems}>
-                  {p.items.map((item, idx) => (
-                    <span key={idx} style={S.splitDoneItemChip}>
-                      {item.name}
-                    </span>
-                  ))}
-                </div>
-                <span style={S.splitDoneAmt}>{p.total.toFixed(2)}€</span>
-              </div>
-            ))}
-            <div style={S.divider} />
-            <div style={S.splitDoneTotal}>
-              <span>Total collected</span>
-              <span>
-                {splitPayments.reduce((s, p) => s + p.total, 0).toFixed(2)}€
-              </span>
-            </div>
-          </div>
-          <div style={S.ticketActions}>
-            <button style={S.closeBtn} onClick={closeSplitTable}>
-              Close table
-            </button>
+            )}
           </div>
         </div>
       )}
@@ -1448,16 +1124,20 @@ export default function App() {
                 paidBills.forEach((bill) => {
                   bill.items.forEach((item) => {
                     if (!itemsMap.has(item.id)) {
-                      // Find item in menu to get category and subcategory
-                      let category = null;
-                      let subcategory = null;
+                      // Use stored category/subcategory first, fallback to MENU lookup
+                      let category = item.category || null;
+                      let subcategory = item.subcategory || null;
 
-                      for (const [cat, items] of Object.entries(MENU)) {
-                        const found = items.find(i => i.id === item.id);
-                        if (found) {
-                          category = cat;
-                          subcategory = found.subcategory;
-                          break;
+                      // Fallback: look up in MENU if not stored
+                      if (!category || !subcategory) {
+                        const lookupId = item.baseId || item.id;
+                        for (const [cat, items] of Object.entries(MENU)) {
+                          const found = items.find(i => i.id === lookupId);
+                          if (found) {
+                            category = category || cat;
+                            subcategory = subcategory || found.subcategory;
+                            break;
+                          }
                         }
                       }
 
@@ -1506,7 +1186,7 @@ export default function App() {
                 const subcatConfigs = {
                   "Food": FOOD_SUBCATEGORIES,
                   "Drinks🍷": DRINKS_SUBCATEGORIES,
-                  "Wines 🍾": WINES_SUBCATEGORIES
+                  "Bottles 🍾": BOTTLES_SUBCATEGORIES
                 };
 
                 return (
@@ -1682,76 +1362,6 @@ export default function App() {
         </div>
       )}
 
-      {/* ── CLOSE CONFIRM ── */}
-      {view === "close" && closedReceipt && (
-        <div style={S.page}>
-          <header style={S.header}>
-            <button style={S.back} onClick={() => setView("ticket")}>
-              ← Back
-            </button>
-            <span style={S.headerTitle}>
-              Close Table {closedReceipt.tableId}
-            </span>
-            <span />
-          </header>
-          <div style={S.closeReceipt}>
-            <div style={S.closeReceiptTitle}>Receipt Summary</div>
-            <div style={S.closeReceiptMeta}>
-              {closedReceipt.time.toLocaleString("en-GB")}
-            </div>
-            <div style={S.divider} />
-            {consolidateItems(closedReceipt.items).map((o) => (
-              <div key={o.id} style={S.closeRow}>
-                <span style={S.closeQty}>{o.qty}×</span>
-                <span style={S.closeName}>{o.name}</span>
-                <span style={S.closeLinePrice}>
-                  {(o.price * o.qty).toFixed(2)}€
-                </span>
-              </div>
-            ))}
-            <div style={S.divider} />
-            {Object.entries(MENU).map(([cat, items]) => {
-              const catItems = closedReceipt.items.filter((o) =>
-                items.some((i) => i.id === o.id)
-              );
-              if (catItems.length === 0) return null;
-              const catTotal = catItems.reduce(
-                (s, o) => s + o.price * o.qty,
-                0
-              );
-              return (
-                <div key={cat} style={S.subtotalRow}>
-                  <span style={S.subtotalLabel}>{cat}</span>
-                  <span>{catTotal.toFixed(2)}€</span>
-                </div>
-              );
-            })}
-            <div style={{ ...S.divider, margin: "8px 0 12px" }} />
-            <div style={S.closeTotalRow}>
-              <span>Total</span>
-              <span>{closedReceipt.total.toFixed(2)}€</span>
-            </div>
-          </div>
-          <div style={S.closeWarning}>
-            <span style={S.closeWarningIcon}>⚠</span>
-            <span>
-              This will clear all orders for Table {closedReceipt.tableId}. This
-              cannot be undone.
-            </span>
-          </div>
-          <div style={S.ticketActions}>
-            <button
-              style={S.copyBtn}
-              onClick={() => copyTicket(closedReceipt.tableId, closedReceipt.items)}
-            >
-              Copy receipt
-            </button>
-            <button style={S.confirmCloseBtn} onClick={confirmClose}>
-              Confirm close
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

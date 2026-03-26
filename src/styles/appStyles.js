@@ -11,7 +11,8 @@ export const S = {
   page: {
     display: "flex",
     flexDirection: "column",
-    minHeight: "100vh"
+    minHeight: "100vh",
+    animation: "fadeIn 0.25s ease-out"
   },
   toast: {
     position: "fixed",
@@ -25,7 +26,8 @@ export const S = {
     fontSize: 13,
     zIndex: 999,
     pointerEvents: "none",
-    whiteSpace: "nowrap"
+    whiteSpace: "nowrap",
+    animation: "fadeIn 0.2s ease-out"
   },
   header: {
     display: "flex",
@@ -139,7 +141,8 @@ export const S = {
     cursor: "pointer",
     whiteSpace: "nowrap",
     color: "#555",
-    fontWeight: 500
+    fontWeight: 500,
+    animation: "fadeIn 0.2s ease-out"
   },
   catBtnActive: {
     background: "#1a1a1a",
@@ -192,7 +195,8 @@ export const S = {
   qtyControl: {
     display: "flex",
     alignItems: "center",
-    gap: 10
+    gap: 10,
+    animation: "fadeIn 0.2s ease-out"
   },
   qtyBtn: {
     width: 30,
@@ -206,13 +210,15 @@ export const S = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    color: "#333"
+    color: "#333",
+    transition: "all 0.15s ease-out"
   },
   qtyNum: {
     fontSize: 15,
     fontWeight: 600,
     minWidth: 18,
-    textAlign: "center"
+    textAlign: "center",
+    animation: "fadeIn 0.2s ease-out"
   },
   addBtn: {
     padding: "6px 16px",
@@ -222,6 +228,28 @@ export const S = {
     fontSize: 13,
     fontWeight: 600,
     cursor: "pointer"
+  },
+  variantBtn: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: 2,
+    padding: "6px 12px",
+    borderRadius: 8,
+    border: "1.5px solid #ddd",
+    background: "#fff",
+    cursor: "pointer",
+    minWidth: 54
+  },
+  variantLabel: {
+    fontSize: 12,
+    fontWeight: 600,
+    lineHeight: 1
+  },
+  variantPrice: {
+    fontSize: 11,
+    color: "#666",
+    fontWeight: 500
   },
   orderBar: {
     position: "fixed",
@@ -236,7 +264,69 @@ export const S = {
     display: "flex",
     flexDirection: "column",
     gap: 10,
-    zIndex: 100
+    zIndex: 100,
+    maxHeight: "50vh",
+    overflowY: "auto"
+  },
+  orderBarList: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 8,
+    maxHeight: "200px",
+    overflowY: "auto",
+    marginBottom: 4
+  },
+  orderBarItemWrapper: {
+    width: "100%",
+    padding: "10px 12px",
+    borderRadius: 8,
+    border: "1px solid #ebe9e3",
+    animation: "itemAppear 1s ease-out"
+  },
+  orderBarItem: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8
+  },
+  orderBarItemInfo: {
+    flex: 1,
+    display: "flex",
+    flexDirection: "column",
+    gap: 2
+  },
+  orderBarItemName: {
+    fontSize: 13,
+    fontWeight: 500,
+    lineHeight: 1.3
+  },
+  orderBarItemPrice: {
+    fontSize: 11,
+    color: "#888"
+  },
+  orderBarItemControls: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8
+  },
+  orderBarQtyBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: "50%",
+    border: "1.5px solid #ccc",
+    background: "#fff",
+    fontSize: 16,
+    lineHeight: 1,
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    color: "#333"
+  },
+  orderBarQtyNum: {
+    fontSize: 14,
+    fontWeight: 600,
+    minWidth: 20,
+    textAlign: "center"
   },
   orderBarItems: {
     display: "flex",
@@ -266,7 +356,8 @@ export const S = {
     padding: "12px 16px",
     background: "#fff",
     borderRadius: 10,
-    border: "1px solid #ebe9e3"
+    border: "1px solid #ebe9e3",
+    animation: "fadeIn 0.25s ease-out"
   },
   sentLabel: {
     fontSize: 11,
@@ -292,7 +383,8 @@ export const S = {
     alignItems: "center",
     gap: 12,
     margin: "16px 16px 8px",
-    padding: "0"
+    padding: "0",
+    animation: "fadeIn 0.25s ease-out"
   },
   sentDividerLine: {
     flex: 1,
@@ -317,7 +409,8 @@ export const S = {
     background: "#fff",
     borderRadius: 12,
     border: "1px solid #ebe9e3",
-    padding: "20px"
+    padding: "20px",
+    animation: "slideUpFade 0.3s ease-out"
   },
   ticketHeader: {
     display: "flex",
@@ -387,7 +480,8 @@ export const S = {
   ticketActions: {
     display: "flex",
     gap: 10,
-    padding: "0 16px 24px"
+    padding: "0 16px 24px",
+    animation: "slideUpFade 0.3s ease-out"
   },
   copyBtn: {
     flex: 1,
@@ -408,7 +502,8 @@ export const S = {
     color: "#fff",
     fontSize: 15,
     fontWeight: 600,
-    cursor: "pointer"
+    cursor: "pointer",
+    animation: "fadeIn 0.25s ease-out"
   },
 
   splitOptions: {
@@ -756,6 +851,13 @@ export const S = {
     border: "1px solid #ebe9e3",
     padding: "20px"
   },
+  closeReceiptBrand: {
+    fontWeight: 800,
+    fontSize: 22,
+    marginBottom: 6,
+    textAlign: "center",
+    letterSpacing: "-0.5px"
+  },
   closeReceiptTitle: {
     fontWeight: 700,
     fontSize: 17,
@@ -763,8 +865,9 @@ export const S = {
   },
   closeReceiptMeta: {
     fontSize: 12,
-    color: "#aaa",
-    marginBottom: 4
+    color: "#999",
+    marginBottom: 4,
+    textAlign: "center"
   },
   closeRow: {
     display: "flex",
@@ -772,10 +875,37 @@ export const S = {
     gap: 8,
     padding: "5px 0"
   },
+  closeRowEditable: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    padding: "5px 0"
+  },
+  closeRemoveBtn: {
+    width: 24,
+    height: 24,
+    borderRadius: "50%",
+    border: "1.5px solid #ddd",
+    background: "#fff",
+    fontSize: 16,
+    lineHeight: 1,
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    color: "#999",
+    flexShrink: 0
+  },
   closeQty: {
-    fontSize: 13,
-    color: "#aaa",
-    minWidth: 24
+    fontSize: 15,
+    fontWeight: 700,
+    color: "#333",
+    minWidth: 28
+  },
+  perforationDivider: {
+    height: 0,
+    borderTop: "2px dashed #d4d2ca",
+    margin: "16px 0 14px"
   },
   closeName: {
     flex: 1,
@@ -828,14 +958,18 @@ export const S = {
     color: "#fff",
     fontSize: 15,
     fontWeight: 700,
-    cursor: "pointer"
+    cursor: "pointer",
+    animation: "fadeIn 0.25s ease-out"
   },
 
   // Tab styles
   tabs: {
-    display: "flex",
     background: "#fff",
     borderBottom: "1px solid #ebe9e3"
+  },
+  tabsContainer: {
+    display: "flex",
+    position: "relative"
   },
   tab: {
     flex: 1,
@@ -846,12 +980,19 @@ export const S = {
     fontWeight: 600,
     color: "#888",
     cursor: "pointer",
-    borderBottom: "2px solid transparent",
-    transition: "all 0.2s"
+    transition: "color 0.25s ease-out"
   },
   tabActive: {
-    color: "#1a1a1a",
-    borderBottom: "2px solid #1a1a1a"
+    color: "#1a1a1a"
+  },
+  tabIndicator: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    width: "50%",
+    height: 2,
+    background: "#1a1a1a",
+    transition: "transform 0.25s ease-out"
   },
 
   // Search styles
@@ -940,7 +1081,8 @@ export const S = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    zIndex: 1000
+    zIndex: 1000,
+    animation: "fadeIn 0.2s ease-out"
   },
   modalCard: {
     background: "#fff",
@@ -948,7 +1090,8 @@ export const S = {
     padding: "24px",
     maxWidth: 360,
     width: "90%",
-    boxShadow: "0 8px 24px rgba(0, 0, 0, 0.15)"
+    boxShadow: "0 8px 24px rgba(0, 0, 0, 0.15)",
+    animation: "scaleIn 0.25s ease-out"
   },
   modalTitle: {
     fontSize: 20,
