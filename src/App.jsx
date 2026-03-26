@@ -998,11 +998,16 @@ export default function App() {
 
               <div style={S.ticketActions}>
                 {!showSplitOptions && (
-                  <button style={S.closeBtn} onClick={() => {
-                    setTicketTable(activeTable);
-                    setShowSplitOptions(true);
+                  <button style={confirmingClose ? S.confirmCloseBtn : S.closeBtn} onClick={() => {
+                    if (confirmingClose) {
+                      setTicketTable(activeTable);
+                      setShowSplitOptions(true);
+                      setConfirmingClose(false);
+                    } else {
+                      setConfirmingClose(true);
+                    }
                   }}>
-                    Close table
+                    {confirmingClose ? "Confirm close" : "Close table"}
                   </button>
                 )}
                 {showSplitOptions && (
@@ -1032,12 +1037,6 @@ export default function App() {
                         <span style={S.splitOptionSub}>Pay round by round</span>
                       </button>
                     </div>
-                    <button style={S.confirmCloseBtn} onClick={() => {
-                      setShowSplitOptions(false);
-                      confirmClose(activeTable);
-                    }}>
-                      Pay in full
-                    </button>
                   </div>
                 )}
               </div>
@@ -1053,6 +1052,7 @@ export default function App() {
             <button style={S.back} onClick={() => {
               setView("tables");
               setShowSplitOptions(false);
+              setConfirmingClose(false);
             }}>
               ← Back
             </button>
@@ -1088,8 +1088,15 @@ export default function App() {
           </div>
 
           <div style={S.ticketActions}>
-            <button style={S.closeBtn} onClick={() => setShowSplitOptions(true)}>
-              Close table
+            <button style={confirmingClose ? S.confirmCloseBtn : S.closeBtn} onClick={() => {
+              if (confirmingClose) {
+                setShowSplitOptions(true);
+                setConfirmingClose(false);
+              } else {
+                setConfirmingClose(true);
+              }
+            }}>
+              {confirmingClose ? "Confirm close" : "Close table"}
             </button>
             {showSplitOptions && (
               <div style={S.splitOptions}>
@@ -1112,12 +1119,6 @@ export default function App() {
                     <span style={S.splitOptionSub}>Pay round by round</span>
                   </button>
                 </div>
-                <button style={S.confirmCloseBtn} onClick={() => {
-                  setShowSplitOptions(false);
-                  confirmClose(ticketTable);
-                }}>
-                  Pay in full
-                </button>
               </div>
             )}
           </div>
