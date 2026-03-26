@@ -479,6 +479,7 @@ export const S = {
   },
   ticketActions: {
     display: "flex",
+    flexDirection: "column",
     gap: 10,
     padding: "0 16px 24px",
     animation: "slideUpFade 0.3s ease-out"

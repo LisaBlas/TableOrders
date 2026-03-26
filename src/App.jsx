@@ -997,12 +997,14 @@ export default function App() {
               </div>
 
               <div style={S.ticketActions}>
-                <button style={S.closeBtn} onClick={() => {
-                  setTicketTable(activeTable);
-                  setShowSplitOptions(true);
-                }}>
-                  Close table
-                </button>
+                {!showSplitOptions && (
+                  <button style={S.closeBtn} onClick={() => {
+                    setTicketTable(activeTable);
+                    setShowSplitOptions(true);
+                  }}>
+                    Close table
+                  </button>
+                )}
                 {showSplitOptions && (
                   <div style={S.splitOptions}>
                     <div style={S.splitOptionsLabel}>Split the bill</div>
