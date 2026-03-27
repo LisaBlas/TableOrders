@@ -99,6 +99,34 @@ export const S = {
     gap: 12,
     padding: 16
   },
+  subcategoryGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(2, 1fr)",
+    gap: 10,
+    padding: 16
+  },
+  subcategoryTile: {
+    background: "#fff",
+    border: "2px solid #ebe9e3",
+    borderRadius: 10,
+    padding: "16px 12px",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    cursor: "pointer",
+    fontSize: 13,
+    fontWeight: 600,
+    color: "#1a1a1a",
+    textAlign: "center",
+    minHeight: 80,
+    transition: "all 0.2s ease"
+  },
+  subcategoryTileEmoji: {
+    fontSize: 28,
+    lineHeight: 1
+  },
   tableCard: {
     display: "flex",
     flexDirection: "column",

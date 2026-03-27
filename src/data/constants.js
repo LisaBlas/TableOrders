@@ -298,17 +298,17 @@ export const MENU = {
       ]
     },
     // Teas
-    { id: "te1", name: "PfefferMinze", price: 3, subcategory: "teas" },
-    { id: "te2", name: "Kamille", price: 3, subcategory: "teas" },
-    { id: "te3", name: "Salbei", price: 3, subcategory: "teas" },
-    { id: "te4", name: "Krauter", price: 3, subcategory: "teas" },
-    { id: "te5", name: "Bergtee", price: 3.7, subcategory: "teas" },
-    { id: "te6", name: "Thymian", price: 3.7, subcategory: "teas" },
-    { id: "te7", name: "Heisse Zitrone", price: 3.7, subcategory: "teas" },
-    { id: "te8", name: "Heisse Orange", price: 5, subcategory: "teas" },
+    { id: "te1", name: "PfefferMinze", price: 3, subcategory: "warm" },
+    { id: "te2", name: "Kamille", price: 3, subcategory: "warm" },
+    { id: "te3", name: "Salbei", price: 3, subcategory: "warm" },
+    { id: "te4", name: "Krauter", price: 3, subcategory: "warm" },
+    { id: "te5", name: "Bergtee", price: 3.7, subcategory: "warm" },
+    { id: "te6", name: "Thymian", price: 3.7, subcategory: "warm" },
+    { id: "te7", name: "Heisse Zitrone", price: 3.7, subcategory: "warm" },
+    { id: "te8", name: "Heisse Orange", price: 5, subcategory: "warm" },
     // Coffee
-    { id: "co1", name: "Espresso", price: 1.9, subcategory: "coffee" },
-    { id: "co2", name: "Cafe Crema", price: 2.6, subcategory: "coffee" },
+    { id: "co1", name: "Espresso", price: 1.9, subcategory: "warm" },
+    { id: "co2", name: "Cafe Crema", price: 2.6, subcategory: "warm" },
   ],
   "Bottles 🍾": [
     // White wines WITH LOCATION VARIANTS (Here / To Go)
@@ -647,8 +647,7 @@ export const DRINKS_SUBCATEGORIES = [
   { id: "cocktail", label: "🍸 Cocktail" },
   { id: "soft", label: "🥤 Soft" },
   { id: "schnaps", label: "🥃 Schnaps" },
-  { id: "teas", label: "🍵 Teas" },
-  { id: "coffee", label: "☕ Coffee" },
+  { id: "warm", label: "☕ Warm" },
 ];
 
 export const BOTTLES_SUBCATEGORIES = [

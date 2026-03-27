@@ -34,6 +34,9 @@ export default function App() {
   const [activeTab, setActiveTab] = useState("order"); // "order" or "bill"
   const [searchQuery, setSearchQuery] = useState("");
   const [seatConfirmTable, setSeatConfirmTable] = useState(null);
+  const [selectedFoodSubcategory, setSelectedFoodSubcategory] = useState(null);
+  const [selectedDrinksSubcategory, setSelectedDrinksSubcategory] = useState(null);
+  const [selectedBottlesSubcategory, setSelectedBottlesSubcategory] = useState(null);
   const [dailySalesTab, setDailySalesTab] = useState("chronological");
   const [editingBillIndex, setEditingBillIndex] = useState(null);
   const [billSnapshot, setBillSnapshot] = useState(null);
@@ -94,6 +97,15 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem("seatedTables", JSON.stringify(Array.from(seatedTables)));
   }, [seatedTables]);
+
+  // Clear selected subcategories when searching
+  useEffect(() => {
+    if (searchQuery) {
+      if (selectedFoodSubcategory) setSelectedFoodSubcategory(null);
+      if (selectedDrinksSubcategory) setSelectedDrinksSubcategory(null);
+      if (selectedBottlesSubcategory) setSelectedBottlesSubcategory(null);
+    }
+  }, [searchQuery, selectedFoodSubcategory, selectedDrinksSubcategory, selectedBottlesSubcategory]);
 
   const showToast = (msg) => {
     setToast(msg);
@@ -807,7 +819,12 @@ export default function App() {
                         ...S.catBtn,
                         ...(activeCategory === cat ? S.catBtnActive : {}),
                       }}
-                      onClick={() => setActiveCategory(cat)}
+                      onClick={() => {
+                        setActiveCategory(cat);
+                        setSelectedFoodSubcategory(null);
+                        setSelectedDrinksSubcategory(null);
+                        setSelectedBottlesSubcategory(null);
+                      }}
                     >
                       {cat}
                     </button>
@@ -815,10 +832,90 @@ export default function App() {
                 </div>
               )}
 
+              {/* Back button - show when any subcategory is selected */}
+              {!searchQuery && (
+                (activeCategory === "Food" && selectedFoodSubcategory) ||
+                (activeCategory === "Drinks🍷" && selectedDrinksSubcategory) ||
+                (activeCategory === "Bottles 🍾" && selectedBottlesSubcategory)
+              ) && (
+                <div style={{ padding: "12px 16px", background: "#fff", borderBottom: "1px solid #ebe9e3" }}>
+                  <button
+                    style={S.back}
+                    onClick={() => {
+                      setSelectedFoodSubcategory(null);
+                      setSelectedDrinksSubcategory(null);
+                      setSelectedBottlesSubcategory(null);
+                    }}
+                  >
+                    ← Back to categories
+                  </button>
+                </div>
+              )}
+
               {/* Scrollable container for menu and sent items */}
               <div style={S.orderContent}>
                 <div style={S.menuList}>
                 {(() => {
+                  // Show subcategory tiles for Food when no subcategory is selected
+                  if (!searchQuery && activeCategory === "Food" && !selectedFoodSubcategory) {
+                    return (
+                      <div style={S.subcategoryGrid}>
+                        {FOOD_SUBCATEGORIES.map(({ id, label }) => (
+                          <button
+                            key={id}
+                            style={S.subcategoryTile}
+                            onClick={() => setSelectedFoodSubcategory(id)}
+                          >
+                            <div style={S.subcategoryTileEmoji}>
+                              {label.split(" ")[0]}
+                            </div>
+                            <div>{label.substring(label.indexOf(" ") + 1)}</div>
+                          </button>
+                        ))}
+                      </div>
+                    );
+                  }
+
+                  // Show subcategory tiles for Drinks when no subcategory is selected
+                  if (!searchQuery && activeCategory === "Drinks🍷" && !selectedDrinksSubcategory) {
+                    return (
+                      <div style={S.subcategoryGrid}>
+                        {DRINKS_SUBCATEGORIES.map(({ id, label }) => (
+                          <button
+                            key={id}
+                            style={S.subcategoryTile}
+                            onClick={() => setSelectedDrinksSubcategory(id)}
+                          >
+                            <div style={S.subcategoryTileEmoji}>
+                              {label.split(" ")[0]}
+                            </div>
+                            <div>{label.substring(label.indexOf(" ") + 1)}</div>
+                          </button>
+                        ))}
+                      </div>
+                    );
+                  }
+
+                  // Show subcategory tiles for Bottles when no subcategory is selected
+                  if (!searchQuery && activeCategory === "Bottles 🍾" && !selectedBottlesSubcategory) {
+                    return (
+                      <div style={S.subcategoryGrid}>
+                        {BOTTLES_SUBCATEGORIES.map(({ id, label }) => (
+                          <button
+                            key={id}
+                            style={S.subcategoryTile}
+                            onClick={() => setSelectedBottlesSubcategory(id)}
+                          >
+                            <div style={S.subcategoryTileEmoji}>
+                              {label.split(" ")[0]}
+                            </div>
+                            <div>{label.substring(label.indexOf(" ") + 1)}</div>
+                          </button>
+                        ))}
+                      </div>
+                    );
+                  }
+
                   // Filter items based on search
                   let itemsToShow = [];
 
@@ -838,15 +935,34 @@ export default function App() {
                       ...item,
                       category: activeCategory,
                     }));
+
+                    // Filter by selected subcategory if applicable
+                    if (activeCategory === "Food" && selectedFoodSubcategory) {
+                      itemsToShow = itemsToShow.filter(
+                        (item) => item.subcategory === selectedFoodSubcategory
+                      );
+                    }
+                    if (activeCategory === "Drinks🍷" && selectedDrinksSubcategory) {
+                      itemsToShow = itemsToShow.filter(
+                        (item) => item.subcategory === selectedDrinksSubcategory
+                      );
+                    }
+                    if (activeCategory === "Bottles 🍾" && selectedBottlesSubcategory) {
+                      itemsToShow = itemsToShow.filter(
+                        (item) => item.subcategory === selectedBottlesSubcategory
+                      );
+                    }
                   }
 
                   // Get subcategory config based on active category
+                  // Don't show subcategory separators when a specific subcategory is selected
                   let subcategoryConfig = null;
-                  if (activeCategory === "Food") subcategoryConfig = FOOD_SUBCATEGORIES;
-                  else if (activeCategory === "Drinks🍷") subcategoryConfig = DRINKS_SUBCATEGORIES;
-                  else if (activeCategory === "Bottles 🍾") subcategoryConfig = BOTTLES_SUBCATEGORIES;
+                  if (activeCategory === "Food" && !selectedFoodSubcategory) subcategoryConfig = FOOD_SUBCATEGORIES;
+                  else if (activeCategory === "Drinks🍷" && !selectedDrinksSubcategory) subcategoryConfig = DRINKS_SUBCATEGORIES;
+                  else if (activeCategory === "Bottles 🍾" && !selectedBottlesSubcategory) subcategoryConfig = BOTTLES_SUBCATEGORIES;
 
                   // Group by subcategory if config exists and no search
+                  // For Food, only group if no specific subcategory is selected
                   if (subcategoryConfig && !searchQuery) {
                     // Group items by subcategory
                     const groupedItems = {};
