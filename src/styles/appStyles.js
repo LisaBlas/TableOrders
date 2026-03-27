@@ -1389,4 +1389,95 @@ export const S = {
     outline: "none",
     fontFamily: "inherit"
   },
+
+  // Bill header styles
+  billHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 8
+  },
+  billHeaderActions: {
+    display: "flex",
+    gap: 6,
+    marginTop: -4
+  },
+  billIconBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    border: "1.5px solid #ddd",
+    background: "#fff",
+    fontSize: 16,
+    lineHeight: 1,
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0
+  },
+  billIconBtnActive: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    border: "1.5px solid #2d5a35",
+    background: "#2d5a35",
+    fontSize: 16,
+    lineHeight: 1,
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+    color: "#fff"
+  },
+
+  // Bill item add button
+  closeAddBtn: {
+    width: 24,
+    height: 24,
+    borderRadius: "50%",
+    border: "1.5px solid #ddd",
+    background: "#fff",
+    fontSize: 16,
+    lineHeight: 1,
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    color: "#999",
+    flexShrink: 0
+  },
+
+  // Gutschein and subtotal rows
+  closeSubtotalRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    fontSize: 15,
+    color: "#666",
+    marginBottom: 4
+  },
+  closeGutscheinRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    fontSize: 15,
+    color: "#c0392b",
+    marginBottom: 8
+  },
+  removeGutscheinBtn: {
+    width: 18,
+    height: 18,
+    borderRadius: "50%",
+    border: "1px solid #e0a0a0",
+    background: "#fff",
+    fontSize: 12,
+    lineHeight: 1,
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    color: "#c0392b",
+    flexShrink: 0
+  },
 };

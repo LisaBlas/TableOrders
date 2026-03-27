@@ -41,6 +41,12 @@ export default function App() {
   // Track sent batches (each send creates a new batch with timestamp)
   const [sentBatches, setSentBatches] = useState({});
 
+  // Bill editing and gutschein state
+  const [editingBill, setEditingBill] = useState(false);
+  const [gutscheinAmounts, setGutscheinAmounts] = useState({});
+  const [showGutscheinModal, setShowGutscheinModal] = useState(false);
+  const [gutscheinInput, setGutscheinInput] = useState("");
+
   // Custom item state
   const [customName, setCustomName] = useState("");
   const [customPrice, setCustomPrice] = useState("");
@@ -105,14 +111,17 @@ export default function App() {
   const openTable = (tableId) => {
     setActiveTable(tableId);
     setActiveCategory("Food");
-    // Land on Bill tab if table has orders, Order tab if empty
-    const hasOrders = orders[tableId] && orders[tableId].length > 0;
-    setActiveTab(hasOrders ? "bill" : "order");
+    // Land on Bill tab if table has sent orders, Order tab otherwise
+    const hasSentOrders = orders[tableId] && orders[tableId].some(o => (o.sentQty || 0) > 0);
+    setActiveTab(hasSentOrders ? "bill" : "order");
     setSearchQuery("");
     setCustomName("");
     setCustomPrice("");
     setCustomQty("1");
     setConfirmingClose(false);
+    setEditingBill(false);
+    setShowGutscheinModal(false);
+    setGutscheinInput("");
     setView("order");
   };
 
@@ -246,6 +255,54 @@ export default function App() {
     });
   };
 
+  const addItemToBill = (itemId) => {
+    setOrders((prev) => {
+      const current = prev[activeTable] || [];
+      const item = current.find((o) => o.id === itemId);
+      if (!item) return prev;
+
+      showToast(`+ ${item.name}`);
+
+      return {
+        ...prev,
+        [activeTable]: current.map((o) => {
+          if (o.id === itemId) {
+            const newQty = o.qty + 1;
+            const newSentQty = (o.sentQty || 0) + 1;
+            return { ...o, qty: newQty, sentQty: newSentQty };
+          }
+          return o;
+        }),
+      };
+    });
+  };
+
+  const applyGutschein = () => {
+    const amount = parseFloat(gutscheinInput);
+    if (isNaN(amount) || amount < 0) {
+      showToast("⚠ Valid amount required");
+      return;
+    }
+
+    setGutscheinAmounts((prev) => ({
+      ...prev,
+      [activeTable]: amount,
+    }));
+
+    showToast(`Gutschein applied: ${amount.toFixed(2)}€`);
+    setShowGutscheinModal(false);
+    setGutscheinInput("");
+  };
+
+  const removeGutschein = () => {
+    setGutscheinAmounts((prev) => {
+      const next = { ...prev };
+      delete next[activeTable];
+      return next;
+    });
+    showToast("Gutschein removed");
+  };
+
   const sendOrder = () => {
     const current = orders[activeTable] || [];
     const unsent = current.filter((o) => (o.qty - (o.sentQty || 0)) > 0);
@@ -280,15 +337,19 @@ export default function App() {
 
   const confirmClose = (tableId) => {
     const items = orders[tableId] || [];
-    const total = items.reduce((s, o) => s + o.price * o.qty, 0);
+    const subtotal = items.reduce((s, o) => s + o.price * o.qty, 0);
+    const gutschein = gutscheinAmounts[tableId] || 0;
+    const total = Math.max(0, subtotal - gutschein);
 
-    // Save bill to paid bills
+    // Save bill to paid bills (including gutschein info)
     setPaidBills((prev) => [
       ...prev,
       {
         tableId,
         items,
         total,
+        subtotal,
+        gutschein: gutschein > 0 ? gutschein : undefined,
         timestamp: new Date().toISOString(),
         paymentMode: "full",
       },
@@ -309,8 +370,14 @@ export default function App() {
       delete next[tableId];
       return next;
     });
+    setGutscheinAmounts((prev) => {
+      const next = { ...prev };
+      delete next[tableId];
+      return next;
+    });
     showToast(`Table ${tableId} closed ✓`);
     setConfirmingClose(false);
+    setEditingBill(false);
     setView("tables");
     setTicketTable(null);
   };
@@ -417,6 +484,11 @@ export default function App() {
 
   const unsentTotal = unsentItems.reduce((s, o) => s + o.price * o.qty, 0);
   const tableBatches = sentBatches[activeTable] || [];
+
+  // For bill display - only show sent items with their sent quantities
+  const sentItems = currentOrder
+    .map((o) => ({ ...o, qty: o.sentQty || 0 }))
+    .filter((o) => o.qty > 0);
 
   const ticketItems = orders[ticketTable] || [];
   const ticketTotal = ticketItems.reduce((s, o) => s + o.price * o.qty, 0);
@@ -869,27 +941,58 @@ export default function App() {
           {activeTab === "bill" && (
             <>
               <div style={S.ticket}>
-                <div style={S.closeReceiptBrand}>Käserei Camidi</div>
-                <div style={S.closeReceiptMeta}>
-                  Table {activeTable} · {new Date().toLocaleString("en-GB", {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
+                <div style={S.billHeader}>
+                  <div>
+                    <div style={S.closeReceiptBrand}>Käserei Camidi</div>
+                    <div style={S.closeReceiptMeta}>
+                      Table {activeTable} · {new Date().toLocaleString("en-GB", {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </div>
+                  </div>
+                  <div style={S.billHeaderActions}>
+                    <button
+                      style={editingBill ? S.billIconBtnActive : S.billIconBtn}
+                      onClick={() => setEditingBill(!editingBill)}
+                      title={editingBill ? "Done" : "Edit"}
+                    >
+                      {editingBill ? "✓" : "✏️"}
+                    </button>
+                    <button
+                      style={S.billIconBtn}
+                      onClick={() => setShowGutscheinModal(true)}
+                      title="Apply Gutschein"
+                    >
+                      🎫
+                    </button>
+                  </div>
                 </div>
                 <div style={S.divider} />
-                {consolidateItems(currentOrder).map((o) => (
+                {consolidateItems(sentItems).map((o) => (
                   <div key={o.id} style={S.closeRowEditable}>
-                    <button
-                      style={S.closeRemoveBtn}
-                      onClick={() => removeItemFromBill(o.id)}
-                      title="Remove one"
-                    >
-                      −
-                    </button>
+                    {editingBill && (
+                      <button
+                        style={S.closeRemoveBtn}
+                        onClick={() => removeItemFromBill(o.id)}
+                        title="Remove one"
+                      >
+                        −
+                      </button>
+                    )}
                     <span style={S.closeQty}>{o.qty}×</span>
+                    {editingBill && (
+                      <button
+                        style={S.closeAddBtn}
+                        onClick={() => addItemToBill(o.id)}
+                        title="Add one"
+                      >
+                        +
+                      </button>
+                    )}
                     <span style={S.closeName}>{o.name}</span>
                     <span style={S.closeLinePrice}>
                       {(o.price * o.qty).toFixed(2)}€
@@ -897,10 +1000,43 @@ export default function App() {
                   </div>
                 ))}
                 <div style={S.perforationDivider} />
-                <div style={S.closeTotalRow}>
-                  <span>Total</span>
-                  <span>{currentOrder.reduce((s, o) => s + o.price * o.qty, 0).toFixed(2)}€</span>
-                </div>
+                {(() => {
+                  const subtotal = sentItems.reduce((s, o) => s + o.price * o.qty, 0);
+                  const gutschein = gutscheinAmounts[activeTable] || 0;
+                  const total = Math.max(0, subtotal - gutschein);
+
+                  return (
+                    <>
+                      {gutschein > 0 && (
+                        <>
+                          <div style={S.closeSubtotalRow}>
+                            <span>Subtotal</span>
+                            <span>{subtotal.toFixed(2)}€</span>
+                          </div>
+                          <div style={S.closeGutscheinRow}>
+                            <span>Gutschein</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span>-{gutschein.toFixed(2)}€</span>
+                              {editingBill && (
+                                <button
+                                  style={S.removeGutscheinBtn}
+                                  onClick={removeGutschein}
+                                  title="Remove gutschein"
+                                >
+                                  ✕
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </>
+                      )}
+                      <div style={S.closeTotalRow}>
+                        <span>Total</span>
+                        <span>{total.toFixed(2)}€</span>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
 
               <div style={S.ticketActions}>
@@ -1084,7 +1220,9 @@ export default function App() {
                         <div style={S.billMeta}>
                           {new Date(bill.timestamp).toLocaleString("en-GB")} ·{" "}
                           {bill.paymentMode === "full"
-                            ? "Full payment"
+                            ? bill.gutschein
+                              ? `Full payment (Gutschein: ${bill.gutschein.toFixed(2)}€)`
+                              : "Full payment"
                             : bill.paymentMode === "equal"
                             ? `Split ${bill.splitData.guests} ways`
                             : `Split by item (${bill.splitData.payments.length} guests)`}
@@ -1356,6 +1494,47 @@ export default function App() {
                 onClick={addCustomItem}
               >
                 Add to order
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── GUTSCHEIN MODAL ── */}
+      {showGutscheinModal && (
+        <div style={S.modalOverlay} onClick={() => setShowGutscheinModal(false)}>
+          <div style={S.modalCard} onClick={(e) => e.stopPropagation()}>
+            <div style={S.modalTitle}>Apply Gutschein</div>
+            <div style={S.customModalForm}>
+              <div style={S.customModalField}>
+                <label style={S.customModalLabel}>Amount (€)</label>
+                <input
+                  type="number"
+                  placeholder="0.00"
+                  value={gutscheinInput}
+                  onChange={(e) => setGutscheinInput(e.target.value)}
+                  step="0.01"
+                  min="0"
+                  style={S.customModalInput}
+                  autoFocus
+                />
+              </div>
+            </div>
+            <div style={S.modalActions}>
+              <button
+                style={S.modalCancelBtn}
+                onClick={() => {
+                  setShowGutscheinModal(false);
+                  setGutscheinInput("");
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                style={S.modalConfirmBtn}
+                onClick={applyGutschein}
+              >
+                Apply
               </button>
             </div>
           </div>
