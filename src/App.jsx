@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { TABLES, MENU, STATUS_CONFIG, FOOD_SUBCATEGORIES, DRINKS_SUBCATEGORIES, BOTTLES_SUBCATEGORIES } from "./data/constants";
+import { TABLES, MENU, STATUS_CONFIG, FOOD_SUBCATEGORIES, DRINKS_SUBCATEGORIES, BOTTLES_SUBCATEGORIES, ARTICLE_ALIASES } from "./data/constants";
 import { getTableStatus, getItemDestination, expandItems } from "./utils/helpers";
 import { S } from "./styles/appStyles";
 import { Receipt } from "./components/Receipt";
@@ -2093,6 +2093,7 @@ export default function App() {
 
                       itemsMap.set(item.id, {
                         name: item.name,
+                        alias: ARTICLE_ALIASES[item.id] || null,
                         qty: 0,
                         revenue: 0,
                         category,
@@ -2162,7 +2163,7 @@ export default function App() {
                               {items.map((item, idx) => (
                                 <div key={idx} style={S.billCard}>
                                   <div style={S.billCardHeader}>
-                                    <span style={S.billTableNum}>{item.name}</span>
+                                    <span style={S.billTableNum}>{item.alias || item.name}</span>
                                     <span style={{ fontSize: 22, fontWeight: 800, color: "#1a1a1a", textAlign: "center", minWidth: 36 }}>{item.qty}</span>
                                   </div>
                                   <div style={S.billMeta}>
@@ -2184,7 +2185,7 @@ export default function App() {
                             {allItems.map((item, idx) => (
                               <div key={idx} style={S.billCard}>
                                 <div style={S.billCardHeader}>
-                                  <span style={S.billTableNum}>{item.name}</span>
+                                  <span style={S.billTableNum}>{item.alias || item.name}</span>
                                   <span style={{ fontSize: 22, fontWeight: 800, color: "#1a1a1a", textAlign: "center", minWidth: 36 }}>{item.qty}</span>
                                 </div>
                                 <div style={S.billMeta}>
@@ -2208,7 +2209,7 @@ export default function App() {
                           {customItems.map((item, idx) => (
                             <div key={idx} style={S.billCard}>
                               <div style={S.billCardHeader}>
-                                <span style={S.billTableNum}>{item.name}</span>
+                                <span style={S.billTableNum}>{item.alias || item.name}</span>
                                 <span style={{ fontSize: 22, fontWeight: 800, color: "#1a1a1a", textAlign: "center", minWidth: 36 }}>{item.qty}</span>
                               </div>
                               <div style={S.billMeta}>
