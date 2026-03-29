@@ -1,4 +1,5 @@
 import { S } from "../styles/appStyles";
+import type { ModalProps } from "../types";
 
 export function Modal({
   title,
@@ -9,7 +10,7 @@ export function Modal({
   confirmText = "Confirm",
   confirmStyle = null,
   closeOnBackdrop = true,
-}) {
+}: ModalProps) {
   const handleBackdropClick = closeOnBackdrop ? onClose : undefined;
   const finalConfirmStyle = confirmStyle || S.modalConfirmBtn;
 

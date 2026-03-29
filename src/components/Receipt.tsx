@@ -1,5 +1,6 @@
 import { S } from "../styles/appStyles";
 import { consolidateItems } from "../utils/helpers";
+import type { ReceiptProps } from "../types";
 
 export function Receipt({
   tableId,
@@ -11,7 +12,7 @@ export function Receipt({
   onAddItem = null,
   onRemoveGutschein = null,
   skipHeader = false,
-}) {
+}: ReceiptProps) {
   const consolidatedItems = consolidateItems(items);
   const subtotal = items.reduce((s, o) => s + o.price * o.qty, 0);
   const total = Math.max(0, subtotal - gutschein);

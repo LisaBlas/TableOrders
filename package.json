@@ -16,8 +16,12 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@types/node": "^25.5.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^4.3.4",
     "gh-pages": "^6.3.0",
+    "typescript": "^6.0.2",
     "vite": "^6.0.11"
   }
 }
