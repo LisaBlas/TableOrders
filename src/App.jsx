@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { TABLES, MENU, STATUS_CONFIG, FOOD_SUBCATEGORIES, DRINKS_SUBCATEGORIES, BOTTLES_SUBCATEGORIES } from "./data/constants";
-import { getTableStatus, copyToClipboard, formatOrderText, getItemDestination, expandItems } from "./utils/helpers";
+import { getTableStatus, getItemDestination, expandItems } from "./utils/helpers";
 import { S } from "./styles/appStyles";
 import { Receipt } from "./components/Receipt";
 import { Modal } from "./components/Modal";
@@ -401,9 +401,6 @@ export default function App() {
     const unsent = current.filter((o) => (o.qty - (o.sentQty || 0)) > 0);
     if (unsent.length === 0) return;
 
-    const text = formatOrderText(activeTable, current);
-    copyToClipboard(text);
-
     // Create new batch with timestamp and unsent items
     const newBatch = {
       timestamp: new Date(),
@@ -420,7 +417,7 @@ export default function App() {
       [activeTable]: current.map((o) => ({ ...o, sentQty: o.qty })),
     }));
 
-    showToast("Order sent & copied!");
+    showToast("Order sent!");
   };
 
   const openTicket = (tableId) => {
@@ -2166,7 +2163,7 @@ export default function App() {
                                 <div key={idx} style={S.billCard}>
                                   <div style={S.billCardHeader}>
                                     <span style={S.billTableNum}>{item.name}</span>
-                                    <span style={S.billTotal}>{item.qty} unit{item.qty > 1 ? "s" : ""}</span>
+                                    <span style={{ fontSize: 22, fontWeight: 800, color: "#1a1a1a", textAlign: "center", minWidth: 36 }}>{item.qty}</span>
                                   </div>
                                   <div style={S.billMeta}>
                                     {item.revenue.toFixed(2)}€ total · {(item.revenue / item.qty).toFixed(2)}€ each
@@ -2188,7 +2185,7 @@ export default function App() {
                               <div key={idx} style={S.billCard}>
                                 <div style={S.billCardHeader}>
                                   <span style={S.billTableNum}>{item.name}</span>
-                                  <span style={S.billTotal}>{item.qty} unit{item.qty > 1 ? "s" : ""}</span>
+                                  <span style={{ fontSize: 22, fontWeight: 800, color: "#1a1a1a", textAlign: "center", minWidth: 36 }}>{item.qty}</span>
                                 </div>
                                 <div style={S.billMeta}>
                                   {item.revenue.toFixed(2)}€ total · {(item.revenue / item.qty).toFixed(2)}€ each
@@ -2212,7 +2209,7 @@ export default function App() {
                             <div key={idx} style={S.billCard}>
                               <div style={S.billCardHeader}>
                                 <span style={S.billTableNum}>{item.name}</span>
-                                <span style={S.billTotal}>{item.qty} unit{item.qty > 1 ? "s" : ""}</span>
+                                <span style={{ fontSize: 22, fontWeight: 800, color: "#1a1a1a", textAlign: "center", minWidth: 36 }}>{item.qty}</span>
                               </div>
                               <div style={S.billMeta}>
                                 {item.revenue.toFixed(2)}€ total · {(item.revenue / item.qty).toFixed(2)}€ each

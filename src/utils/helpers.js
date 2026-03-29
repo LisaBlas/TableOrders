@@ -26,55 +26,6 @@ export function expandItems(items) {
   return expanded;
 }
 
-export function copyToClipboard(text) {
-  return navigator.clipboard.writeText(text).catch(() => {});
-}
-
-export function formatTicketText(tableId, items) {
-  const consolidated = consolidateItems(items);
-  const total = consolidated.reduce((s, o) => s + o.price * o.qty, 0);
-  return `TICKET — Table ${tableId}\n${"─".repeat(28)}\n${consolidated
-    .map((o) => `${o.qty}x ${o.name.padEnd(22)} ${(o.price * o.qty).toFixed(2)}€`)
-    .join("\n")}\n${"─".repeat(28)}\nTOTAL  ${total.toFixed(2)}€`;
-}
-
-export function formatOrderText(tableId, items) {
-  // Group by destination
-  const byDestination = { bar: [], counter: [], kitchen: [] };
-  items.forEach((item) => {
-    const unsentQty = item.qty - (item.sentQty || 0);
-    if (unsentQty > 0) {
-      const destination = getItemDestination(item);
-      byDestination[destination].push({ ...item, qty: unsentQty });
-    }
-  });
-
-  const sections = [];
-
-  if (byDestination.bar.length > 0) {
-    sections.push(
-      "🍷 BAR (Waiter):\n" +
-      byDestination.bar.map((o) => `  ${o.qty}x ${o.name}`).join("\n")
-    );
-  }
-
-  if (byDestination.counter.length > 0) {
-    sections.push(
-      "🧀 COUNTER (Cheese):\n" +
-      byDestination.counter.map((o) => `  ${o.qty}x ${o.name}`).join("\n")
-    );
-  }
-
-  if (byDestination.kitchen.length > 0) {
-    sections.push(
-      "🍽️ KITCHEN (Hot/Salad):\n" +
-      byDestination.kitchen.map((o) => `  ${o.qty}x ${o.name}`).join("\n")
-    );
-  }
-
-  return `ORDER — Table ${tableId}\n${new Date().toLocaleTimeString()}\n\n${sections.join("\n\n")}`;
-}
-
 // Consolidate items with same ID by summing their quantities
 export function consolidateItems(items) {
   const consolidated = new Map();
