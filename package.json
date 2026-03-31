@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "homepage": "https://LisaBlas.github.io/TableOrders",
+  "homepage": "https://LisaBlas.github.io/TableOrdersDemo",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
