@@ -1,5 +1,5 @@
 import { useApp } from "../contexts/AppContext";
-import { MENU, FOOD_SUBCATEGORIES, DRINKS_SUBCATEGORIES, BOTTLES_SUBCATEGORIES, ARTICLE_ALIASES } from "../data/constants";
+import { ARTICLE_ALIASES } from "../data/constants";
 import { S } from "../styles/appStyles";
 import { Modal } from "../components/Modal";
 import { BillCard } from "../components/BillCard";
@@ -83,108 +83,26 @@ export function DailySalesView() {
 
   // Total tab aggregation
   const renderTotalTab = () => {
-    const itemsMap = new Map<string, { name: string; alias: string | null; qty: number; revenue: number; category: string | null; subcategory: string | null }>();
+    const itemsMap = new Map<string, { name: string; alias: string | null; qty: number }>();
     paidBills.forEach((bill) => {
       bill.items.forEach((item) => {
         if (!itemsMap.has(item.id)) {
-          let category = (item as any).category || null;
-          let subcategory = item.subcategory || null;
-          if (!category || !subcategory) {
-            const lookupId = (item as any).baseId || item.id;
-            for (const [cat, items] of Object.entries(MENU)) {
-              const found = (items as any[]).find((i) => i.id === lookupId);
-              if (found) {
-                category = category || cat;
-                subcategory = subcategory || found.subcategory;
-                break;
-              }
-            }
-          }
-          itemsMap.set(item.id, { name: item.name, alias: (ARTICLE_ALIASES as any)[item.id] || null, qty: 0, revenue: 0, category, subcategory });
+          itemsMap.set(item.id, { name: item.name, alias: (ARTICLE_ALIASES as any)[item.id] || null, qty: 0 });
         }
-        const existing = itemsMap.get(item.id)!;
-        existing.qty += item.qty;
-        existing.revenue += item.price * item.qty;
+        itemsMap.get(item.id)!.qty += item.qty;
       });
     });
 
-    const aggregatedItems = Array.from(itemsMap.values());
-    const categorizedItems: Record<string, Record<string, any[]>> = {};
-    Object.keys(MENU).forEach((cat) => { categorizedItems[cat] = {}; });
-
-    aggregatedItems.forEach((item) => {
-      const cat = item.category || "Ad-hoc Items";
-      const subcat = item.subcategory || "custom";
-      if (!categorizedItems[cat]) categorizedItems[cat] = {};
-      if (!categorizedItems[cat][subcat]) categorizedItems[cat][subcat] = [];
-      categorizedItems[cat][subcat].push(item);
-    });
-
-    Object.values(categorizedItems).forEach((subcats) => {
-      Object.values(subcats).forEach((items) => {
-        items.sort((a, b) => b.qty - a.qty);
-      });
-    });
-
-    const subcatConfigs: Record<string, any[]> = {
-      Food: FOOD_SUBCATEGORIES,
-      "Drinks🍷": DRINKS_SUBCATEGORIES,
-      "Bottles 🍾": BOTTLES_SUBCATEGORIES,
-    };
-
-    const renderItemCard = (item: any, idx: number) => (
-      <div key={idx} style={S.billCard}>
-        <div style={S.billCardHeader}>
-          <span style={S.billTableNum}>{item.alias || item.name}</span>
-          <span style={{ fontSize: 22, fontWeight: 800, color: "#1a1a1a", textAlign: "center" as const, minWidth: 36 }}>{item.qty}</span>
-        </div>
-        <div style={S.billMeta}>
-          {item.revenue.toFixed(2)}€ total · {(item.revenue / item.qty).toFixed(2)}€ each
-        </div>
-      </div>
-    );
+    const sortedItems = Array.from(itemsMap.values()).sort((a, b) => b.qty - a.qty);
 
     return (
-      <div style={S.billsList}>
-        {Object.keys(MENU).map((category) => {
-          const categoryItems = categorizedItems[category];
-          const subcatConfig = subcatConfigs[category];
-          const hasItems = Object.values(categoryItems).some((items) => items.length > 0);
-          if (!hasItems) return null;
-
-          if (subcatConfig) {
-            return subcatConfig.map(({ id, label }: any) => {
-              const items = categoryItems[id] || [];
-              if (items.length === 0) return null;
-              return (
-                <div key={`${category}-${id}`}>
-                  <div style={S.subcategorySeparator}>{label}</div>
-                  {items.map(renderItemCard)}
-                </div>
-              );
-            });
-          }
-
-          const allItems = Object.values(categoryItems).flat();
-          if (allItems.length === 0) return null;
-          return (
-            <div key={category}>
-              <div style={S.subcategorySeparator}>{category}</div>
-              {allItems.map(renderItemCard)}
-            </div>
-          );
-        })}
-
-        {categorizedItems["Ad-hoc Items"] && (() => {
-          const customItems = Object.values(categorizedItems["Ad-hoc Items"]).flat();
-          if (customItems.length === 0) return null;
-          return (
-            <div key="ad-hoc">
-              <div style={S.subcategorySeparator}>Ad-hoc Items</div>
-              {customItems.map(renderItemCard)}
-            </div>
-          );
-        })()}
+      <div style={{ ...S.billsList, padding: "0 16px" }}>
+        {sortedItems.map((item, idx) => (
+          <div key={idx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #f0f0f0" }}>
+            <span style={{ fontSize: 15, color: "#1a1a1a" }}>{item.alias || item.name}</span>
+            <span style={{ fontSize: 15, fontWeight: 700, color: "#1a1a1a", minWidth: 28, textAlign: "right" as const }}>{item.qty}</span>
+          </div>
+        ))}
       </div>
     );
   };
