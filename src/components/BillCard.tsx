@@ -37,6 +37,11 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
               : bill.paymentMode === "equal"
               ? `Split ${(bill.splitData as any)?.guests} ways`
               : `Split by item (${(bill.splitData as any)?.payments?.length} guests)`}
+            {bill.paymentMode !== "full" && bill.gutschein && bill.gutschein > 0 && (
+              <div style={{ color: "#2d7a3a", fontWeight: 600 }}>
+                Gutschein: -{bill.gutschein.toFixed(2)}€
+              </div>
+            )}
             {(bill as any).tip !== undefined && (
               <div style={{ color: (bill as any).tip >= 0 ? "#2d5a35" : "#c0392b" }}>
                 Tip: {(bill as any).tip >= 0 ? `+${(bill as any).tip.toFixed(2)}€` : `${(bill as any).tip.toFixed(2)}€`}

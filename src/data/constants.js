@@ -666,6 +666,42 @@ export const MENU = {
         { type: "togo", price: 14, label: "To Go" }
       ]
     },
+    {
+      id: "cremant_alsace_bottle",
+      name: "Crémant d'Alsace Fl.",
+      subcategory: "natural",
+      variants: [
+        { type: "here", price: 24, label: "Here" },
+        { type: "togo", price: 21, label: "To Go" }
+      ]
+    },
+    {
+      id: "vi_no_bottle",
+      name: "Vi-No Fl.",
+      subcategory: "natural",
+      variants: [
+        { type: "here", price: 25.5, label: "Here" },
+        { type: "togo", price: 14, label: "To Go" }
+      ]
+    },
+    {
+      id: "fritz_muller_bottle",
+      name: "Fritz Müller Fl.",
+      subcategory: "natural",
+      variants: [
+        { type: "here", price: 25.5, label: "Here" },
+        { type: "togo", price: 14, label: "To Go" }
+      ]
+    },
+    {
+      id: "divin_pinot_noir_bottle",
+      name: "Divin Pinot Noir Fl.",
+      subcategory: "natural",
+      variants: [
+        { type: "here", price: 29, label: "Here" },
+        { type: "togo", price: 18.5, label: "To Go" }
+      ]
+    },
     // Water bottles WITH LOCATION VARIANTS
     {
       id: "wasser_sprudel_bottle",
@@ -890,6 +926,14 @@ export const ARTICLE_ALIASES = {
   "ya_plus_qua_bottle-togo":      "YaPlusQ Fl TG [226]",
   "divin_rose_bottle-here":       "DivRose Fl H [151]",
   "divin_rose_bottle-togo":       "DivRose Fl TG [151]",
+  "cremant_alsace_bottle-here":   "CremAls Fl H [191]",
+  "cremant_alsace_bottle-togo":   "CremAls Fl TG [191]",
+  "vi_no_bottle-here":            "ViNo Fl H [153]",
+  "vi_no_bottle-togo":            "ViNo Fl TG [153]",
+  "fritz_muller_bottle-here":     "FritzM Fl H [150]",
+  "fritz_muller_bottle-togo":     "FritzM Fl TG [150]",
+  "divin_pinot_noir_bottle-here": "DivPinNoir Fl H [154]",
+  "divin_pinot_noir_bottle-togo": "DivPinNoir Fl TG [154]",
   // Bottles — Water
   "wasser_sprudel_bottle-here": "SprudWass Fl H [52]",
   "wasser_sprudel_bottle-togo": "SprudWass Fl TG [52]",
