@@ -108,6 +108,64 @@ export function OrderView() {
       });
       return results;
     }
+
+    // Special handling for Bottles category: merge static bottles + drinks with bottle variants
+    if (activeCategory === "Bottles 🍾") {
+      const staticBottles = (MENU as any)["Bottles 🍾"]?.map((item: any) => ({
+        ...item,
+        category: "Bottles 🍾"
+      })) || [];
+
+      const drinksWithBottles = (MENU as any)["Drinks🍷"]
+        ?.filter((item: any) => item.variants?.some((v: any) => v.bottleSubcategory))
+        .map((item: any) => ({
+          ...item,
+          category: "Bottles 🍾",
+          // Filter variants to show only bottle variants, and map subcategory
+          variants: item.variants
+            .filter((v: any) => v.bottleSubcategory)
+            .map((v: any) => ({ ...v, subcategory: v.bottleSubcategory })),
+          // Use bottle subcategory for filtering
+          subcategory: item.variants.find((v: any) => v.bottleSubcategory)?.bottleSubcategory
+        })) || [];
+
+      let items = [...staticBottles, ...drinksWithBottles];
+
+      if (selectedSubcategory) {
+        items = items.filter((item: any) => item.subcategory === selectedSubcategory);
+      }
+
+      return items;
+    }
+
+    // Special handling for Drinks category: hide bottle variants
+    if (activeCategory === "Drinks🍷") {
+      let items = (MENU as any)["Drinks🍷"]?.map((item: any) => {
+        // If item has variants, filter out bottle variants
+        if (item.variants) {
+          const filteredVariants = item.variants.filter((v: any) => !v.bottleSubcategory);
+          // Only include item if it has non-bottle variants
+          if (filteredVariants.length > 0) {
+            return {
+              ...item,
+              category: "Drinks🍷",
+              variants: filteredVariants
+            };
+          }
+          return null; // Exclude items with only bottle variants
+        }
+        // Regular items without variants
+        return { ...item, category: "Drinks🍷" };
+      }).filter(Boolean) || [];
+
+      if (selectedSubcategory) {
+        items = items.filter((item: any) => item.subcategory === selectedSubcategory);
+      }
+
+      return items;
+    }
+
+    // Default category handling (Food, etc.)
     let items = (MENU as any)[activeCategory]?.map((item: any) => ({ ...item, category: activeCategory })) || [];
     if (selectedSubcategory) {
       items = items.filter((item: any) => item.subcategory === selectedSubcategory);

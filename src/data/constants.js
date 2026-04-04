@@ -23,36 +23,36 @@ export const TABLES = [
 export const MENU = {
   Food: [
     // Cheese & Charcuterie
-    { id: "f1", name: "Small Cheese Plate", price: 10, subcategory: "cheese" },
-    { id: "f2", name: "Cheese Plate", price: 11, subcategory: "cheese" },
-    { id: "f4", name: "Charcuterie Plate", price: 11, subcategory: "cheese" },
-    { id: "f5", name: "Mixed Plate", price: 25, subcategory: "cheese" },
-    { id: "f29", name: "Charcuterie dazu", price: 6.5, subcategory: "cheese" },
+    { id: "f1", name: "Small Cheese Plate", price: 10, subcategory: "cheese", posId: "11", posName: "Kleiner Kâseteller" },
+    { id: "f2", name: "Cheese Plate", price: 11, subcategory: "cheese", posId: "10", posName: "CP 1PAX" },
+    { id: "f4", name: "Charcuterie Plate", price: 11, subcategory: "cheese", posId: "16", posName: "Charcuterie klein" },
+    { id: "f5", name: "Mixed Plate", price: 25, subcategory: "cheese", posId: "12", posName: "MixPlate 2PAX" },
+    { id: "f29", name: "Charcuterie dazu", price: 6.5, subcategory: "cheese", posId: "18", posName: "Charcuterie Dazu?" },
     // Hot Dishes
-    { id: "f6", name: "Marcelin Chaud", price: 9, subcategory: "warm" },
-    { id: "f7", name: "Camembert Rôti", price: 17, subcategory: "warm" },
-    { id: "f8", name: "Mont d'Or", price: 29, subcategory: "warm" },
-    { id: "f9", name: "Tartiflette", price: 15, subcategory: "warm" },
-    { id: "f10", name: "Tartiflette + Speck", price: 17, subcategory: "warm" },
-    { id: "f11", name: "Raclette", price: 28, subcategory: "warm" },
-    { id: "f12", name: "Fondue", price: 28, subcategory: "warm" },
-    { id: "f28", name: "Fondue Alkoholfrei", price: 28, subcategory: "warm" },
+    { id: "f6", name: "Marcelin Chaud", price: 9, subcategory: "warm", posId: "418", posName: "ST.M" },
+    { id: "f7", name: "Camembert Rôti", price: 17, subcategory: "warm", posId: "401", posName: "CAM" },
+    { id: "f8", name: "Mont d'Or", price: 29, subcategory: "warm", posId: "421", posName: "Mont d'Or" },
+    { id: "f9", name: "Tartiflette", price: 15, subcategory: "warm", posId: "21", posName: "Tartiflette" },
+    { id: "f10", name: "Tartiflette + Speck", price: 17, subcategory: "warm", posId: "0000", posName: "TartSpeck?" },
+    { id: "f11", name: "Raclette", price: 28, subcategory: "warm", posId: "24", posName: "Raclettemenü" },
+    { id: "f12", name: "Fondue", price: 28, subcategory: "warm", posId: "23", posName: "Fonduemenü" },
+    { id: "f28", name: "Fondue Alkoholfrei", price: 28, subcategory: "warm", posId: "0000", posName: "Fondue Alkoholfrei?" },
     // Salads
-    { id: "f13", name: "Seguin", price: 12.5, subcategory: "salads" },
-    { id: "f21", name: "Seguin + Speck", price: 14.5, subcategory: "salads" },
-    { id: "f14", name: "Papillon", price: 13.5, subcategory: "salads" },
-    { id: "f22", name: "Papillon + Serrano", price: 15.5, subcategory: "salads" },
-    { id: "f15", name: "Bauern", price: 12.5, subcategory: "salads" },
-    { id: "f23", name: "Bauern + Kartoffeln", price: 15, subcategory: "salads" },
-    { id: "f16", name: "Porthos", price: 13, subcategory: "salads" },
-    { id: "f24", name: "Porthos + Serrano", price: 15, subcategory: "salads" },
-    { id: "f17", name: "Basic", price: 7, subcategory: "salads" },
+    { id: "f13", name: "Seguin", price: 12.5, subcategory: "salads", posId: "41", posName: "Seguin Salat" },
+    { id: "f21", name: "Seguin + Speck", price: 14.5, subcategory: "salads", posId: "1015", posName: "SegSpeck?" },
+    { id: "f14", name: "Papillon", price: 13.5, subcategory: "salads", posId: "43", posName: "Papillon Salat" },
+    { id: "f22", name: "Papillon + Serrano", price: 15.5, subcategory: "salads", posId: "0000", posName: "PapSerrano?" },
+    { id: "f15", name: "Bauern", price: 12.5, subcategory: "salads", posId: "44", posName: "Bauernsalat" },
+    { id: "f23", name: "Bauern + Kartoffeln", price: 15, subcategory: "salads", posId: "0000", posName: "BauKartoffel?" },
+    { id: "f16", name: "Porthos", price: 13, subcategory: "salads", posId: "43", posName: "Porthos Salat" },
+    { id: "f24", name: "Porthos + Serrano", price: 15, subcategory: "salads", posId: "0000", posName: "PortSerrano?" },
+    { id: "f17", name: "Basic", price: 7, subcategory: "salads", posId: "40", posName: "Basissalat" },
     // Dessert
-    { id: "f18", name: "Tarte Tatin", price: 7, subcategory: "snacks" },
-    { id: "f27", name: "Tarte Tatin + Calvados", price: 10, subcategory: "snacks" },
-    { id: "f19", name: "Olives", price: 3, subcategory: "snacks" },
-    { id: "f20", name: "Olives + Grissini", price: 5.5, subcategory: "snacks" },
-    { id: "f26", name: "Cornichons", price: 2.5, subcategory: "snacks" },
+    { id: "f18", name: "Tarte Tatin", price: 7, subcategory: "snacks", posId: "30", posName: "Tarte Tatin" },
+    { id: "f27", name: "Tarte Tatin + Calvados", price: 10, subcategory: "snacks", posId: "0000", posName: "Tarte Tatin Calvados?" },
+    { id: "f19", name: "Olives", price: 3, subcategory: "snacks", posId: "9", posName: "Oliven" },
+    { id: "f20", name: "Olives + Grissini", price: 5.5, subcategory: "snacks", posId: "0000", posName: "Oliven Grissini?" },
+    { id: "f26", name: "Cornichons", price: 2.5, subcategory: "snacks", posId: "0000", posName: "Cornichons?" },
   ],
   "Drinks🍷": [
     // Wines by Glass - White WITH SIZE VARIANTS
@@ -61,8 +61,10 @@ export const MENU = {
       name: "Picpoul",
       subcategory: "wine",
       variants: [
-        { type: "small", price: 3.5, label: "0,1" },
-        { type: "large", price: 6.5, label: "0,2" }
+        { type: "small", price: 3.5, label: "0,1", posId: "251-1", posName: "Picpoul 0,1" },
+        { type: "large", price: 6.5, label: "0,2", posId: "251-2", posName: "Picpoul 0,2" },
+        { type: "here", price: 22.5, label: "Here", posId: "251", posName: "Picpoul Fl H", bottleSubcategory: "white" },
+        { type: "togo", price: 11.5, label: "To Go", posId: "251", posName: "Picpoul Fl TG", bottleSubcategory: "white" }
       ]
     },
     {
@@ -70,8 +72,10 @@ export const MENU = {
       name: "Sauvignon Blanc",
       subcategory: "wine",
       variants: [
-        { type: "small", price: 3.5, label: "0,1" },
-        { type: "large", price: 7, label: "0,2" }
+        { type: "small", price: 3.5, label: "0,1", posId: "256-1", posName: "SauB 0,1" },
+        { type: "large", price: 7, label: "0,2", posId: "256-2", posName: "SauB 0,2" },
+        { type: "here", price: 24, label: "Here", posId: "256", posName: "SauB Fl H", bottleSubcategory: "white" },
+        { type: "togo", price: 12.5, label: "To Go", posId: "256", posName: "SauB Fl TG", bottleSubcategory: "white" }
       ]
     },
     {
@@ -79,8 +83,10 @@ export const MENU = {
       name: "Grauburgunder",
       subcategory: "wine",
       variants: [
-        { type: "small", price: 4, label: "0,1" },
-        { type: "large", price: 7.5, label: "0,2" }
+        { type: "small", price: 4, label: "0,1", posId: "254-1", posName: "Grau 0,1" },
+        { type: "large", price: 7.5, label: "0,2", posId: "254-2", posName: "Grau 0,2" },
+        { type: "here", price: 25.5, label: "Here", posId: "254", posName: "Grau Fl H", bottleSubcategory: "white" },
+        { type: "togo", price: 14, label: "To Go", posId: "254", posName: "Grau Fl TG", bottleSubcategory: "white" }
       ]
     },
     {
@@ -88,8 +94,10 @@ export const MENU = {
       name: "Brise-Marine",
       subcategory: "wine",
       variants: [
-        { type: "small", price: 3.5, label: "0,1" },
-        { type: "large", price: 7, label: "0,2" }
+        { type: "small", price: 3.5, label: "0,1", posId: "281-1", posName: "BrisMar 0,1" },
+        { type: "large", price: 7, label: "0,2", posId: "281-2", posName: "BrisMar 0,2" },
+        { type: "here", price: 24, label: "Here", posId: "281", posName: "BrisMar Fl H", bottleSubcategory: "rosé" },
+        { type: "togo", price: 12.5, label: "To Go", posId: "281", posName: "BrisMar Fl TG", bottleSubcategory: "rosé" }
       ]
     },
     {
@@ -97,8 +105,10 @@ export const MENU = {
       name: "Divin Sauvignon Blanc",
       subcategory: "wine",
       variants: [
-        { type: "small", price: 4, label: "0,1" },
-        { type: "large", price: 7.5, label: "0,2" }
+        { type: "small", price: 4, label: "0,1", posId: "152-1", posName: "DivSauB 0,1" },
+        { type: "large", price: 7.5, label: "0,2", posId: "152-2", posName: "DivSauB 0,2" },
+        { type: "here", price: 25.5, label: "Here", posId: "152", posName: "DivSauB Fl H", bottleSubcategory: "white" },
+        { type: "togo", price: 14, label: "To Go", posId: "152", posName: "DivSauB Fl TG", bottleSubcategory: "white" }
       ]
     },
     // Wines by Glass - Sparkling WITH SIZE VARIANTS
@@ -107,8 +117,10 @@ export const MENU = {
       name: "Cidre",
       subcategory: "wine",
       variants: [
-        { type: "small", price: 3, label: "0,1" },
-        { type: "large", price: 6, label: "0,2" }
+        { type: "small", price: 3, label: "0,1", posId: "299-1", posName: "Cidre 0,1" },
+        { type: "large", price: 6, label: "0,2", posId: "299-2", posName: "Cidre 0,2" },
+        { type: "here", price: 21, label: "Here", posId: "299", posName: "Cidre Fl H", bottleSubcategory: "sparkling" },
+        { type: "togo", price: 10.5, label: "To Go", posId: "299", posName: "Cidre Fl TG", bottleSubcategory: "sparkling" }
       ]
     },
     {
@@ -116,8 +128,10 @@ export const MENU = {
       name: "Sekt",
       subcategory: "wine",
       variants: [
-        { type: "small", price: 3.5, label: "0,1" },
-        { type: "large", price: 7, label: "0,2" }
+        { type: "small", price: 3.5, label: "0,1", posId: "271-1", posName: "Sekt 0,1" },
+        { type: "large", price: 7, label: "0,2", posId: "271-2", posName: "Sekt 0,2" },
+        { type: "here", price: 28, label: "Here", posId: "271", posName: "Sekt Fl H", bottleSubcategory: "sparkling" },
+        { type: "togo", price: 17.5, label: "To Go", posId: "271", posName: "Sekt Fl TG", bottleSubcategory: "sparkling" }
       ]
     },
     {
@@ -125,8 +139,10 @@ export const MENU = {
       name: "PetNat",
       subcategory: "wine",
       variants: [
-        { type: "small", price: 4, label: "0,1" },
-        { type: "large", price: 8, label: "0,2" }
+        { type: "small", price: 4, label: "0,1", posId: "198-1", posName: "PetNat 0,1" },
+        { type: "large", price: 8, label: "0,2", posId: "198-2", posName: "PetNat 0,2" },
+        { type: "here", price: 36, label: "Here", posId: "198", posName: "PetNat Fl H", bottleSubcategory: "sparkling" },
+        { type: "togo", price: 20, label: "To Go", posId: "198", posName: "PetNat Fl TG", bottleSubcategory: "sparkling" }
       ]
     },
     // Wines by Glass - Red WITH SIZE VARIANTS
@@ -135,8 +151,10 @@ export const MENU = {
       name: "Montepulciano",
       subcategory: "wine",
       variants: [
-        { type: "small", price: 3.5, label: "0,1" },
-        { type: "large", price: 6.5, label: "0,2" }
+        { type: "small", price: 3.5, label: "0,1", posId: "205-1", posName: "Montep 0,1" },
+        { type: "large", price: 6.5, label: "0,2", posId: "205-2", posName: "Montep 0,2" },
+        { type: "here", price: 22.5, label: "Here", posId: "205", posName: "Montep Fl H", bottleSubcategory: "red" },
+        { type: "togo", price: 11, label: "To Go", posId: "205", posName: "Montep Fl TG", bottleSubcategory: "red" }
       ]
     },
     {
@@ -144,8 +162,10 @@ export const MENU = {
       name: "Gamay",
       subcategory: "wine",
       variants: [
-        { type: "small", price: 3.5, label: "0,1" },
-        { type: "large", price: 7, label: "0,2" }
+        { type: "small", price: 3.5, label: "0,1", posId: "202-1", posName: "Gamay 0,1" },
+        { type: "large", price: 7, label: "0,2", posId: "202-2", posName: "Gamay 0,2" },
+        { type: "here", price: 25.5, label: "Here", posId: "202", posName: "Gamay Fl H", bottleSubcategory: "red" },
+        { type: "togo", price: 14, label: "To Go", posId: "202", posName: "Gamay Fl TG", bottleSubcategory: "red" }
       ]
     },
     {
@@ -153,8 +173,10 @@ export const MENU = {
       name: "Carignan",
       subcategory: "wine",
       variants: [
-        { type: "small", price: 4, label: "0,1" },
-        { type: "large", price: 8, label: "0,2" }
+        { type: "small", price: 4, label: "0,1", posId: "208-1", posName: "Carig 0,1" },
+        { type: "large", price: 8, label: "0,2", posId: "208-2", posName: "Carig 0,2" },
+        { type: "here", price: 27, label: "Here", posId: "208", posName: "Carig Fl H", bottleSubcategory: "red" },
+        { type: "togo", price: 15.5, label: "To Go", posId: "208", posName: "Carig Fl TG", bottleSubcategory: "red" }
       ]
     },
     // Wines by Glass - Other WITH SIZE VARIANTS
@@ -163,8 +185,10 @@ export const MENU = {
       name: "Yellow Muskat",
       subcategory: "wine",
       variants: [
-        { type: "small", price: 4.5, label: "0,1" },
-        { type: "large", price: 9, label: "0,2" }
+        { type: "small", price: 4.5, label: "0,1", posId: "194-1", posName: "YellM 0,1" },
+        { type: "large", price: 9, label: "0,2", posId: "194-2", posName: "YellM 0,2" },
+        { type: "here", price: 30, label: "Here", posId: "194", posName: "YellM Fl H", bottleSubcategory: "natural" },
+        { type: "togo", price: 17, label: "To Go", posId: "194", posName: "YellM Fl TG", bottleSubcategory: "natural" }
       ]
     },
     {
@@ -172,8 +196,10 @@ export const MENU = {
       name: "Cuvée des Galets",
       subcategory: "wine",
       variants: [
-        { type: "small", price: 4.5, label: "0,1" },
-        { type: "large", price: 9, label: "0,2" }
+        { type: "small", price: 4.5, label: "0,1", posId: "280-1", posName: "CuvGal 0,1" },
+        { type: "large", price: 9, label: "0,2", posId: "280-2", posName: "CuvGal 0,2" },
+        { type: "here", price: 27, label: "Here", posId: "280", posName: "CuvGal Fl H", bottleSubcategory: "natural" },
+        { type: "togo", price: 17, label: "To Go", posId: "280", posName: "CuvGal Fl TG", bottleSubcategory: "natural" }
       ]
     },
     // Weinschorle WITH SIZE VARIANTS
@@ -182,36 +208,36 @@ export const MENU = {
       name: "Weinschorle",
       subcategory: "wine",
       variants: [
-        { type: "small", price: 3, label: "0,1" },
-        { type: "large", price: 6, label: "0,2" }
+        { type: "small", price: 3, label: "0,1", posId: "69-1", posName: "WeinSch 0,1" },
+        { type: "large", price: 6, label: "0,2", posId: "69-2", posName: "WeinSch 0,2" }
       ]
     },
     // Aperitifs & Spirits
-    { id: "dr1", name: "Aperol", price: 8, subcategory: "cocktail" },
-    { id: "dr2", name: "Cynar", price: 8, subcategory: "cocktail" },
-    { id: "dr3", name: "Campari", price: 8, subcategory: "cocktail" },
-    { id: "dr17", name: "Kir", price: 5, subcategory: "cocktail" },
-    { id: "dr18", name: "Kir Royal", price: 7.5, subcategory: "cocktail" },
-    { id: "dr19", name: "Select", price: 8, subcategory: "cocktail" },
-    { id: "dr20", name: "Pastis", price: 6, subcategory: "cocktail" },
+    { id: "dr1", name: "Aperol", price: 8, subcategory: "cocktail", posId: "73", posName: "Aperol" },
+    { id: "dr2", name: "Cynar", price: 8, subcategory: "cocktail", posId: "76", posName: "Cynar" },
+    { id: "dr3", name: "Campari", price: 8, subcategory: "cocktail", posId: "74", posName: "Campari" },
+    { id: "dr17", name: "Kir", price: 5, subcategory: "cocktail", posId: "71", posName: "Kir" },
+    { id: "dr18", name: "Kir Royal", price: 7.5, subcategory: "cocktail", posId: "72", posName: "KirRoy" },
+    { id: "dr19", name: "Select", price: 8, subcategory: "cocktail", posId: "75", posName: "Select" },
+    { id: "dr20", name: "Pastis", price: 6, subcategory: "cocktail", posId: "67", posName: "Pastis" },
     // Beer
-    { id: "dr5", name: "Pilsner Urquell", price: 3.8, subcategory: "bier" },
-    { id: "dr6", name: "Stortebecker", price: 3.8, subcategory: "bier" },
-    { id: "dr4", name: "Picon Biere", price: 4.8, subcategory: "bier" },
+    { id: "dr5", name: "Pilsner Urquell", price: 3.8, subcategory: "bier", posId: "64", posName: "Pilsner Urquell" },
+    { id: "dr6", name: "Stortebecker", price: 3.8, subcategory: "bier", posId: "66", posName: "Störtebecker" },
+    { id: "dr4", name: "Picon Biere", price: 4.8, subcategory: "bier", posId: "65", posName: "Picon Bier" },
     // Soft Drinks
-    { id: "dr7", name: "Fritz Cola", price: 3.7, subcategory: "soft" },
-    { id: "dr8", name: "Limo Granada", price: 3.8, subcategory: "soft" },
-    { id: "dr9", name: "Limo Orange", price: 3.8, subcategory: "soft" },
-    { id: "dr10", name: "Limo Minze", price: 3.8, subcategory: "soft" },
-    { id: "dr11", name: "Limo Pamplemousse", price: 3.8, subcategory: "soft" },
+    { id: "dr7", name: "Fritz Cola", price: 3.7, subcategory: "soft", posId: "54", posName: "Fritz Cola" },
+    { id: "dr8", name: "Limo Granada", price: 3.8, subcategory: "soft", posId: "55-1", posName: "Mortuacienne Granada" },
+    { id: "dr9", name: "Limo Orange", price: 3.8, subcategory: "soft", posId: "55-2", posName: "Mortuacienne Orange" },
+    { id: "dr10", name: "Limo Minze", price: 3.8, subcategory: "soft", posId: "55-3", posName: "Mortuacienne Minze" },
+    { id: "dr11", name: "Limo Pamplemousse", price: 3.8, subcategory: "soft", posId: "55-4", posName: "Mortuacienne Pamplemousse" },
     // Juices & Water WITH SIZE VARIANTS
     {
       id: "rahbarb_saft",
       name: "Rahbarb Saft",
       subcategory: "soft",
       variants: [
-        { type: "small", price: 3.5, label: "0,2" },
-        { type: "large", price: 4.7, label: "0,4" }
+        { type: "small", price: 3.5, label: "0,2", posId: "56-1", posName: "RhabSaft klein" },
+        { type: "large", price: 4.7, label: "0,4", posId: "57-1", posName: "RhabSaft groß" }
       ]
     },
     {
@@ -219,8 +245,8 @@ export const MENU = {
       name: "Rhabarb Schorle",
       subcategory: "soft",
       variants: [
-        { type: "small", price: 3, label: "0,2" },
-        { type: "large", price: 4, label: "0,4" }
+        { type: "small", price: 3, label: "0,2", posId: "58-1", posName: "RhabSch klein" },
+        { type: "large", price: 4, label: "0,4", posId: "59-1", posName: "RhabSch groß" }
       ]
     },
     {
@@ -228,8 +254,8 @@ export const MENU = {
       name: "Apfel Schorle",
       subcategory: "soft",
       variants: [
-        { type: "small", price: 3, label: "0,2" },
-        { type: "large", price: 4, label: "0,4" }
+        { type: "small", price: 3, label: "0,2", posId: "58-2", posName: "ApfSch klein" },
+        { type: "large", price: 4, label: "0,4", posId: "59-2", posName: "ApfSch groß" }
       ]
     },
     {
@@ -237,8 +263,8 @@ export const MENU = {
       name: "Apfel Saft",
       subcategory: "soft",
       variants: [
-        { type: "small", price: 3.5, label: "0,2" },
-        { type: "large", price: 4.7, label: "0,4" }
+        { type: "small", price: 3.5, label: "0,2", posId: "56-2", posName: "ApfSaft klein" },
+        { type: "large", price: 4.7, label: "0,4", posId: "57-2", posName: "ApfSaft groß" }
       ]
     },
     {
@@ -246,8 +272,8 @@ export const MENU = {
       name: "Wasser Sprudel",
       subcategory: "soft",
       variants: [
-        { type: "small", price: 1.5, label: "0,2" },
-        { type: "large", price: 2.8, label: "0,4" }
+        { type: "small", price: 1.5, label: "0,2", posId: "50-1", posName: "WassSprud klein" },
+        { type: "large", price: 2.8, label: "0,4", posId: "51-1", posName: "WassSprud groß" }
       ]
     },
     {
@@ -255,8 +281,8 @@ export const MENU = {
       name: "Wasser",
       subcategory: "soft",
       variants: [
-        { type: "small", price: 1.5, label: "0,2" },
-        { type: "large", price: 2.8, label: "0,4" }
+        { type: "small", price: 1.5, label: "0,2", posId: "50-2", posName: "Wass klein" },
+        { type: "large", price: 2.8, label: "0,4", posId: "51-2", posName: "Wass groß" }
       ]
     },
     // Schnaps WITH SIZE VARIANTS
@@ -265,8 +291,8 @@ export const MENU = {
       name: "Cognac",
       subcategory: "schnaps",
       variants: [
-        { type: "small", price: 4.5, label: "0,2" },
-        { type: "large", price: 8.5, label: "0,4" }
+        { type: "small", price: 4.5, label: "0,2", posId: "84", posName: "Cognac 0,2" },
+        { type: "large", price: 8.5, label: "0,4", posId: "85", posName: "Cognac 0,4" }
       ]
     },
     {
@@ -274,8 +300,8 @@ export const MENU = {
       name: "Calvados",
       subcategory: "schnaps",
       variants: [
-        { type: "small", price: 3.5, label: "0,2" },
-        { type: "large", price: 6.5, label: "0,4" }
+        { type: "small", price: 3.5, label: "0,2", posId: "86", posName: "Calvados 0,2" },
+        { type: "large", price: 6.5, label: "0,4", posId: "87", posName: "Calvados 0,4" }
       ]
     },
     {
@@ -283,8 +309,8 @@ export const MENU = {
       name: "Mirabelle",
       subcategory: "schnaps",
       variants: [
-        { type: "small", price: 3, label: "0,2" },
-        { type: "large", price: 5.5, label: "0,4" }
+        { type: "small", price: 3, label: "0,2", posId: "80", posName: "Mirabelle 0,2" },
+        { type: "large", price: 5.5, label: "0,4", posId: "81", posName: "Mirabelle 0,4" }
       ]
     },
     {
@@ -292,8 +318,8 @@ export const MENU = {
       name: "Jameson",
       subcategory: "schnaps",
       variants: [
-        { type: "small", price: 3, label: "0,2" },
-        { type: "large", price: 5.5, label: "0,4" }
+        { type: "small", price: 3, label: "0,2", posId: "82", posName: "Jameson 0,2" },
+        { type: "large", price: 5.5, label: "0,4", posId: "83", posName: "Jameson 0,4" }
       ]
     },
     {
@@ -301,69 +327,42 @@ export const MENU = {
       name: "Crème de Calvados",
       subcategory: "schnaps",
       variants: [
-        { type: "small", price: 4, label: "0,2" },
-        { type: "large", price: 7.5, label: "0,4" }
+        { type: "small", price: 4, label: "0,2", posId: "88", posName: "Creme Calvados 0,2" },
+        { type: "large", price: 7.5, label: "0,4", posId: "89", posName: "Creme Calvados 0,4" }
       ]
     },
     // Teas
-    { id: "te1", name: "PfefferMinze", price: 3, subcategory: "warm" },
-    { id: "te2", name: "Kamille", price: 3, subcategory: "warm" },
-    { id: "te3", name: "Salbei", price: 3, subcategory: "warm" },
-    { id: "te4", name: "Krauter", price: 3, subcategory: "warm" },
-    { id: "te5", name: "Bergtee", price: 3.7, subcategory: "warm" },
-    { id: "te6", name: "Thymian", price: 3.7, subcategory: "warm" },
-    { id: "te7", name: "Heisse Zitrone", price: 3.7, subcategory: "warm" },
-    { id: "te8", name: "Heisse Orange", price: 5, subcategory: "warm" },
+    { id: "te1", name: "PfefferMinze", price: 3, subcategory: "warm", posId: "93-1", posName: "PfefMin" },
+    { id: "te2", name: "Kamille", price: 3, subcategory: "warm", posId: "93-2", posName: "Kamil" },
+    { id: "te3", name: "Salbei", price: 3, subcategory: "warm", posId: "93-3", posName: "Salb" },
+    { id: "te4", name: "Krauter", price: 3, subcategory: "warm", posId: "93-4", posName: "Kraut" },
+    { id: "te5", name: "Bergtee", price: 3.7, subcategory: "warm", posId: "94-1", posName: "BergT" },
+    { id: "te6", name: "Thymian", price: 3.7, subcategory: "warm", posId: "94-2", posName: "Thym" },
+    { id: "te7", name: "Heisse Zitrone", price: 3.7, subcategory: "warm", posId: "0000", posName: "HeissZ" },
+    { id: "te8", name: "Heisse Orange", price: 5, subcategory: "warm", posId: "95", posName: "Hot Orange" },
     // Coffee
-    { id: "co1", name: "Espresso", price: 1.9, subcategory: "warm" },
-    { id: "co2", name: "Cafe Crema", price: 2.6, subcategory: "warm" },
+    { id: "co1", name: "Espresso", price: 1.9, subcategory: "warm", posId: "91", posName: "Espr" },
+    { id: "co2", name: "Cafe Crema", price: 2.6, subcategory: "warm", posId: "90", posName: "CafCr" },
   ],
   "Bottles 🍾": [
     // White wines WITH LOCATION VARIANTS (Here / To Go)
-    {
-      id: "picpoul_bottle",
-      name: "Picpoul Fl.",
-      subcategory: "white",
-      variants: [
-        { type: "here", price: 22.5, label: "Here" },
-        { type: "togo", price: 11.5, label: "To Go" }
-      ]
-    },
-    {
-      id: "sauvignon_bottle",
-      name: "Sauvignon Blanc Fl.",
-      subcategory: "white",
-      variants: [
-        { type: "here", price: 24, label: "Here" },
-        { type: "togo", price: 12.5, label: "To Go" }
-      ]
-    },
-    {
-      id: "grauburgunder_bottle",
-      name: "Grauburgunder Fl.",
-      subcategory: "white",
-      variants: [
-        { type: "here", price: 25.5, label: "Here" },
-        { type: "togo", price: 14, label: "To Go" }
-      ]
-    },
     {
       id: "sancerre_bottle",
       name: "Sancerre Fl.",
       subcategory: "white",
       variants: [
-        { type: "here", price: 38, label: "Here" },
-        { type: "togo", price: 27.5, label: "To Go" }
+        { type: "here", price: 38, label: "Here", posId: "3107", posName: "Sanc Fl H" },
+        { type: "togo", price: 27.5, label: "To Go", posId: "3108", posName: "Sanc Fl TG" }
       ]
     },
-    { id: "chablis_bottle", name: "Chablis", price: 38, subcategory: "white" },
+    { id: "chablis_bottle", name: "Chablis", price: 38, subcategory: "white", posId: "3109", posName: "Chab Fl" },
     {
       id: "riesling_bottle",
       name: "Riesling Fl.",
       subcategory: "white",
       variants: [
-        { type: "here", price: 24.5, label: "Here" },
-        { type: "togo", price: 13, label: "To Go" }
+        { type: "here", price: 24.5, label: "Here", posId: "3110", posName: "Riesl Fl H" },
+        { type: "togo", price: 13, label: "To Go", posId: "3111", posName: "Riesl Fl TG" }
       ]
     },
     {
@@ -371,8 +370,8 @@ export const MENU = {
       name: "Entre-Deux-Mers Fl.",
       subcategory: "white",
       variants: [
-        { type: "here", price: 23, label: "Here" },
-        { type: "togo", price: 12.5, label: "To Go" }
+        { type: "here", price: 23, label: "Here", posId: "3112", posName: "EdM Fl H" },
+        { type: "togo", price: 12.5, label: "To Go", posId: "3113", posName: "EdM Fl TG" }
       ]
     },
     {
@@ -380,37 +379,19 @@ export const MENU = {
       name: "Zotz Fl.",
       subcategory: "white",
       variants: [
-        { type: "here", price: 25.5, label: "Here" },
-        { type: "togo", price: 14, label: "To Go" }
+        { type: "here", price: 25.5, label: "Here", posId: "3114", posName: "Zotz Fl H" },
+        { type: "togo", price: 14, label: "To Go", posId: "3115", posName: "Zotz Fl TG" }
       ]
     },
-    { id: "rocailles_bottle", name: "Rocailles", price: 25.5, subcategory: "white" },
-    {
-      id: "divin_sauv_bottle",
-      name: "Divin Sauvignon Blanc Fl.",
-      subcategory: "white",
-      variants: [
-        { type: "here", price: 25.5, label: "Here" },
-        { type: "togo", price: 14, label: "To Go" }
-      ]
-    },
+    { id: "rocailles_bottle", name: "Rocailles", price: 25.5, subcategory: "white", posId: "3116", posName: "Roca Fl" },
     // Rosé
-    {
-      id: "brise_marine_bottle",
-      name: "Brise-Marine Fl.",
-      subcategory: "rosé",
-      variants: [
-        { type: "here", price: 24, label: "Here" },
-        { type: "togo", price: 12.5, label: "To Go" }
-      ]
-    },
     {
       id: "aurore_boreale_bottle",
       name: "Aurore Boréale Fl.",
       subcategory: "rosé",
       variants: [
-        { type: "here", price: 28, label: "Here" },
-        { type: "togo", price: 17.5, label: "To Go" }
+        { type: "here", price: 28, label: "Here", posId: "3203", posName: "AurBor Fl H" },
+        { type: "togo", price: 17.5, label: "To Go", posId: "3204", posName: "AurBor Fl TG" }
       ]
     },
     {
@@ -418,27 +399,18 @@ export const MENU = {
       name: "PetNat Rosé Fl.",
       subcategory: "rosé",
       variants: [
-        { type: "here", price: 33, label: "Here" },
-        { type: "togo", price: 20, label: "To Go" }
+        { type: "here", price: 33, label: "Here", posId: "3205", posName: "PetNatR Fl H" },
+        { type: "togo", price: 20, label: "To Go", posId: "3206", posName: "PetNatR Fl TG" }
       ]
     },
     // Sparkling wines
-    {
-      id: "cidre_bottle",
-      name: "Cidre Fl.",
-      subcategory: "sparkling",
-      variants: [
-        { type: "here", price: 21, label: "Here" },
-        { type: "togo", price: 10.5, label: "To Go" }
-      ]
-    },
     {
       id: "cremant_bottle",
       name: "Crémant Fl.",
       subcategory: "sparkling",
       variants: [
-        { type: "here", price: 35, label: "Here" },
-        { type: "togo", price: 26.5, label: "To Go" }
+        { type: "here", price: 35, label: "Here", posId: "3303", posName: "Crem Fl H" },
+        { type: "togo", price: 26.5, label: "To Go", posId: "3304", posName: "Crem Fl TG" }
       ]
     },
     {
@@ -446,63 +418,18 @@ export const MENU = {
       name: "Prosecco Fl.",
       subcategory: "sparkling",
       variants: [
-        { type: "here", price: 23, label: "Here" },
-        { type: "togo", price: 12.5, label: "To Go" }
-      ]
-    },
-    {
-      id: "sekt_bottle",
-      name: "Sekt Fl.",
-      subcategory: "sparkling",
-      variants: [
-        { type: "here", price: 28, label: "Here" },
-        { type: "togo", price: 17.5, label: "To Go" }
-      ]
-    },
-    {
-      id: "petnat_bottle",
-      name: "PetNat Fl.",
-      subcategory: "sparkling",
-      variants: [
-        { type: "here", price: 36, label: "Here" },
-        { type: "togo", price: 20, label: "To Go" }
+        { type: "here", price: 23, label: "Here", posId: "3305", posName: "Prosc Fl H" },
+        { type: "togo", price: 12.5, label: "To Go", posId: "3306", posName: "Prosc Fl TG" }
       ]
     },
     // Red wines
-    {
-      id: "montepulciano_bottle",
-      name: "Montepulciano Fl.",
-      subcategory: "red",
-      variants: [
-        { type: "here", price: 22.5, label: "Here" },
-        { type: "togo", price: 11, label: "To Go" }
-      ]
-    },
-    {
-      id: "gamay_bottle",
-      name: "Gamay Fl.",
-      subcategory: "red",
-      variants: [
-        { type: "here", price: 25.5, label: "Here" },
-        { type: "togo", price: 14, label: "To Go" }
-      ]
-    },
-    {
-      id: "carignan_bottle",
-      name: "Carignan Fl.",
-      subcategory: "red",
-      variants: [
-        { type: "here", price: 27, label: "Here" },
-        { type: "togo", price: 15.5, label: "To Go" }
-      ]
-    },
     {
       id: "graves_bottle",
       name: "Graves Fl.",
       subcategory: "red",
       variants: [
-        { type: "here", price: 32, label: "Here" },
-        { type: "togo", price: 21.5, label: "To Go" }
+        { type: "here", price: 32, label: "Here", posId: "3407", posName: "Grav Fl H" },
+        { type: "togo", price: 21.5, label: "To Go", posId: "3408", posName: "Grav Fl TG" }
       ]
     },
     {
@@ -510,8 +437,8 @@ export const MENU = {
       name: "Malbec Fl.",
       subcategory: "red",
       variants: [
-        { type: "here", price: 29, label: "Here" },
-        { type: "togo", price: 18.5, label: "To Go" }
+        { type: "here", price: 29, label: "Here", posId: "3409", posName: "Malb Fl H" },
+        { type: "togo", price: 18.5, label: "To Go", posId: "3410", posName: "Malb Fl TG" }
       ]
     },
     {
@@ -519,8 +446,8 @@ export const MENU = {
       name: "Crozes Hermitage Fl.",
       subcategory: "red",
       variants: [
-        { type: "here", price: 48, label: "Here" },
-        { type: "togo", price: 24.5, label: "To Go" }
+        { type: "here", price: 48, label: "Here", posId: "3411", posName: "CrozHer Fl H" },
+        { type: "togo", price: 24.5, label: "To Go", posId: "3412", posName: "CrozHer Fl TG" }
       ]
     },
     {
@@ -528,8 +455,8 @@ export const MENU = {
       name: "Der Roth Fl.",
       subcategory: "red",
       variants: [
-        { type: "here", price: 26, label: "Here" },
-        { type: "togo", price: 15.5, label: "To Go" }
+        { type: "here", price: 26, label: "Here", posId: "3413", posName: "DerRoth Fl H" },
+        { type: "togo", price: 15.5, label: "To Go", posId: "3414", posName: "DerRoth Fl TG" }
       ]
     },
     {
@@ -537,8 +464,8 @@ export const MENU = {
       name: "Primitivo Fl.",
       subcategory: "red",
       variants: [
-        { type: "here", price: 32, label: "Here" },
-        { type: "togo", price: 21.5, label: "To Go" }
+        { type: "here", price: 32, label: "Here", posId: "3415", posName: "Primit Fl H" },
+        { type: "togo", price: 21.5, label: "To Go", posId: "3416", posName: "Primit Fl TG" }
       ]
     },
     // Natural & Other wines
@@ -547,8 +474,8 @@ export const MENU = {
       name: "Pinot Grisant Fl.",
       subcategory: "natural",
       variants: [
-        { type: "here", price: 30, label: "Here" },
-        { type: "togo", price: 17, label: "To Go" }
+        { type: "here", price: 30, label: "Here", posId: "3501", posName: "PinGri Fl H" },
+        { type: "togo", price: 17, label: "To Go", posId: "3502", posName: "PinGri Fl TG" }
       ]
     },
     {
@@ -556,8 +483,8 @@ export const MENU = {
       name: "Ca va le faire Fl.",
       subcategory: "natural",
       variants: [
-        { type: "here", price: 30, label: "Here" },
-        { type: "togo", price: 17, label: "To Go" }
+        { type: "here", price: 30, label: "Here", posId: "3503", posName: "CavFaire Fl H" },
+        { type: "togo", price: 17, label: "To Go", posId: "3504", posName: "CavFaire Fl TG" }
       ]
     },
     {
@@ -565,17 +492,8 @@ export const MENU = {
       name: "Bonne Mine Fl.",
       subcategory: "natural",
       variants: [
-        { type: "here", price: 32, label: "Here" },
-        { type: "togo", price: 17, label: "To Go" }
-      ]
-    },
-    {
-      id: "yellow_muskat_bottle",
-      name: "Yellow Muskat Fl.",
-      subcategory: "natural",
-      variants: [
-        { type: "here", price: 30, label: "Here" },
-        { type: "togo", price: 17, label: "To Go" }
+        { type: "here", price: 32, label: "Here", posId: "3505", posName: "BonMin Fl H" },
+        { type: "togo", price: 17, label: "To Go", posId: "3506", posName: "BonMin Fl TG" }
       ]
     },
     {
@@ -583,8 +501,8 @@ export const MENU = {
       name: "Clairette Fl.",
       subcategory: "natural",
       variants: [
-        { type: "here", price: 30, label: "Here" },
-        { type: "togo", price: 17, label: "To Go" }
+        { type: "here", price: 30, label: "Here", posId: "3509", posName: "Clair Fl H" },
+        { type: "togo", price: 17, label: "To Go", posId: "3510", posName: "Clair Fl TG" }
       ]
     },
     {
@@ -592,8 +510,8 @@ export const MENU = {
       name: "Infrarouge Fl.",
       subcategory: "natural",
       variants: [
-        { type: "here", price: 29, label: "Here" },
-        { type: "togo", price: 19, label: "To Go" }
+        { type: "here", price: 29, label: "Here", posId: "3511", posName: "Infra Fl H" },
+        { type: "togo", price: 19, label: "To Go", posId: "3512", posName: "Infra Fl TG" }
       ]
     },
     {
@@ -601,17 +519,8 @@ export const MENU = {
       name: "Grenache Fl.",
       subcategory: "natural",
       variants: [
-        { type: "here", price: 30, label: "Here" },
-        { type: "togo", price: 17, label: "To Go" }
-      ]
-    },
-    {
-      id: "cuvee_galets_bottle",
-      name: "Cuvée des Galets Fl.",
-      subcategory: "natural",
-      variants: [
-        { type: "here", price: 27, label: "Here" },
-        { type: "togo", price: 17, label: "To Go" }
+        { type: "here", price: 30, label: "Here", posId: "3513", posName: "Gren Fl H" },
+        { type: "togo", price: 17, label: "To Go", posId: "3514", posName: "Gren Fl TG" }
       ]
     },
     // Water bottles WITH LOCATION VARIANTS
@@ -620,8 +529,8 @@ export const MENU = {
       name: "Sprudel Wasser Fl.",
       subcategory: "water",
       variants: [
-        { type: "here", price: 5.5, label: "Here" },
-        { type: "togo", price: 5, label: "To Go" }
+        { type: "here", price: 5.5, label: "Here", posId: "3601", posName: "SprudWass Fl H" },
+        { type: "togo", price: 5, label: "To Go", posId: "3602", posName: "SprudWass Fl TG" }
       ]
     },
     {
@@ -629,210 +538,11 @@ export const MENU = {
       name: "Wasser Fl.",
       subcategory: "water",
       variants: [
-        { type: "here", price: 5.5, label: "Here" },
-        { type: "togo", price: 5, label: "To Go" }
+        { type: "here", price: 5.5, label: "Here", posId: "3603", posName: "Wass Fl H" },
+        { type: "togo", price: 5, label: "To Go", posId: "3604", posName: "Wass Fl TG" }
       ]
     },
   ]
-};
-
-// Aliases for the Total tab in Daily Sales — maps item ID to POS alias (Simplified Name [POS_ID])
-export const ARTICLE_ALIASES = {
-  // Food — Cheese & Charcuterie
-  "f1":  "Kleiner Kâseteller [11]",
-  "f2":  "CP 1PAX [10]",
-  "f4":  "Charcuterie klein [16]",
-  "f5":  "MixPlate 2PAX [12]",
-  "f29": "Charcuterie Dazu? [18]",
-  // Food — Hot Dishes
-  "f6":  "ST.M [418]",
-  "f7":  "CAM [401]",
-  "f8":  "Mont d'Or [421]",
-  "f9":  "Tartiflette [21]",
-  "f10": "TartSpeck? [0000]",
-  "f11": "Raclettemenü [24]",
-  "f12": "Fonduemenü [23]",
-  "f28": "Fondue Alkoholfrei? [0000]",
-  // Food — Salads
-  "f13": "Seguin Salat [41]",
-  "f21": "SegSpeck? [1015]",
-  "f14": "Papillon Salat [43]",
-  "f22": "PapSerrano? [0000]",
-  "f15": "Bauernsalat [44]",
-  "f23": "BauKartoffel? [0000]",
-  "f16": "Porthos Salat [43]",
-  "f24": "PortSerrano? [0000]",
-  "f17": "Basissalat [40]",
-  // Food — Snacks / Dessert
-  "f18": "Tarte Tatin [30]",
-  "f27": "Tarte Tatin Calvados? [0000]",
-  "f19": "Oliven [9]",
-  "f20": "Oliven Grissini? [0000]",
-  "f26": "Cornichons? [0000]",
-
-  // Drinks by glass — White
-  "wg1-small":  "Picpoul 0,1 [251-1]",
-  "wg1-large":  "Picpoul 0,2 [251-2]",
-  "wg2-small":  "SauB 0,1 [256-1]",
-  "wg2-large":  "SauB 0,2 [256-2]",
-  "wg3-small":  "Grau 0,1 [254-1]",
-  "wg3-large":  "Grau 0,2 [254-2]",
-  "wg4-small":  "BrisMar 0,1 [281-1]",
-  "wg4-large":  "BrisMar 0,2 [281-2]",
-  "wg5-small":  "DivSauB 0,1 [152-1]",
-  "wg5-large":  "DivSauB 0,2 [152-2]",
-  // Drinks by glass — Sparkling
-  "wg6-small":  "Cidre 0,1 [299-1]",
-  "wg6-large":  "Cidre 0,2 [299-2]",
-  "wg7-small":  "Sekt 0,1 [271-1]",
-  "wg7-large":  "Sekt 0,2 [271-2]",
-  "wg8-small":  "PetNat 0,1 [198-1]",
-  "wg8-large":  "PetNat 0,2 [198-2]",
-  // Drinks by glass — Red
-  "wg9-small":  "Montep 0,1 [205-1]",
-  "wg9-large":  "Montep 0,2 [205-2]",
-  "wg10-small": "Gamay 0,1 [202-1]",
-  "wg10-large": "Gamay 0,2 [202-2]",
-  "wg11-small": "Carig 0,1 [208-1]",
-  "wg11-large": "Carig 0,2 [208-2]",
-  // Drinks by glass — Other
-  "wg12-small": "YellM 0,1 [194-1]",
-  "wg12-large": "YellM 0,2 [194-2]",
-  "wg13-small": "CuvGal 0,1 [0000]",
-  "wg13-large": "CuvGal 0,2 [0000]",
-  "wg14-small": "WeinSch 0,1 [69-1]",
-  "wg14-large": "WeinSch 0,2 [69-2]",
-  // Aperitifs & Spirits
-  "dr1":  "Aperol [73]",
-  "dr2":  "Cynar [76]",
-  "dr3":  "Campari [74]",
-  "dr17": "Kir [71]",
-  "dr18": "KirRoy [72]",
-  "dr19": "Select [75]",
-  "dr20": "Pastis [67]",
-  // Beer
-  "dr5": "Pilsner Urquell [64]",
-  "dr6": "Störtebecker [66]",
-  "dr4": "Picon Bier [65]",
-  // Soft Drinks
-  "dr7":  "Fritz Cola [54]",
-  "dr8":  "Mortuacienne Granada [55-1]",
-  "dr9":  "Mortuacienne Orange [55-2]",
-  "dr10": "Mortuacienne Minze [55-3]",
-  "dr11": "Mortuacienne Pamplemousse [55-4]",
-  // Juices & Water
-  "rahbarb_saft-small":    "RhabSaft klein [56-1]",
-  "rahbarb_saft-large":    "RhabSaft groß [57-1]",
-  "rhabarb_schorle-small": "RhabSch klein [58-1]",
-  "rhabarb_schorle-large": "RhabSch groß [59-1]",
-  "apfel_schorle-small":   "ApfSch klein [58-2]",
-  "apfel_schorle-large":   "ApfSch groß [59-2]",
-  "apfel_saft-small":      "ApfSaft klein [56-2]",
-  "apfel_saft-large":      "ApfSaft groß [57-2]",
-  "wasser_sprudel-small":  "WassSprud klein [50-1]",
-  "wasser_sprudel-large":  "WassSprud groß [51-1]",
-  "wasser-small":          "Wass klein [50-2]",
-  "wasser-large":          "Wass groß [51-2]",
-  // Schnaps
-  "cognac-small":        "Cognac 0,2 [84]",
-  "cognac-large":        "Cognac 0,4 [85]",
-  "calvados-small":      "Calvados 0,2 [86]",
-  "calvados-large":      "Calvados 0,4 [87]",
-  "mirabelle-small":     "Mirabelle 0,2 [80]",
-  "mirabelle-large":     "Mirabelle 0,4 [81]",
-  "jameson-small":       "Jameson 0,2 [82]",
-  "jameson-large":       "Jameson 0,4 [83]",
-  "creme_calvados-small": "Creme Calvados 0,2 [88]",
-  "creme_calvados-large": "Creme Calvados 0,4 [89]",
-  // Teas
-  "te1": "PfefMin [93-1]",
-  "te2": "Kamil [93-2]",
-  "te3": "Salb [93-3]",
-  "te4": "Kraut [93-4]",
-  "te5": "BergT [94-1]",
-  "te6": "Thym [94-2]",
-  "te7": "HeissZ [0000]",
-  "te8": "Hot Orange [95]",
-  // Coffee
-  "co1": "Espr [91]",
-  "co2": "CafCr [90]",
-
-  // Bottles — White
-  "picpoul_bottle-here":         "Picpoul Fl H [3101]",
-  "picpoul_bottle-togo":         "Picpoul Fl TG [3102]",
-  "sauvignon_bottle-here":       "SauB Fl H [3103]",
-  "sauvignon_bottle-togo":       "SauB Fl TG [3104]",
-  "grauburgunder_bottle-here":   "Grau Fl H [3105]",
-  "grauburgunder_bottle-togo":   "Grau Fl TG [3106]",
-  "sancerre_bottle-here":        "Sanc Fl H [3107]",
-  "sancerre_bottle-togo":        "Sanc Fl TG [3108]",
-  "chablis_bottle":              "Chab Fl [3109]",
-  "riesling_bottle-here":        "Riesl Fl H [3110]",
-  "riesling_bottle-togo":        "Riesl Fl TG [3111]",
-  "entre_deux_mers_bottle-here": "EdM Fl H [3112]",
-  "entre_deux_mers_bottle-togo": "EdM Fl TG [3113]",
-  "zotz_bottle-here":            "Zotz Fl H [3114]",
-  "zotz_bottle-togo":            "Zotz Fl TG [3115]",
-  "rocailles_bottle":            "Roca Fl [3116]",
-  "divin_sauv_bottle-here":      "DivSauB Fl H [3117]",
-  "divin_sauv_bottle-togo":      "DivSauB Fl TG [3118]",
-  // Bottles — Rosé
-  "brise_marine_bottle-here":  "BrisMar Fl H [3201]",
-  "brise_marine_bottle-togo":  "BrisMar Fl TG [3202]",
-  "aurore_boreale_bottle-here": "AurBor Fl H [3203]",
-  "aurore_boreale_bottle-togo": "AurBor Fl TG [3204]",
-  "petnat_rose_bottle-here":   "PetNatR Fl H [3205]",
-  "petnat_rose_bottle-togo":   "PetNatR Fl TG [3206]",
-  // Bottles — Sparkling
-  "cidre_bottle-here":   "Cidre Fl H [3301]",
-  "cidre_bottle-togo":   "Cidre Fl TG [3302]",
-  "cremant_bottle-here": "Crem Fl H [3303]",
-  "cremant_bottle-togo": "Crem Fl TG [3304]",
-  "prosecco_bottle-here": "Prosc Fl H [3305]",
-  "prosecco_bottle-togo": "Prosc Fl TG [3306]",
-  "sekt_bottle-here":    "Sekt Fl H [3307]",
-  "sekt_bottle-togo":    "Sekt Fl TG [3308]",
-  "petnat_bottle-here":  "PetNat Fl H [3309]",
-  "petnat_bottle-togo":  "PetNat Fl TG [3310]",
-  // Bottles — Red
-  "montepulciano_bottle-here":    "Montep Fl H [3401]",
-  "montepulciano_bottle-togo":    "Montep Fl TG [3402]",
-  "gamay_bottle-here":            "Gamay Fl H [3403]",
-  "gamay_bottle-togo":            "Gamay Fl TG [3404]",
-  "carignan_bottle-here":         "Carig Fl H [3405]",
-  "carignan_bottle-togo":         "Carig Fl TG [3406]",
-  "graves_bottle-here":           "Grav Fl H [3407]",
-  "graves_bottle-togo":           "Grav Fl TG [3408]",
-  "malbec_bottle-here":           "Malb Fl H [3409]",
-  "malbec_bottle-togo":           "Malb Fl TG [3410]",
-  "crozes_hermitage_bottle-here": "CrozHer Fl H [3411]",
-  "crozes_hermitage_bottle-togo": "CrozHer Fl TG [3412]",
-  "der_roth_bottle-here":         "DerRoth Fl H [3413]",
-  "der_roth_bottle-togo":         "DerRoth Fl TG [3414]",
-  "primitivo_bottle-here":        "Primit Fl H [3415]",
-  "primitivo_bottle-togo":        "Primit Fl TG [3416]",
-  // Bottles — Natural
-  "pinot_grisant_bottle-here":    "PinGri Fl H [3501]",
-  "pinot_grisant_bottle-togo":    "PinGri Fl TG [3502]",
-  "ca_va_le_faire_bottle-here":   "CavFaire Fl H [3503]",
-  "ca_va_le_faire_bottle-togo":   "CavFaire Fl TG [3504]",
-  "bonne_mine_bottle-here":       "BonMin Fl H [3505]",
-  "bonne_mine_bottle-togo":       "BonMin Fl TG [3506]",
-  "yellow_muskat_bottle-here":    "YellM Fl H [3507]",
-  "yellow_muskat_bottle-togo":    "YellM Fl TG [3508]",
-  "clairette_bottle-here":        "Clair Fl H [3509]",
-  "clairette_bottle-togo":        "Clair Fl TG [3510]",
-  "infrarouge_bottle-here":       "Infra Fl H [3511]",
-  "infrarouge_bottle-togo":       "Infra Fl TG [3512]",
-  "grenache_bottle-here":         "Gren Fl H [3513]",
-  "grenache_bottle-togo":         "Gren Fl TG [3514]",
-  "cuvee_galets_bottle-here":     "CuvGal Fl H [3515]",
-  "cuvee_galets_bottle-togo":     "CuvGal Fl TG [3516]",
-  // Bottles — Water
-  "wasser_sprudel_bottle-here": "SprudWass Fl H [3601]",
-  "wasser_sprudel_bottle-togo": "SprudWass Fl TG [3602]",
-  "wasser_bottle-here":         "Wass Fl H [3603]",
-  "wasser_bottle-togo":         "Wass Fl TG [3604]",
 };
 
 export const STATUS_CONFIG = {

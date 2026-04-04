@@ -6,13 +6,12 @@ import type { OrderItem, TableId, MenuCategory } from "../types";
 interface OrderBarProps {
   tableId: TableId;
   unsent: OrderItem[];
-  unsentTotal: number;
   expanded: boolean;
   onToggleExpand: () => void;
   onAddItem: (item: any, variant: any) => void;
 }
 
-export function OrderBar({ tableId, unsent, unsentTotal, expanded, onToggleExpand, onAddItem }: OrderBarProps) {
+export function OrderBar({ tableId, unsent, expanded, onToggleExpand, onAddItem }: OrderBarProps) {
   const table = useTable();
 
   return (
@@ -54,7 +53,7 @@ export function OrderBar({ tableId, unsent, unsentTotal, expanded, onToggleExpan
         ))}
       </div>
       <button style={S.sendBtn} onClick={() => table.sendOrder(tableId)}>
-        Send — {unsentTotal.toFixed(2)}€
+        Confirm
       </button>
     </div>
   );

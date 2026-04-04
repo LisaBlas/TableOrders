@@ -1,5 +1,4 @@
 import { useApp } from "../contexts/AppContext";
-import { MENU, FOOD_SUBCATEGORIES, DRINKS_SUBCATEGORIES, BOTTLES_SUBCATEGORIES, ARTICLE_ALIASES } from "../data/constants";
 import { S } from "../styles/appStyles";
 import { Modal } from "../components/Modal";
 import { BillCard } from "../components/BillCard";
@@ -81,110 +80,71 @@ export function DailySalesView() {
     }
   };
 
-  // Total tab aggregation
+  // Total tab aggregation - by POS ID for easy POS entry
   const renderTotalTab = () => {
-    const itemsMap = new Map<string, { name: string; alias: string | null; qty: number; revenue: number; category: string | null; subcategory: string | null }>();
+    // Aggregate by POS ID
+    const posMap = new Map<string, { posId: string; posName: string; qty: number; revenue: number; items: string[] }>();
+
     paidBills.forEach((bill) => {
       bill.items.forEach((item) => {
-        if (!itemsMap.has(item.id)) {
-          let category = (item as any).category || null;
-          let subcategory = item.subcategory || null;
-          if (!category || !subcategory) {
-            const lookupId = (item as any).baseId || item.id;
-            for (const [cat, items] of Object.entries(MENU)) {
-              const found = (items as any[]).find((i) => i.id === lookupId);
-              if (found) {
-                category = category || cat;
-                subcategory = subcategory || found.subcategory;
-                break;
-              }
-            }
-          }
-          itemsMap.set(item.id, { name: item.name, alias: (ARTICLE_ALIASES as any)[item.id] || null, qty: 0, revenue: 0, category, subcategory });
+        // Extract posId and posName from item metadata
+        const posId = (item as any).posId || "NO_POS_ID";
+        const posName = (item as any).posName || item.name;
+
+        if (!posMap.has(posId)) {
+          posMap.set(posId, { posId, posName, qty: 0, revenue: 0, items: [] });
         }
-        const existing = itemsMap.get(item.id)!;
-        existing.qty += item.qty;
-        existing.revenue += item.price * item.qty;
+        const entry = posMap.get(posId)!;
+        entry.qty += item.qty;
+        entry.revenue += item.price * item.qty;
+        if (!entry.items.includes(item.name)) {
+          entry.items.push(item.name);
+        }
       });
     });
 
-    const aggregatedItems = Array.from(itemsMap.values());
-    const categorizedItems: Record<string, Record<string, any[]>> = {};
-    Object.keys(MENU).forEach((cat) => { categorizedItems[cat] = {}; });
+    // Convert to array and sort by quantity (most sold first)
+    const aggregated = Array.from(posMap.values()).sort((a, b) => b.qty - a.qty);
 
-    aggregatedItems.forEach((item) => {
-      const cat = item.category || "Ad-hoc Items";
-      const subcat = item.subcategory || "custom";
-      if (!categorizedItems[cat]) categorizedItems[cat] = {};
-      if (!categorizedItems[cat][subcat]) categorizedItems[cat][subcat] = [];
-      categorizedItems[cat][subcat].push(item);
-    });
+    // Separate items with missing POS IDs
+    const withPosId = aggregated.filter((item) => item.posId !== "NO_POS_ID" && item.posId !== "0000");
+    const missingPosId = aggregated.filter((item) => item.posId === "NO_POS_ID" || item.posId === "0000");
 
-    Object.values(categorizedItems).forEach((subcats) => {
-      Object.values(subcats).forEach((items) => {
-        items.sort((a, b) => b.qty - a.qty);
-      });
-    });
-
-    const subcatConfigs: Record<string, any[]> = {
-      Food: FOOD_SUBCATEGORIES,
-      "Drinks🍷": DRINKS_SUBCATEGORIES,
-      "Bottles 🍾": BOTTLES_SUBCATEGORIES,
+    const renderPosCard = (item: any, idx: number) => {
+      const isMissing = item.posId === "NO_POS_ID" || item.posId === "0000";
+      return (
+        <div key={idx} style={{
+          ...S.billCard,
+          ...(isMissing ? { borderLeft: "4px solid #e07b5a" } : {})
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+            <span style={{ fontSize: 28, fontWeight: 900, color: isMissing ? "#e07b5a" : "#1a1a1a", letterSpacing: 0.5 }}>
+              [{item.posId}]
+            </span>
+            <span style={{ fontSize: 32, fontWeight: 900, color: "#1a1a1a" }}>×{item.qty}</span>
+          </div>
+          <div style={{ fontSize: 15, fontWeight: 600, color: "#555", marginBottom: 4 }}>{item.posName}</div>
+          <div style={{ fontSize: 13, color: "#888" }}>
+            {item.revenue.toFixed(2)}€ total
+          </div>
+          {item.items.length > 1 && (
+            <div style={{ fontSize: 12, color: "#999", marginTop: 4, fontStyle: "italic" }}>
+              ({item.items.join(", ")})
+            </div>
+          )}
+        </div>
+      );
     };
-
-    const renderItemCard = (item: any, idx: number) => (
-      <div key={idx} style={S.billCard}>
-        <div style={S.billCardHeader}>
-          <span style={S.billTableNum}>{item.alias || item.name}</span>
-          <span style={{ fontSize: 22, fontWeight: 800, color: "#1a1a1a", textAlign: "center" as const, minWidth: 36 }}>{item.qty}</span>
-        </div>
-        <div style={S.billMeta}>
-          {item.revenue.toFixed(2)}€ total · {(item.revenue / item.qty).toFixed(2)}€ each
-        </div>
-      </div>
-    );
 
     return (
       <div style={S.billsList}>
-        {Object.keys(MENU).map((category) => {
-          const categoryItems = categorizedItems[category];
-          const subcatConfig = subcatConfigs[category];
-          const hasItems = Object.values(categoryItems).some((items) => items.length > 0);
-          if (!hasItems) return null;
-
-          if (subcatConfig) {
-            return subcatConfig.map(({ id, label }: any) => {
-              const items = categoryItems[id] || [];
-              if (items.length === 0) return null;
-              return (
-                <div key={`${category}-${id}`}>
-                  <div style={S.subcategorySeparator}>{label}</div>
-                  {items.map(renderItemCard)}
-                </div>
-              );
-            });
-          }
-
-          const allItems = Object.values(categoryItems).flat();
-          if (allItems.length === 0) return null;
-          return (
-            <div key={category}>
-              <div style={S.subcategorySeparator}>{category}</div>
-              {allItems.map(renderItemCard)}
-            </div>
-          );
-        })}
-
-        {categorizedItems["Ad-hoc Items"] && (() => {
-          const customItems = Object.values(categorizedItems["Ad-hoc Items"]).flat();
-          if (customItems.length === 0) return null;
-          return (
-            <div key="ad-hoc">
-              <div style={S.subcategorySeparator}>Ad-hoc Items</div>
-              {customItems.map(renderItemCard)}
-            </div>
-          );
-        })()}
+        {withPosId.map(renderPosCard)}
+        {missingPosId.length > 0 && (
+          <>
+            <div style={{ ...S.subcategorySeparator, color: "#e07b5a" } as React.CSSProperties}>⚠️ Missing POS IDs</div>
+            {missingPosId.map(renderPosCard)}
+          </>
+        )}
       </div>
     );
   };
