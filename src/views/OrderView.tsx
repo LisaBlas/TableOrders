@@ -8,7 +8,6 @@ import { S } from "../styles/appStyles";
 import { Modal } from "../components/Modal";
 import { MenuItemCard } from "../components/MenuItemCard";
 import { VariantBottomSheet } from "../components/VariantBottomSheet";
-import { SentBatchCard } from "../components/SentBatchCard";
 import { OrderBar } from "../components/OrderBar";
 import { BillView } from "../components/BillView";
 import type { MenuCategory, MenuItem, MenuItemVariant } from "../types";
@@ -292,16 +291,15 @@ export function OrderView() {
         )}
       </div>
 
-      <div style={{ ...S.orderContent, paddingBottom: unsent.length > 0 ? 160 : 16 }}>
-        <SentBatchCard batches={batches} tableId={tableId} />
+      <div style={{ ...S.orderContent, paddingBottom: (unsent.length > 0 || batches.length > 0) ? 160 : 16 }}>
         {renderMenuGrid()}
       </div>
 
-      {unsent.length > 0 && (
+      {(unsent.length > 0 || batches.length > 0) && (
         <OrderBar
           tableId={tableId}
           unsent={unsent}
-          unsentTotal={unsentTotal}
+          batches={batches}
           expanded={orderBarExpanded}
           onToggleExpand={() => setOrderBarExpanded(!orderBarExpanded)}
           onAddItem={handleAddItem}
