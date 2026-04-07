@@ -292,7 +292,7 @@ export function OrderView() {
         )}
       </div>
 
-      <div style={S.orderContent}>
+      <div style={{ ...S.orderContent, paddingBottom: unsent.length > 0 ? 160 : 16 }}>
         {renderMenuGrid()}
         <SentBatchCard batches={batches} tableId={tableId} />
       </div>
