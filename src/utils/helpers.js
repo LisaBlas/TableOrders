@@ -1,15 +1,15 @@
-export function getTableStatus(tableId, orders, seatedTables = new Set()) {
+export function getTableStatus(tableId, orders, seatedTables = new Set(), sentBatches = {}, markedBatches = {}) {
   const order = orders[tableId];
-  const hasOrders = order && order.length > 0;
+  const batches = sentBatches[tableId] || [];
+  const marked = markedBatches[tableId]; // Set<number> | undefined
 
-  if (hasOrders) {
-    const hasOrdered = order.some((item) => (item.sentQty || 0) > 0);
-    if (hasOrdered) return "ordered";
-    return "taken";
+  if (batches.length > 0) {
+    const allMarked = batches.every((_, idx) => marked?.has(idx));
+    return allMarked ? "confirmed" : "unconfirmed";
   }
 
-  // No orders - check if table is seated
-  if (seatedTables.has(tableId)) return "taken";
+  // No sent batches — check if table is active (seated or has pending items)
+  if (seatedTables.has(tableId) || (order && order.length > 0)) return "seated";
 
   return "open";
 }

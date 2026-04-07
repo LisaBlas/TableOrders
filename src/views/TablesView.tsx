@@ -8,11 +8,11 @@ import { Modal } from "../components/Modal";
 
 export function TablesView() {
   const { setView, setActiveTable, showToast } = useApp();
-  const { orders, seatedTables, seatTable } = useTable();
+  const { orders, seatedTables, seatTable, sentBatches, markedBatches } = useTable();
   const [seatConfirmTable, setSeatConfirmTable] = useState<string | number | null>(null);
 
   const handleTableClick = (tableId: string | number) => {
-    const status = getTableStatus(tableId, orders, seatedTables);
+    const status = getTableStatus(tableId, orders, seatedTables, sentBatches, markedBatches);
     if (status === "open") {
       setSeatConfirmTable(tableId);
     } else {
@@ -70,7 +70,7 @@ export function TablesView() {
               </div>
             );
           }
-          const status = getTableStatus(t.id, orders, seatedTables);
+          const status = getTableStatus(t.id, orders, seatedTables, sentBatches, markedBatches);
           const cfg = STATUS_CONFIG[status];
           return (
             <button
