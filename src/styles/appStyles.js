@@ -1325,6 +1325,19 @@ export const S = {
     fontWeight: 500,
     color: "#555"
   },
+  billItemCrossed: {
+    textDecoration: "line-through",
+    color: "#bbb"
+  },
+  addedToPOSLabel: {
+    fontSize: 11,
+    fontWeight: 700,
+    color: "#c0392b",
+    background: "#fde8e8",
+    borderRadius: 4,
+    padding: "2px 6px",
+    letterSpacing: 0.3
+  },
   billItemEditable: {
     fontSize: 13,
     color: "#666",

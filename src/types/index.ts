@@ -64,6 +64,7 @@ export interface OrderItem {
   category?: MenuCategory;
   subcategory?: string;
   _uid?: string;
+  crossed?: boolean;
 }
 
 export type Orders = Record<string, OrderItem[]>;
@@ -92,6 +93,7 @@ export interface Bill {
   timestamp: string;
   paymentMode: "full" | "equal" | "item";
   splitData?: EqualSplitData | ItemSplitData;
+  addedToPOS?: boolean;
 }
 
 export interface EqualSplitData {

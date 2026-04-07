@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useApp } from "../contexts/AppContext";
 import { S } from "../styles/appStyles";
 import { Modal } from "../components/Modal";
@@ -11,13 +12,15 @@ export function DailySalesView() {
     dailySalesTab, setDailySalesTab,
     editingBillIndex, setEditingBillIndex,
     billSnapshot, setBillSnapshot,
-    deletingBillIndex, setDeletingBillIndex,
     showToast,
   } = app;
+
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   const clearDailySales = () => {
     if (paidBills.length === 0) return;
     setPaidBills([]);
+    setShowClearConfirm(false);
     showToast("Daily sales cleared");
   };
 
@@ -25,23 +28,23 @@ export function DailySalesView() {
     setPaidBills((prev) => {
       const bills = [...prev];
       const bill = { ...bills[billIndex] };
-      bill.items = bill.items
-        .map((o) => o.id === itemId ? { ...o, qty: o.qty - 1 } : o)
-        .filter((o) => o.qty > 0);
-      bill.total = bill.items.reduce((s, o) => s + o.price * o.qty, 0);
-      if (bill.gutschein) {
-        bill.total = Math.max(0, bill.total - bill.gutschein);
-      }
+      bill.items = bill.items.map((o) =>
+        o.id === itemId ? { ...o, crossed: !o.crossed } : o
+      );
       bills[billIndex] = bill;
       return bills;
     });
   };
 
-  const deletePaidBill = (billIndex: number) => {
-    setPaidBills((prev) => prev.filter((_, i) => i !== billIndex));
+  const markBillAsAddedToPOS = (billIndex: number) => {
+    setPaidBills((prev) => {
+      const bills = [...prev];
+      bills[billIndex] = { ...bills[billIndex], addedToPOS: true };
+      return bills;
+    });
     setEditingBillIndex(null);
     setBillSnapshot(null);
-    showToast("Bill deleted");
+    showToast("Bill marked as Added To POS");
   };
 
   const enterEditMode = (billIndex: number) => {
@@ -62,22 +65,8 @@ export function DailySalesView() {
   };
 
   const exitEditMode = () => {
-    if (editingBillIndex !== null) {
-      const bill = paidBills[editingBillIndex];
-      if (bill && bill.items.length === 0) {
-        setDeletingBillIndex(editingBillIndex);
-        return;
-      }
-    }
     setEditingBillIndex(null);
     setBillSnapshot(null);
-  };
-
-  const confirmDeleteBill = () => {
-    if (deletingBillIndex !== null) {
-      deletePaidBill(deletingBillIndex);
-      setDeletingBillIndex(null);
-    }
   };
 
   // Total tab aggregation - by POS ID for easy POS entry
@@ -197,7 +186,7 @@ export function DailySalesView() {
                     onEdit={() => enterEditMode(billIndex)}
                     onDone={exitEditMode}
                     onCancel={cancelEditMode}
-                    onDelete={() => setDeletingBillIndex(billIndex)}
+                    onDelete={() => markBillAsAddedToPOS(billIndex)}
                     onRemoveItem={(itemId) => removePaidBillItem(billIndex, itemId)}
                   />
                 );
@@ -207,22 +196,20 @@ export function DailySalesView() {
 
           {dailySalesTab === "total" && renderTotalTab()}
 
-          <button style={S.clearDayBtn} onClick={clearDailySales}>Clear Daily Sales</button>
+          <button style={S.clearDayBtn} onClick={() => setShowClearConfirm(true)}>Clear Daily Sales</button>
         </>
       )}
 
-      {deletingBillIndex !== null && (
+      {showClearConfirm && (
         <Modal
-          title="Delete Bill?"
-          onClose={() => setDeletingBillIndex(null)}
-          onConfirm={confirmDeleteBill}
-          confirmText="Delete"
+          title="Clear Daily Sales?"
+          onClose={() => setShowClearConfirm(false)}
+          onConfirm={clearDailySales}
+          confirmText="Clear"
           confirmStyle={S.modalDeleteBtn}
         >
           <div style={S.modalMessage}>
-            {editingBillIndex !== null && paidBills[deletingBillIndex]?.items.length === 0
-              ? "This bill has no items. Delete it?"
-              : "Are you sure? This action cannot be undone."}
+            This will permanently remove all bills from today's sales. This action cannot be undone.
           </div>
         </Modal>
       )}
