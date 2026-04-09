@@ -142,29 +142,17 @@ export function OrderView() {
 
     // Special handling for Bottles category: wines with glass sizes first, then static bottles
     if (activeCategory === "Wines 🍷") {
-      // Wines that have glass sizes (0,1/0,2) AND bottle variants — shown first, all variants kept
       const winesWithGlasses = (MENU as any)["Drinks🍷"]
         ?.filter((item: any) => item.variants?.some((v: any) => v.bottleSubcategory))
-        .map((item: any) => ({
-          ...item,
-          category: "Wines 🍷",
-          // Use the bottleSubcategory for subcategory filtering
-          subcategory: item.variants.find((v: any) => v.bottleSubcategory)?.bottleSubcategory
-        })) || [];
+        .map((item: any) => ({ ...item, category: "Wines 🍷", subcategory: "glass" })) || [];
 
       const staticBottles = (MENU as any)["Wines 🍷"]?.map((item: any) => ({
         ...item,
-        category: "Wines 🍷"
+        category: "Wines 🍷",
+        subcategory: "bottle",
       })) || [];
 
-      // Wines with glass sizes appear first
-      let items = [...winesWithGlasses, ...staticBottles];
-
-      if (selectedSubcategory) {
-        items = items.filter((item: any) => item.subcategory === selectedSubcategory);
-      }
-
-      return items;
+      return [...winesWithGlasses, ...staticBottles];
     }
 
     // Special handling for Drinks category: exclude wines entirely, hide bottle variants on others

@@ -650,10 +650,6 @@ export const DRINKS_SUBCATEGORIES = [
 ];
 
 export const BOTTLES_SUBCATEGORIES = [
-  { id: "white", label: "🥂 White" },
-  { id: "rosé", label: "🌸 Rosé" },
-  { id: "sparkling", label: "🍾 Sparkling" },
-  { id: "red", label: "🍷 Red" },
-  { id: "natural", label: "🍇 Natural" },
-  { id: "water", label: "💧 Water" },
+  { id: "glass", label: "By the glass" },
+  { id: "bottle", label: "Bottle only" },
 ];
