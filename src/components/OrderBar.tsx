@@ -17,12 +17,16 @@ export function OrderBar({ tableId, unsent, batches, expanded, onToggleExpand, o
   const table = useTable();
   const sentMode = unsent.length === 0;
 
+  const allMarked = batches.length > 0 && batches.every((_, i) => table.markedBatches[tableId]?.has(i));
+  const statusDotColor = allMarked ? "#52b87a" : "#e05252";
+
   return (
     <div style={S.orderBar}>
       <div style={S.orderBarHandle} onClick={onToggleExpand}>
         <div style={S.orderBarHandleLine} />
         {sentMode ? (
-          <span style={S.orderBarHandleText}>
+          <span style={{ ...S.orderBarHandleText, display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ width: 7, height: 7, borderRadius: "50%", background: statusDotColor, display: "inline-block", flexShrink: 0 }} />
             {expanded ? "Hide sent" : `${batches.length} batch${batches.length > 1 ? "es" : ""} sent`}
           </span>
         ) : (
@@ -40,6 +44,8 @@ export function OrderBar({ tableId, unsent, batches, expanded, onToggleExpand, o
             {[...batches].reverse().map((batch, batchIdx) => {
               const actualBatchIdx = batches.length - 1 - batchIdx;
               const isMarked = table.markedBatches[tableId]?.has(actualBatchIdx) || false;
+              const accentColor = isMarked ? "#52b87a" : "#e05252";
+              const sectionStyle = { ...S.sentSection, ...(isMarked ? S.sentSectionMarked : S.sentSectionPending) };
               const batchByDest: Record<string, OrderItem[]> = { bar: [], counter: [], kitchen: [] };
               batch.items.forEach((item: OrderItem) => {
                 batchByDest[getItemDestination(item)].push(item);
@@ -48,17 +54,17 @@ export function OrderBar({ tableId, unsent, batches, expanded, onToggleExpand, o
               return (
                 <div key={batchIdx}>
                   <div style={S.sentDivider}>
-                    <div style={S.sentDividerLine} />
+                    <div style={{ ...S.sentDividerLine, background: accentColor }} />
                     <span style={S.sentDividerText}>
                       Sent {ts.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
                     </span>
-                    <button style={S.markBtn} onClick={() => table.toggleMarkBatch(tableId, actualBatchIdx)}>
+                    <button style={{ ...S.markBtn, borderColor: accentColor }} onClick={() => table.toggleMarkBatch(tableId, actualBatchIdx)}>
                       {isMarked ? "Unmark" : "Mark"}
                     </button>
-                    <div style={S.sentDividerLine} />
+                    <div style={{ ...S.sentDividerLine, background: accentColor }} />
                   </div>
                   {batchByDest.bar.length > 0 && (
-                    <div style={{ ...S.sentSection, ...(isMarked ? S.sentSectionMarked : {}) }}>
+                    <div style={sectionStyle}>
                       <span style={S.sentLabel}>🍷 Bar</span>
                       {batchByDest.bar.map((o) => (
                         <div key={o.id} style={S.sentItem}>
@@ -72,7 +78,7 @@ export function OrderBar({ tableId, unsent, batches, expanded, onToggleExpand, o
                     </div>
                   )}
                   {batchByDest.counter.length > 0 && (
-                    <div style={{ ...S.sentSection, ...(isMarked ? S.sentSectionMarked : {}) }}>
+                    <div style={sectionStyle}>
                       <span style={S.sentLabel}>🧀 Counter</span>
                       {batchByDest.counter.map((o) => (
                         <div key={o.id} style={S.sentItem}>
@@ -86,7 +92,7 @@ export function OrderBar({ tableId, unsent, batches, expanded, onToggleExpand, o
                     </div>
                   )}
                   {batchByDest.kitchen.length > 0 && (
-                    <div style={{ ...S.sentSection, ...(isMarked ? S.sentSectionMarked : {}) }}>
+                    <div style={sectionStyle}>
                       <span style={S.sentLabel}>🍽️ Kitchen</span>
                       {batchByDest.kitchen.map((o) => (
                         <div key={o.id} style={S.sentItem}>

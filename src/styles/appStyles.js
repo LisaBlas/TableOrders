@@ -1794,10 +1794,12 @@ export const S = {
   },
   sentSectionPending: {
     background: "#fdf5f5",
-    border: "1px solid #f0bfbf"
+    border: "1px solid #ebe9e3",
+    borderLeft: "3px solid #e05252"
   },
   sentSectionMarked: {
     background: "#f4fbf6",
-    border: "1px solid #b8e6c8"
+    border: "1px solid #ebe9e3",
+    borderLeft: "3px solid #52b87a"
   }
 };
