@@ -144,12 +144,18 @@ export function OrderView() {
     if (activeCategory === "Wines 🍷") {
       const winesWithGlasses = (MENU as any)["Drinks🍷"]
         ?.filter((item: any) => item.variants?.some((v: any) => v.bottleSubcategory))
-        .map((item: any) => ({ ...item, category: "Wines 🍷", subcategory: "glass" })) || [];
+        .map((item: any) => ({
+          ...item,
+          category: "Wines 🍷",
+          subcategory: "glass",
+          wineType: item.variants.find((v: any) => v.bottleSubcategory)?.bottleSubcategory,
+        })) || [];
 
       const staticBottles = (MENU as any)["Wines 🍷"]?.map((item: any) => ({
         ...item,
         category: "Wines 🍷",
         subcategory: "bottle",
+        wineType: item.subcategory,
       })) || [];
 
       return [...winesWithGlasses, ...staticBottles];

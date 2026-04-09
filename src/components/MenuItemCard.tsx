@@ -32,6 +32,15 @@ export function MenuItemCard({ item, unsent, showCategory, onTap, onLongPress }:
   const unsentQty = getUnsentQty();
   const displayName = (item as any).posName || item.name;
 
+  const WINE_COLORS: Record<string, string> = {
+    white: "#e8c84a",
+    red: "#c0392b",
+    sparkling: "#999",
+    natural: "#7c3aed",
+    rosé: "#e88ea0",
+  };
+  const wineColor = WINE_COLORS[(item as any).wineType];
+
   const startPress = () => {
     longFiredRef.current = false;
     if (onLongPress) {
@@ -67,6 +76,16 @@ export function MenuItemCard({ item, unsent, showCategory, onTap, onLongPress }:
     >
       {unsentQty > 0 && (
         <span style={S.menuCardBadge as any}>({unsentQty})</span>
+      )}
+      {wineColor && (
+        <span style={{
+          display: "inline-block",
+          width: 8,
+          height: 8,
+          borderRadius: "50%",
+          background: wineColor,
+          marginBottom: 4,
+        }} />
       )}
       <div style={S.menuCardName as any}>{displayName}</div>
       {showCategory && (item as any).category && (
