@@ -28,6 +28,7 @@ interface TableContextValue {
   removeGutschein: (tableId: TableId) => void;
   cleanupTable: (tableId: TableId) => void;
   toggleMarkBatch: (tableId: TableId, batchIndex: number) => void;
+  swapTables: (fromTableId: TableId, toTableId: TableId) => void;
 }
 
 const TableContext = createContext<TableContextValue | null>(null);
@@ -205,6 +206,73 @@ export function TableProvider({ children }: { children: ReactNode }) {
     });
   }, [setMarkedBatches]);
 
+  const swapTables = useCallback((fromTableId: TableId, toTableId: TableId) => {
+    const fromOrders = orders[fromTableId] || [];
+    const toOrdersCurrent = orders[toTableId] || [];
+    const fromBatchesCurrent = sentBatches[fromTableId] || [];
+    const toBatchesCurrent = sentBatches[toTableId] || [];
+
+    // Merge orders into target; all moved items are fully "sent"
+    const merged: OrderItem[] = [...toOrdersCurrent];
+    for (const item of fromOrders) {
+      const idx = merged.findIndex(o => o.id === item.id);
+      if (idx >= 0) {
+        merged[idx] = {
+          ...merged[idx],
+          qty: merged[idx].qty + item.qty,
+          sentQty: (merged[idx].sentQty || 0) + item.qty,
+        };
+      } else {
+        merged.push({ ...item, sentQty: item.qty });
+      }
+    }
+
+    // Build merged batches; unsent items from source become their own batch
+    const unsentFromItems = fromOrders
+      .filter(o => o.qty - (o.sentQty || 0) > 0)
+      .map(o => ({ ...o, qty: o.qty - (o.sentQty || 0) }));
+
+    const newBatches = [...toBatchesCurrent, ...fromBatchesCurrent];
+    if (unsentFromItems.length > 0) {
+      newBatches.push({ timestamp: new Date().toISOString(), items: unsentFromItems });
+    }
+    const totalBatchCount = newBatches.length;
+
+    setOrders((prev) => {
+      const next = { ...prev, [toTableId]: merged };
+      delete next[fromTableId];
+      return next;
+    });
+
+    setSentBatches((prev) => {
+      const next = { ...prev, [toTableId]: newBatches };
+      delete next[fromTableId];
+      return next;
+    });
+
+    setMarkedBatches((prev) => {
+      const allMarked = new Set<number>(Array.from({ length: totalBatchCount }, (_, i) => i));
+      const next = { ...prev, [toTableId]: allMarked };
+      delete next[fromTableId];
+      return next;
+    });
+
+    setSeatedTablesArr((prev) => {
+      const s = new Set<TableId>(prev);
+      s.add(toTableId);
+      s.delete(fromTableId);
+      return Array.from(s);
+    });
+
+    setGutscheinAmounts((prev) => {
+      const next = { ...prev };
+      delete next[fromTableId];
+      return next;
+    });
+
+    showToast(`Table ${fromTableId} → Table ${toTableId}`);
+  }, [orders, sentBatches, setOrders, setSentBatches, setMarkedBatches, setSeatedTablesArr, setGutscheinAmounts, showToast]);
+
   const cleanupTable = useCallback((tableId: TableId) => {
     setOrders((prev) => {
       const next = { ...prev };
@@ -243,7 +311,7 @@ export function TableProvider({ children }: { children: ReactNode }) {
       addItem, removeItem, removeItemFromBill, addItemToBill,
       sendOrder, seatTable,
       applyGutschein, removeGutschein,
-      cleanupTable, toggleMarkBatch,
+      cleanupTable, toggleMarkBatch, swapTables,
     }}>
       {children}
     </TableContext.Provider>
