@@ -273,7 +273,8 @@ export const MENU = {
       id: "wasser_sprudel_bottle",
       name: "Sprudel Wasser Fl.",
       subcategory: "soft",
-      variants: [
+      price: 5.5,
+      holdVariants: [
         { type: "small", price: 1.5, label: "0,2", posId: "50-1", posName: "WassSprud klein" },
         { type: "large", price: 2.8, label: "0,4", posId: "51-1", posName: "WassSprud groß" }
       ]
@@ -282,7 +283,8 @@ export const MENU = {
       id: "wasser_bottle",
       name: "Wasser Fl.",
       subcategory: "soft",
-      variants: [
+      price: 5.5,
+      holdVariants: [
         { type: "small", price: 1.5, label: "0,2", posId: "50-2", posName: "Wass klein" },
         { type: "large", price: 2.8, label: "0,4", posId: "51-2", posName: "Wass groß" }
       ]

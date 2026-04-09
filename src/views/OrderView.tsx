@@ -59,7 +59,7 @@ export function OrderView() {
   };
 
   const handleCardLongPress = (item: MenuItem) => {
-    if (item.variants && item.variants.length > 0) {
+    if ((item.holdVariants && item.holdVariants.length > 0) || (item.variants && item.variants.length > 0)) {
       setSelectedItemForVariant(item);
       setShowVariantSheet(true);
     } else {
@@ -355,6 +355,7 @@ export function OrderView() {
             setShowVariantSheet(false);
             setSelectedItemForVariant(null);
           }}
+          variants={selectedItemForVariant.holdVariants ?? selectedItemForVariant.variants}
         />
       )}
 

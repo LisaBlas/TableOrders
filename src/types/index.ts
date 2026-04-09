@@ -44,6 +44,7 @@ export interface MenuItem {
   price?: number;
   subcategory?: string;
   variants?: MenuItemVariant[];
+  holdVariants?: MenuItemVariant[];
 }
 
 export type MenuData = Record<MenuCategory, MenuItem[]>;

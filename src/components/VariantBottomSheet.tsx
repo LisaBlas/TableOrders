@@ -6,10 +6,12 @@ interface VariantBottomSheetProps {
   unsent: OrderItem[];
   onSelectVariant: (variant: MenuItemVariant) => void;
   onClose: () => void;
+  variants?: MenuItemVariant[];
 }
 
-export function VariantBottomSheet({ item, unsent, onSelectVariant, onClose }: VariantBottomSheetProps) {
-  if (!item.variants || item.variants.length === 0) return null;
+export function VariantBottomSheet({ item, unsent, onSelectVariant, onClose, variants: variantsProp }: VariantBottomSheetProps) {
+  const variants = variantsProp ?? item.variants;
+  if (!variants || variants.length === 0) return null;
 
   // Get unsent qty for a specific variant
   const getVariantUnsentQty = (variant: MenuItemVariant) => {
@@ -28,7 +30,7 @@ export function VariantBottomSheet({ item, unsent, onSelectVariant, onClose }: V
         <div style={S.variantSheetHeader}>{item.name}</div>
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-          {item.variants.map((variant) => {
+          {variants.map((variant) => {
             const unsentQty = getVariantUnsentQty(variant);
 
             return (
