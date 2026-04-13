@@ -99,39 +99,39 @@ export function DailySalesView() {
     const withPosId = aggregated.filter((item) => item.posId !== "NO_POS_ID" && item.posId !== "0000");
     const missingPosId = aggregated.filter((item) => item.posId === "NO_POS_ID" || item.posId === "0000");
 
-    const renderPosCard = (item: any, idx: number) => {
-      const isMissing = item.posId === "NO_POS_ID" || item.posId === "0000";
-      return (
-        <div key={idx} style={{
-          ...S.billCard,
-          ...(isMissing ? { borderLeft: "4px solid #e07b5a" } : {})
-        }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-            <span style={{ fontSize: 28, fontWeight: 900, color: isMissing ? "#e07b5a" : "#1a1a1a", letterSpacing: 0.5 }}>
-              [{item.posId}]
-            </span>
-            <span style={{ fontSize: 32, fontWeight: 900, color: "#1a1a1a" }}>×{item.qty}</span>
-          </div>
-          <div style={{ fontSize: 15, fontWeight: 600, color: "#555", marginBottom: 4 }}>{item.posName}</div>
-          <div style={{ fontSize: 13, color: "#888" }}>
-            {item.revenue.toFixed(2)}€ total
-          </div>
-          {item.items.length > 1 && (
-            <div style={{ fontSize: 12, color: "#999", marginTop: 4, fontStyle: "italic" }}>
-              ({item.items.join(", ")})
-            </div>
-          )}
-        </div>
-      );
-    };
+    const renderPosRow = (item: any, isMissing: boolean) => (
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+        <span style={{ fontSize: 22, fontWeight: 900, color: isMissing ? "#e07b5a" : "#1a1a1a", letterSpacing: 0.5, minWidth: 64 }}>
+          [{item.posId}]
+        </span>
+        <span style={{ flex: 1, fontSize: 15, fontWeight: 600, color: "#555" }}>{item.posName}</span>
+        <span style={{ fontSize: 26, fontWeight: 900, color: "#1a1a1a" }}>×{item.qty}</span>
+      </div>
+    );
 
     return (
       <div style={S.billsList}>
-        {withPosId.map(renderPosCard)}
+        {withPosId.length > 0 && (
+          <div style={S.billCard}>
+            {withPosId.map((item, idx) => (
+              <div key={idx}>
+                {idx > 0 && <div style={S.divider} />}
+                {renderPosRow(item, false)}
+              </div>
+            ))}
+          </div>
+        )}
         {missingPosId.length > 0 && (
           <>
             <div style={{ ...S.subcategorySeparator, color: "#e07b5a" } as React.CSSProperties}>⚠️ Missing POS IDs</div>
-            {missingPosId.map(renderPosCard)}
+            <div style={{ ...S.billCard, borderLeft: "4px solid #e07b5a" }}>
+              {missingPosId.map((item, idx) => (
+                <div key={idx}>
+                  {idx > 0 && <div style={S.divider} />}
+                  {renderPosRow(item, true)}
+                </div>
+              ))}
+            </div>
           </>
         )}
       </div>
