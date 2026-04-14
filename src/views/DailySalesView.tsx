@@ -122,7 +122,7 @@ export function DailySalesView() {
 
     const renderPosRow = (item: PosEntry, color: string, badge?: boolean) => (
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-        <span style={{ fontSize: 22, fontWeight: 900, color, letterSpacing: 0.5, minWidth: 64 }}>
+        <span style={{ fontSize: 22, fontWeight: 900, color, letterSpacing: 0.5, width: 96, flexShrink: 0 }}>
           [{item.posId}]
         </span>
         <span style={{ flex: 1, fontSize: 15, fontWeight: 600, color: badge ? "#c0392b" : "#555" }}>{item.posName}</span>
