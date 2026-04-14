@@ -93,8 +93,16 @@ export function DailySalesView() {
       });
     });
 
+    const parsePos = (id: string) => {
+      const parts = id.split("-");
+      return { base: parseInt(parts[0]) || 0, suffix: parseInt(parts[1]) || 0 };
+    };
     const sort = (m: Map<string, PosEntry>) =>
-      Array.from(m.values()).sort((a, b) => b.qty - a.qty);
+      Array.from(m.values()).sort((a, b) => {
+        const pa = parsePos(a.posId);
+        const pb = parsePos(b.posId);
+        return pa.base !== pb.base ? pa.base - pb.base : pa.suffix - pb.suffix;
+      });
 
     const isMissingPosId = (id: string) => id === "NO_POS_ID" || id === "0000";
 

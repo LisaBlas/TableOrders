@@ -33,7 +33,7 @@ export const MENU = {
     { id: "f7", name: "Camembert Rôti", shortName: "CAM", price: 17, subcategory: "warm", posId: "401", posName: "CAM" },
     { id: "f8", name: "Mont d'Or", shortName: "Mont d'Or", price: 29, subcategory: "warm", posId: "421", posName: "Mont d'Or" },
     { id: "f9", name: "Tartiflette", shortName: "Tartif", price: 15, subcategory: "warm", posId: "21", posName: "Tartif" },
-    { id: "f10", name: "Tartiflette + Speck", shortName: "Tartif + Speck", price: 17, subcategory: "warm", posId: "0000", posName: "Tartif + Speck" },
+    { id: "f10", name: "Tartiflette + Speck", shortName: "Tartif + Speck", price: 17, subcategory: "warm", posId: "21-1", posName: "Tartif + Speck" },
     { id: "f11", name: "Raclette", shortName: "Raclette", price: 28, subcategory: "warm", posId: "24", posName: "Raclette" },
     { id: "f12", name: "Fondue", shortName: "Fondue", price: 28, subcategory: "warm", posId: "23", posName: "Fondue" },
     { id: "f28", name: "Fondue Alkoholfrei", shortName: "Fondue Alkfrei", price: 28, subcategory: "warm", posId: "23", posName: "Fondue Alkfrei" },
@@ -51,9 +51,9 @@ export const MENU = {
     { id: "f17", name: "Basic", shortName: "BASIS", price: 7, subcategory: "salads", posId: "40", posName: "BASIS" },
     // Dessert
     { id: "f18", name: "Tarte Tatin", shortName: "TT", price: 7, subcategory: "snacks", posId: "30", posName: "TT" },
-    { id: "f27", name: "Tarte Tatin + Calvados", shortName: "TT + Calva", price: 10, subcategory: "snacks", posId: "0000", posName: "TT + Calva" },
+    { id: "f27", name: "Tarte Tatin + Calvados", shortName: "TT + Calva", price: 10, subcategory: "snacks", posId: "30-1", posName: "TT + Calva" },
     { id: "f19", name: "Olives", shortName: "OLV", price: 3, subcategory: "snacks", posId: "9", posName: "OLV" },
-    { id: "f20", name: "Olives + Grissini", shortName: "OLV + Grissini", price: 5.5, subcategory: "snacks", posId: "0000", posName: "OLV + Grissini" },
+    { id: "f20", name: "Olives + Grissini", shortName: "OLV + Grissini", price: 5.5, subcategory: "snacks", posId: "9-1", posName: "OLV + Grissini" },
     { id: "f26", name: "Cornichons", shortName: "Cornichons", price: 2.5, subcategory: "snacks", posId: "0000", posName: "Cornichons" },
   ],
   "Wines": [
@@ -482,7 +482,7 @@ export const MENU = {
       subcategory: "wine",
       variants: [
         { type: "small", price: 3.5, label: "0,1", posId: "202-1", posName: "Gamay 0,1" },
-        { type: "large", price: 7, label: "0,2", posId: "202-2", posName: "Gamay 0,2" },
+        { type: "large", price: 7.5, label: "0,2", posId: "202-2", posName: "Gamay 0,2" },
         { type: "here", price: 25.5, label: "Fl.", posId: "202", posName: "Gamay Fl.", bottleSubcategory: "red" },
         { type: "togo", price: 14, label: "To Go", posId: "202", posName: "Gamay Fl. To Go", bottleSubcategory: "red" }
       ]
