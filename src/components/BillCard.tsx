@@ -8,10 +8,11 @@ interface BillCardProps {
   onDone: () => void;
   onCancel: () => void;
   onDelete: () => void;
+  onRestore: () => void;
   onRemoveItem: (itemId: string) => void;
 }
 
-export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, onRemoveItem }: BillCardProps) {
+export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, onRestore, onRemoveItem }: BillCardProps) {
   const cardStyle = bill.addedToPOS
     ? { ...S.billCard, background: "#fff5f5", borderColor: "#f5c2c2" }
     : S.billCard;
@@ -49,8 +50,10 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
             )}
           </div>
         </div>
-        {!isEditing ? (
-          <button style={S.editBillBtn} onClick={onEdit}>Edit</button>
+        {bill.addedToPOS ? (
+          <button style={S.editBillBtn} onClick={onRestore} title="Restore bill">↩️</button>
+        ) : !isEditing ? (
+          <button style={S.editBillBtn} onClick={onEdit}>✏️</button>
         ) : (
           <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
             <button style={S.doneEditBtn} onClick={onDone}>Done</button>
@@ -79,7 +82,7 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
             <>
               {activeItems.map((item) => (
                 <div key={item.id} style={isEditing ? S.billItemEditable : S.billItem}>
-                  {isEditing && (
+                  {isEditing && !bill.addedToPOS && (
                     <button style={S.billItemRemoveBtn} onClick={() => onRemoveItem(item.id)} title="Remove one">−</button>
                   )}
                   <span style={S.billItemName}>

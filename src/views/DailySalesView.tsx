@@ -71,6 +71,15 @@ export function DailySalesView() {
     setBillSnapshot(null);
   };
 
+  const restoreBillFromPOS = (billIndex: number) => {
+    setPaidBills((prev) => {
+      const bills = [...prev];
+      bills[billIndex] = { ...bills[billIndex], addedToPOS: false };
+      return bills;
+    });
+    showToast("Bill restored");
+  };
+
   // Total tab aggregation - by POS ID for easy POS entry
   const renderTotalTab = () => {
     type PosEntry = { posId: string; posName: string; qty: number; revenue: number; items: string[] };
@@ -225,6 +234,7 @@ export function DailySalesView() {
                     onDone={exitEditMode}
                     onCancel={cancelEditMode}
                     onDelete={() => markBillAsAddedToPOS(billIndex)}
+                    onRestore={() => restoreBillFromPOS(billIndex)}
                     onRemoveItem={(itemId) => removePaidBillItem(billIndex, itemId)}
                   />
                 );
