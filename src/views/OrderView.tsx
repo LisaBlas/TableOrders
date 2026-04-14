@@ -77,7 +77,7 @@ export function OrderView() {
 
   const addCustomItem = () => {
     const name = customName.trim();
-    const price = parseFloat(customPrice);
+    const price = parseFloat(customPrice.replace(",", "."));
     const qty = parseInt(customQty);
     if (!name) { app.showToast("⚠ Item name required"); return; }
     if (isNaN(price) || price <= 0) { app.showToast("⚠ Valid price required"); return; }
@@ -318,8 +318,8 @@ export function OrderView() {
             <div style={S.customModalRow}>
               <div style={S.customModalField}>
                 <label style={S.customModalLabel}>Price (€)</label>
-                <input type="number" placeholder="0.00" value={customPrice}
-                  onChange={(e) => setCustomPrice(e.target.value)} step="0.01" min="0" style={S.customModalInput} />
+                <input type="text" inputMode="decimal" placeholder="0.00" value={customPrice}
+                  onChange={(e) => setCustomPrice(e.target.value)} style={S.customModalInput} />
               </div>
               <div style={S.customModalFieldSmall}>
                 <label style={S.customModalLabel}>Quantity</label>
