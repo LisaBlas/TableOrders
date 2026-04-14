@@ -79,8 +79,9 @@ export function DailySalesView() {
 
     const addToMap = (map: Map<string, PosEntry>, posId: string, posName: string, item: typeof paidBills[0]["items"][0], qty: number) => {
       if (qty <= 0) return;
-      if (!map.has(posId)) map.set(posId, { posId, posName, qty: 0, revenue: 0, items: [] });
-      const entry = map.get(posId)!;
+      const key = `${posId}::${posName}`;
+      if (!map.has(key)) map.set(key, { posId, posName, qty: 0, revenue: 0, items: [] });
+      const entry = map.get(key)!;
       entry.qty += qty;
       entry.revenue += item.price * qty;
       if (!entry.items.includes(item.name)) entry.items.push(item.name);

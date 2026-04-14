@@ -43,18 +43,18 @@ export const MENU = {
     { id: "f13", name: "Seguin", shortName: "SEG", price: 12.5, subcategory: "salads", posId: "41", posName: "SEG" },
     { id: "f21", name: "Seguin + Speck", shortName: "SEG + Speck", price: 14.5, subcategory: "salads", posId: "1015", posName: "SEG + Speck" },
     { id: "f14", name: "Papillon", shortName: "PAP", price: 13.5, subcategory: "salads", posId: "43", posName: "PAP" },
-    { id: "f22", name: "Papillon + Serrano", shortName: "PAP + Serrano", price: 15.5, subcategory: "salads", posId: "43", posName: "PAP + Serrano" },
+    { id: "f22", name: "Papillon + Serrano", shortName: "PAP + Serrano", price: 15.5, subcategory: "salads", posId: "43-1", posName: "PAP + Serrano" },
     { id: "f15", name: "Bauern", shortName: "BAU", price: 12.5, subcategory: "salads", posId: "44", posName: "BAU" },
     { id: "f23", name: "Bauern + Kartoffeln", shortName: "BAU + Kartoffeln", price: 15, subcategory: "salads", posId: "44", posName: "BAU + Kartoffeln" },
-    { id: "f16", name: "Porthos", shortName: "POT", price: 13, subcategory: "salads", posId: "43", posName: "POT" },
-    { id: "f24", name: "Porthos + Serrano", shortName: "POT + Serrano", price: 15, subcategory: "salads", posId: "43", posName: "POT + Serrano" },
+    { id: "f16", name: "Porthos", shortName: "POT", price: 13, subcategory: "salads", posId: "42", posName: "POT" },
+    { id: "f24", name: "Porthos + Serrano", shortName: "POT + Serrano", price: 15, subcategory: "salads", posId: "42-1", posName: "POT + Serrano" },
     { id: "f17", name: "Basic", shortName: "BASIS", price: 7, subcategory: "salads", posId: "40", posName: "BASIS" },
     // Dessert
     { id: "f18", name: "Tarte Tatin", shortName: "TT", price: 7, subcategory: "snacks", posId: "30", posName: "TT" },
     { id: "f27", name: "Tarte Tatin + Calvados", shortName: "TT + Calva", price: 10, subcategory: "snacks", posId: "30-1", posName: "TT + Calva" },
     { id: "f19", name: "Olives", shortName: "OLV", price: 3, subcategory: "snacks", posId: "9", posName: "OLV" },
     { id: "f20", name: "Olives + Grissini", shortName: "OLV + Grissini", price: 5.5, subcategory: "snacks", posId: "9-1", posName: "OLV + Grissini" },
-    { id: "f26", name: "Cornichons", shortName: "Cornichons", price: 2.5, subcategory: "snacks", posId: "0000", posName: "Cornichons" },
+    { id: "f26", name: "Cornichons", shortName: "Cornichons", price: 2.5, subcategory: "snacks", posId: "20", posName: "Cornichons" },
   ],
   "Wines": [
     // White wines WITH LOCATION VARIANTS (Here / To Go)
@@ -674,7 +674,7 @@ export const MENU = {
     { id: "te4", name: "Kräuter", shortName: "Kraut", price: 3, subcategory: "warm", posId: "93-4", posName: "Kraut" },
     { id: "te5", name: "Bergtee", shortName: "BergT", price: 3.7, subcategory: "warm", posId: "94-1", posName: "BergT" },
     { id: "te6", name: "Thymian", shortName: "Thym", price: 3.7, subcategory: "warm", posId: "94-2", posName: "Thym" },
-    { id: "te7", name: "Heiße Zitrone", shortName: "HeissZ", price: 3.7, subcategory: "warm", posId: "0000", posName: "HeissZ" },
+    { id: "te7", name: "Heiße Zitrone", shortName: "HeissZ", price: 3.7, subcategory: "warm", posId: "94-3", posName: "HeissZ" },
     { id: "te8", name: "Heiße Orange", shortName: "Hot Orange", price: 5, subcategory: "warm", posId: "95", posName: "Hot Orange" },
     // Coffee
     { id: "co1", name: "Espresso", shortName: "Espr", price: 1.9, subcategory: "warm", posId: "91", posName: "Espr" },
