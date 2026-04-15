@@ -86,6 +86,20 @@ export function DailySalesView() {
     showToast("Bill restored");
   };
 
+  const restorePaidBillItem = (billIndex: number, itemId: string) => {
+    setPaidBills((prev) => {
+      const bills = [...prev];
+      const bill = { ...bills[billIndex] };
+      bill.items = bill.items.map((o) =>
+        o.id === itemId
+          ? { ...o, crossedQty: Math.max((o.crossedQty || 0) - 1, 0), crossed: false }
+          : o
+      );
+      bills[billIndex] = bill;
+      return bills;
+    });
+  };
+
   // Total tab aggregation - by POS ID for easy POS entry
   const renderTotalTab = () => {
     type PosEntry = { posId: string; posName: string; qty: number; revenue: number; items: string[] };
@@ -131,7 +145,7 @@ export function DailySalesView() {
       // Group removed items by bill
       if (billRemovedItems.length > 0) {
         removedBillGroups.push({
-          tableId: bill.tableId,
+          tableId: bill.tableId as number,
           timestamp: bill.timestamp,
           items: billRemovedItems
         });
@@ -337,6 +351,7 @@ export function DailySalesView() {
                     onDelete={() => markBillAsAddedToPOS(billIndex)}
                     onRestore={() => restoreBillFromPOS(billIndex)}
                     onRemoveItem={(itemId) => removePaidBillItem(billIndex, itemId)}
+                    onRestoreItem={(itemId) => restorePaidBillItem(billIndex, itemId)}
                   />
                 );
               })}

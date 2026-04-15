@@ -10,9 +10,10 @@ interface BillCardProps {
   onDelete: () => void;
   onRestore: () => void;
   onRemoveItem: (itemId: string) => void;
+  onRestoreItem: (itemId: string) => void;
 }
 
-export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, onRestore, onRemoveItem }: BillCardProps) {
+export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, onRestore, onRemoveItem, onRestoreItem }: BillCardProps) {
   // Check if all items are crossed (removed one by one)
   const allItemsCrossed = bill.items.length > 0 && bill.items.every((item) => {
     const cQty = item.crossedQty ?? (item.crossed ? item.qty : 0);
@@ -120,7 +121,10 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
                     Added to POS
                   </div>
                   {crossedItems.map((item) => (
-                    <div key={`crossed-${item.id}`} style={S.billItem}>
+                    <div key={`crossed-${item.id}`} style={isEditing && !bill.addedToPOS ? S.billItemEditable : S.billItem}>
+                      {isEditing && !bill.addedToPOS && (
+                        <button style={{ ...S.billItemRemoveBtn, background: "#2d7a3a", color: "#fff" }} onClick={() => onRestoreItem(item.id)} title="Un-cross one">+</button>
+                      )}
                       <span style={{
                         ...S.billItemName,
                         textDecoration: "line-through",
