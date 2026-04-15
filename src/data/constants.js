@@ -717,3 +717,6 @@ export const BOTTLES_SUBCATEGORIES = [
   { id: "glass", label: "By the glass" },
   { id: "bottle", label: "Bottle only" },
 ];
+
+// Items that must always be ordered in multiples of 2 (minimum 2 per order)
+export const MIN_QTY_2_IDS = new Set(["f2", "f11", "f12", "f28"]);

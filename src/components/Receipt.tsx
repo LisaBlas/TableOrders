@@ -1,4 +1,5 @@
 import { S } from "../styles/appStyles";
+import { MIN_QTY_2_IDS } from "../data/constants";
 import { consolidateItems } from "../utils/helpers";
 import type { ReceiptProps } from "../types";
 
@@ -45,6 +46,7 @@ export function Receipt({
               style={S.closeRemoveBtn}
               onClick={() => onRemoveItem(o.id)}
               title="Remove one"
+              disabled={o.qty <= 2 && MIN_QTY_2_IDS.has(o.id)}
             >
               −
             </button>

@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import { useApp } from "./AppContext";
-import { MENU } from "../data/constants";
+import { MENU, MIN_QTY_2_IDS } from "../data/constants";
 import type { Orders, OrderItem, SentBatches, Batch, GutscheinAmounts, TableId, MenuItem, MenuItemVariant, MenuCategory } from "../types";
 
 interface TableContextValue {
@@ -99,7 +99,8 @@ export function TableProvider({ children }: { children: ReactNode }) {
           ],
         };
       }
-      return { ...prev, [tableId]: [...current, { ...orderItem, qty: 1, sentQty: 0 }] };
+      const initialQty = MIN_QTY_2_IDS.has(item.id) ? 2 : 1;
+      return { ...prev, [tableId]: [...current, { ...orderItem, qty: initialQty, sentQty: 0 }] };
     });
     showToast(`+ ${baseOrderItem.name}`);
   }, [setOrders, showToast]);
@@ -113,7 +114,12 @@ export function TableProvider({ children }: { children: ReactNode }) {
           .map((o: OrderItem) => {
             if (o.id === itemId) {
               const unsent = o.qty - (o.sentQty || 0);
-              if (unsent > 0) return { ...o, qty: o.qty - 1 };
+              if (unsent > 0) {
+                const newQty = o.qty - 1;
+                // Min-2 items can't land on qty=1; skip straight to 0 (full removal)
+                if (newQty === 1 && MIN_QTY_2_IDS.has(o.id)) return { ...o, qty: 0 };
+                return { ...o, qty: newQty };
+              }
             }
             return o;
           })
@@ -130,6 +136,8 @@ export function TableProvider({ children }: { children: ReactNode }) {
         [tableId]: current
           .map((o: OrderItem) => {
             if (o.id === itemId && (o.sentQty || 0) > 0) {
+              // Min-2 items can't be decremented below 2
+              if (o.qty <= 2 && MIN_QTY_2_IDS.has(o.id)) return o;
               return { ...o, qty: o.qty - 1, sentQty: (o.sentQty || 0) - 1 };
             }
             return o;
