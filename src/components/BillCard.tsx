@@ -13,7 +13,13 @@ interface BillCardProps {
 }
 
 export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, onRestore, onRemoveItem }: BillCardProps) {
-  const cardStyle = bill.addedToPOS
+  // Check if all items are crossed (removed one by one)
+  const allItemsCrossed = bill.items.length > 0 && bill.items.every((item) => {
+    const cQty = item.crossedQty ?? (item.crossed ? item.qty : 0);
+    return cQty === item.qty;
+  });
+
+  const cardStyle = (bill.addedToPOS || allItemsCrossed)
     ? { ...S.billCard, background: "#fff5f5", borderColor: "#f5c2c2" }
     : S.billCard;
 
@@ -26,7 +32,7 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
             <span style={{ fontSize: 12, color: "#888" }}>
               {new Date(bill.timestamp).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
             </span>
-            {bill.addedToPOS && (
+            {(bill.addedToPOS || allItemsCrossed) && (
               <span style={S.addedToPOSLabel}>Added To POS</span>
             )}
           </div>
@@ -75,14 +81,20 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
           bill.items.forEach((item) => {
             const cQty = item.crossedQty ?? (item.crossed ? item.qty : 0);
             const aQty = item.qty - cQty;
-            if (aQty > 0) activeItems.push({ ...item, displayQty: aQty });
-            if (cQty > 0) crossedItems.push({ ...item, displayQty: cQty });
+
+            // If bill is marked as deleted or all items are crossed, show everything in main section
+            if (bill.addedToPOS || allItemsCrossed) {
+              activeItems.push({ ...item, displayQty: item.qty });
+            } else {
+              if (aQty > 0) activeItems.push({ ...item, displayQty: aQty });
+              if (cQty > 0) crossedItems.push({ ...item, displayQty: cQty });
+            }
           });
           return (
             <>
               {activeItems.map((item) => (
                 <div key={item.id} style={isEditing ? S.billItemEditable : S.billItem}>
-                  {isEditing && !bill.addedToPOS && (
+                  {isEditing && !bill.addedToPOS && !allItemsCrossed && (
                     <button style={S.billItemRemoveBtn} onClick={() => onRemoveItem(item.id)} title="Remove one">−</button>
                   )}
                   <span style={S.billItemName}>
@@ -96,16 +108,32 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
               ))}
               {crossedItems.length > 0 && (
                 <>
-                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: "#aaa", textTransform: "uppercase" as const, marginTop: 8, marginBottom: 2 }}>
+                  <div style={{
+                    fontSize: 10,
+                    fontWeight: 700,
+                    letterSpacing: 1,
+                    color: "#c0392b",
+                    textTransform: "uppercase" as const,
+                    marginTop: 8,
+                    marginBottom: 2
+                  }}>
                     Added to POS
                   </div>
                   {crossedItems.map((item) => (
                     <div key={`crossed-${item.id}`} style={S.billItem}>
-                      <span style={{ ...S.billItemName, ...S.billItemCrossed }}>
+                      <span style={{
+                        ...S.billItemName,
+                        textDecoration: "line-through",
+                        color: "#c0392b"
+                      }}>
                         <span style={S.billItemQty}>{item.displayQty}×</span>
                         {item.name}
                       </span>
-                      <span style={{ ...S.billItemPrice, ...S.billItemCrossed }}>
+                      <span style={{
+                        ...S.billItemPrice,
+                        textDecoration: "line-through",
+                        color: "#c0392b"
+                      }}>
                         {(item.price * item.displayQty).toFixed(2)}€
                       </span>
                     </div>
