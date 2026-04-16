@@ -58,7 +58,10 @@ export function OrderBar({ tableId, unsent, batches, expanded, onToggleExpand, o
                     <span style={S.sentDividerText}>
                       Sent {ts.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
                     </span>
-                    <button style={{ ...S.markBtn, borderColor: accentColor }} onClick={() => table.toggleMarkBatch(tableId, actualBatchIdx)}>
+                    <button style={{ ...S.markBtn, borderColor: accentColor }} onClick={() => {
+                      table.toggleMarkBatch(tableId, actualBatchIdx);
+                      onToggleExpand();
+                    }}>
                       {isMarked ? "Unmark" : "Mark"}
                     </button>
                     <div style={{ ...S.sentDividerLine, background: accentColor }} />

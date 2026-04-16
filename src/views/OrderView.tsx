@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MENU, FOOD_SUBCATEGORIES, DRINKS_SUBCATEGORIES, BOTTLES_SUBCATEGORIES } from "../data/constants";
+import { MENU, FOOD_SUBCATEGORIES, DRINKS_SUBCATEGORIES, BOTTLES_SUBCATEGORIES, SHOP_SUBCATEGORIES } from "../data/constants";
 import { useApp } from "../contexts/AppContext";
 import { useTable } from "../contexts/TableContext";
 import { useTableOrder } from "../hooks/useTableOrder";
@@ -25,6 +25,7 @@ export function OrderView() {
   const [selectedFoodSubcategory, setSelectedFoodSubcategory] = useState<string | null>(null);
   const [selectedDrinksSubcategory, setSelectedDrinksSubcategory] = useState<string | null>(null);
   const [selectedBottlesSubcategory, setSelectedBottlesSubcategory] = useState<string | null>(null);
+  const [selectedShopSubcategory, setSelectedShopSubcategory] = useState<string | null>(null);
   const [orderBarExpanded, setOrderBarExpanded] = useState(false);
   const [showCustomModal, setShowCustomModal] = useState(false);
   const [customName, setCustomName] = useState("");
@@ -42,6 +43,7 @@ export function OrderView() {
     if (selectedFoodSubcategory) setSelectedFoodSubcategory(null);
     if (selectedDrinksSubcategory) setSelectedDrinksSubcategory(null);
     if (selectedBottlesSubcategory) setSelectedBottlesSubcategory(null);
+    if (selectedShopSubcategory) setSelectedShopSubcategory(null);
   }
 
   const handleAddItem = (item: MenuItem, variant: MenuItemVariant | null = null, note?: string) => {
@@ -100,6 +102,7 @@ export function OrderView() {
     if (activeCategory === "Food") return selectedFoodSubcategory;
     if (activeCategory === "Drinks") return selectedDrinksSubcategory;
     if (activeCategory === "Wines") return selectedBottlesSubcategory;
+    if (activeCategory === "Shop") return selectedShopSubcategory;
     return null;
   };
 
@@ -107,18 +110,21 @@ export function OrderView() {
     setSelectedFoodSubcategory(null);
     setSelectedDrinksSubcategory(null);
     setSelectedBottlesSubcategory(null);
+    setSelectedShopSubcategory(null);
   };
 
   const setSubcategoryForCategory = (sub: string) => {
     if (activeCategory === "Food") setSelectedFoodSubcategory(sub);
     else if (activeCategory === "Drinks") setSelectedDrinksSubcategory(sub);
     else if (activeCategory === "Wines") setSelectedBottlesSubcategory(sub);
+    else if (activeCategory === "Shop") setSelectedShopSubcategory(sub);
   };
 
   const getSubcategoryConfig = () => {
     if (activeCategory === "Food") return FOOD_SUBCATEGORIES;
     if (activeCategory === "Drinks") return DRINKS_SUBCATEGORIES;
     if (activeCategory === "Wines") return BOTTLES_SUBCATEGORIES;
+    if (activeCategory === "Shop") return SHOP_SUBCATEGORIES;
     return [];
   };
 
@@ -132,7 +138,7 @@ export function OrderView() {
       const results: any[] = [];
       Object.entries(MENU).forEach(([category, items]: [string, any[]]) => {
         items.forEach((item: any) => {
-          if (item.name.toLowerCase().includes(query)) {
+          if (item.name.toLowerCase().includes(query) || (item.shortName && item.shortName.toLowerCase().includes(query))) {
             results.push({ ...item, category });
           }
         });

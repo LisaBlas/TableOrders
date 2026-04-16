@@ -1,4 +1,5 @@
 export const TABLES = [
+  { isDivider: true, label: "Inside" },
   { id: 1, label: "Table 1" },
   { id: 2, label: "Table 2" },
   { id: 3, label: "Table 3" },
@@ -25,9 +26,10 @@ export const MENU = {
     // Cheese & Charcuterie
     { id: "f1", name: "Small Cheese Plate", shortName: "CP KL", price: 10, subcategory: "cheese", posId: "11", posName: "CP KL" },
     { id: "f2", name: "Cheese Plate", shortName: "CP1", price: 11, subcategory: "cheese", posId: "10", posName: "CP1" },
-    { id: "f4", name: "Charcuterie Plate", shortName: "CH KL", price: 11, subcategory: "cheese", posId: "16", posName: "CH KL" },
+    { id: "f4", name: "Charcuterie Klein", shortName: "CH KL", price: 11, subcategory: "cheese", posId: "16", posName: "CH KL" },
     { id: "f5", name: "Mixed Plate", shortName: "MIX", price: 25, subcategory: "cheese", posId: "12", posName: "MIX" },
     { id: "f29", name: "Charcuterie dazu", shortName: "CH Dazu", price: 6.5, subcategory: "cheese", posId: "18", posName: "CH Dazu" },
+    { id: "f32", name: "Charcuterie Gross", shortName: "CH GR", price: 22, subcategory: "cheese", posId: "17", posName: "CH GR" },
     // Hot Dishes
     { id: "f6", name: "Marcelin Chaud", shortName: "STM", price: 9, subcategory: "warm", posId: "418", posName: "STM" },
     { id: "f7", name: "Camembert Rôti", shortName: "CAM", price: 17, subcategory: "warm", posId: "401", posName: "CAM" },
@@ -39,6 +41,7 @@ export const MENU = {
     { id: "f28", name: "Fondue Alkoholfrei", shortName: "Fondue Alkfrei", price: 28, subcategory: "warm", posId: "23", posName: "Fondue Alkfrei" },
     { id: "f30", name: "Tartine", shortName: "Tartine", price: 13.5, subcategory: "warm", posId: "26", posName: "Tartine" },
     { id: "f31", name: "Tartine + Schinken", shortName: "Tartine + Schinken", price: 15.5, subcategory: "warm", posId: "26-1", posName: "Tartine + Schinken" },
+    { id: "f33", name: "Chicorée Caramel", shortName: "CHIC", price: 15, subcategory: "warm", posId: "22", posName: "CHIC" },
     // Salads
     { id: "f13", name: "Seguin", shortName: "SEG", price: 12.5, subcategory: "salads", posId: "41", posName: "SEG" },
     { id: "f21", name: "Seguin + Speck", shortName: "SEG + Speck", price: 14.5, subcategory: "salads", posId: "1015", posName: "SEG + Speck" },
@@ -64,8 +67,8 @@ export const MENU = {
       shortName: "Sanc",
       subcategory: "white",
       variants: [
-        { type: "here", price: 38, label: "Here", posId: "3107", posName: "Sanc Fl." },
-        { type: "togo", price: 27.5, label: "To Go", posId: "3108", posName: "Sanc Fl. To Go" }
+        { type: "here", price: 38, label: "Here", posId: "255", posName: "Sanc Fl." },
+        { type: "togo", price: 27.5, label: "To Go", posId: "255", posName: "Sanc Fl. To Go" }
       ]
     },
     {
@@ -74,8 +77,8 @@ export const MENU = {
       shortName: "Chab",
       subcategory: "white",
       variants: [
-        { type: "here", price: 38, label: "Here", posId: "3109", posName: "Chab Fl." },
-        { type: "togo", price: 27.5, label: "To Go", posId: "3109", posName: "Chab Fl. To Go" }
+        { type: "here", price: 38, label: "Here", posId: "259", posName: "Chab Fl." },
+        { type: "togo", price: 27.5, label: "To Go", posId: "259", posName: "Chab Fl. To Go" }
       ]
     },
     {
@@ -84,8 +87,8 @@ export const MENU = {
       shortName: "Riesl",
       subcategory: "white",
       variants: [
-        { type: "here", price: 24.5, label: "Here", posId: "3110", posName: "Riesl Fl." },
-        { type: "togo", price: 13, label: "To Go", posId: "3111", posName: "Riesl Fl. To Go" }
+        { type: "here", price: 24.5, label: "Here", posId: "257", posName: "Riesl Fl." },
+        { type: "togo", price: 13, label: "To Go", posId: "257", posName: "Riesl Fl. To Go" }
       ]
     },
     {
@@ -94,8 +97,8 @@ export const MENU = {
       shortName: "EdM",
       subcategory: "white",
       variants: [
-        { type: "here", price: 23, label: "Here", posId: "3112", posName: "EdM Fl." },
-        { type: "togo", price: 12.5, label: "To Go", posId: "3113", posName: "EdM Fl. To Go" }
+        { type: "here", price: 23, label: "Here", posId: "252", posName: "EdM Fl." },
+        { type: "togo", price: 12.5, label: "To Go", posId: "252", posName: "EdM Fl. To Go" }
       ]
     },
     {
@@ -104,8 +107,8 @@ export const MENU = {
       shortName: "Zotz",
       subcategory: "white",
       variants: [
-        { type: "here", price: 25.5, label: "Here", posId: "3114", posName: "Zotz Fl." },
-        { type: "togo", price: 14, label: "To Go", posId: "3115", posName: "Zotz Fl. To Go" }
+        { type: "here", price: 25.5, label: "Here", posId: "260", posName: "Zotz Fl." },
+        { type: "togo", price: 14, label: "To Go", posId: "260", posName: "Zotz Fl. To Go" }
       ]
     },
     {
@@ -114,8 +117,8 @@ export const MENU = {
       shortName: "Roca",
       subcategory: "white",
       variants: [
-        { type: "here", price: 25.5, label: "Here", posId: "3116", posName: "Roca Fl." },
-        { type: "togo", price: 14, label: "To Go", posId: "3116", posName: "Roca Fl. To Go" }
+        { type: "here", price: 25.5, label: "Here", posId: "261", posName: "Roca Fl." },
+        { type: "togo", price: 14, label: "To Go", posId: "261", posName: "Roca Fl. To Go" }
       ]
     },
     {
@@ -135,8 +138,8 @@ export const MENU = {
       shortName: "AurBor",
       subcategory: "rosé",
       variants: [
-        { type: "here", price: 28, label: "Here", posId: "3203", posName: "AurBor Fl." },
-        { type: "togo", price: 17.5, label: "To Go", posId: "3204", posName: "AurBor Fl. To Go" }
+        { type: "here", price: 28, label: "Here", posId: "282", posName: "AurBor Fl." },
+        { type: "togo", price: 17.5, label: "To Go", posId: "282", posName: "AurBor Fl. To Go" }
       ]
     },
     {
@@ -145,8 +148,8 @@ export const MENU = {
       shortName: "PetNatR",
       subcategory: "rosé",
       variants: [
-        { type: "here", price: 33, label: "Here", posId: "3205", posName: "PetNatR Fl." },
-        { type: "togo", price: 20, label: "To Go", posId: "3206", posName: "PetNatR Fl. To Go" }
+        { type: "here", price: 33, label: "Here", posId: "199", posName: "PetNatR Fl." },
+        { type: "togo", price: 20, label: "To Go", posId: "199", posName: "PetNatR Fl. To Go" }
       ]
     },
     // Sparkling wines
@@ -156,8 +159,8 @@ export const MENU = {
       shortName: "Crem",
       subcategory: "sparkling",
       variants: [
-        { type: "here", price: 35, label: "Here", posId: "3303", posName: "Crem Fl." },
-        { type: "togo", price: 26.5, label: "To Go", posId: "3304", posName: "Crem Fl. To Go" }
+        { type: "here", price: 35, label: "Here", posId: "273", posName: "Crem Fl." },
+        { type: "togo", price: 26.5, label: "To Go", posId: "273", posName: "Crem Fl. To Go" }
       ]
     },
     {
@@ -166,8 +169,8 @@ export const MENU = {
       shortName: "Prosc",
       subcategory: "sparkling",
       variants: [
-        { type: "here", price: 23, label: "Here", posId: "3305", posName: "Prosc Fl." },
-        { type: "togo", price: 12.5, label: "To Go", posId: "3306", posName: "Prosc Fl. To Go" }
+        { type: "here", price: 23, label: "Here", posId: "272", posName: "Prosc Fl." },
+        { type: "togo", price: 12.5, label: "To Go", posId: "272", posName: "Prosc Fl. To Go" }
       ]
     },
     // Red wines
@@ -177,8 +180,8 @@ export const MENU = {
       shortName: "Grav",
       subcategory: "red",
       variants: [
-        { type: "here", price: 32, label: "Here", posId: "3407", posName: "Grav Fl." },
-        { type: "togo", price: 21.5, label: "To Go", posId: "3408", posName: "Grav Fl. To Go" }
+        { type: "here", price: 32, label: "Here", posId: "211", posName: "Grav Fl." },
+        { type: "togo", price: 21.5, label: "To Go", posId: "211", posName: "Grav Fl. To Go" }
       ]
     },
     {
@@ -187,8 +190,8 @@ export const MENU = {
       shortName: "Malb",
       subcategory: "red",
       variants: [
-        { type: "here", price: 29, label: "Here", posId: "3409", posName: "Malb Fl." },
-        { type: "togo", price: 18.5, label: "To Go", posId: "3410", posName: "Malb Fl. To Go" }
+        { type: "here", price: 29, label: "Here", posId: "206", posName: "Malb Fl." },
+        { type: "togo", price: 18.5, label: "To Go", posId: "206", posName: "Malb Fl. To Go" }
       ]
     },
     {
@@ -197,8 +200,8 @@ export const MENU = {
       shortName: "CrozHer",
       subcategory: "red",
       variants: [
-        { type: "here", price: 48, label: "Here", posId: "3411", posName: "CrozHer Fl." },
-        { type: "togo", price: 24.5, label: "To Go", posId: "3412", posName: "CrozHer Fl. To Go" }
+        { type: "here", price: 48, label: "Here", posId: "204", posName: "CrozHer Fl." },
+        { type: "togo", price: 24.5, label: "To Go", posId: "204", posName: "CrozHer Fl. To Go" }
       ]
     },
     {
@@ -207,8 +210,8 @@ export const MENU = {
       shortName: "DerRoth",
       subcategory: "red",
       variants: [
-        { type: "here", price: 26, label: "Here", posId: "3413", posName: "DerRoth Fl." },
-        { type: "togo", price: 15.5, label: "To Go", posId: "3414", posName: "DerRoth Fl. To Go" }
+        { type: "here", price: 26, label: "Here", posId: "212", posName: "DerRoth Fl." },
+        { type: "togo", price: 15.5, label: "To Go", posId: "212", posName: "DerRoth Fl. To Go" }
       ]
     },
     {
@@ -217,8 +220,8 @@ export const MENU = {
       shortName: "Primit",
       subcategory: "red",
       variants: [
-        { type: "here", price: 32, label: "Here", posId: "3415", posName: "Primit Fl." },
-        { type: "togo", price: 21.5, label: "To Go", posId: "3416", posName: "Primit Fl. To Go" }
+        { type: "here", price: 32, label: "Here", posId: "213", posName: "Primit Fl." },
+        { type: "togo", price: 21.5, label: "To Go", posId: "213", posName: "Primit Fl. To Go" }
       ]
     },
     // Natural & Other wines
@@ -228,8 +231,8 @@ export const MENU = {
       shortName: "PinGri",
       subcategory: "natural",
       variants: [
-        { type: "here", price: 30, label: "Here", posId: "3501", posName: "PinGri Fl." },
-        { type: "togo", price: 17, label: "To Go", posId: "3502", posName: "PinGri Fl. To Go" }
+        { type: "here", price: 30, label: "Here", posId: "248", posName: "PinGri Fl." },
+        { type: "togo", price: 17, label: "To Go", posId: "248", posName: "PinGri Fl. To Go" }
       ]
     },
     {
@@ -238,8 +241,8 @@ export const MENU = {
       shortName: "CavFaire",
       subcategory: "natural",
       variants: [
-        { type: "here", price: 30, label: "Here", posId: "3503", posName: "CavFaire Fl." },
-        { type: "togo", price: 17, label: "To Go", posId: "3504", posName: "CavFaire Fl. To Go" }
+        { type: "here", price: 30, label: "Here", posId: "192", posName: "CavFaire Fl." },
+        { type: "togo", price: 17, label: "To Go", posId: "192", posName: "CavFaire Fl. To Go" }
       ]
     },
     {
@@ -248,8 +251,8 @@ export const MENU = {
       shortName: "BonMin",
       subcategory: "natural",
       variants: [
-        { type: "here", price: 32, label: "Here", posId: "3505", posName: "BonMin Fl." },
-        { type: "togo", price: 17, label: "To Go", posId: "3506", posName: "BonMin Fl. To Go" }
+        { type: "here", price: 32, label: "Here", posId: "242", posName: "BonMin Fl." },
+        { type: "togo", price: 17, label: "To Go", posId: "242", posName: "BonMin Fl. To Go" }
       ]
     },
     {
@@ -258,8 +261,8 @@ export const MENU = {
       shortName: "Clair",
       subcategory: "natural",
       variants: [
-        { type: "here", price: 30, label: "Here", posId: "3509", posName: "Clair Fl." },
-        { type: "togo", price: 17, label: "To Go", posId: "3510", posName: "Clair Fl. To Go" }
+        { type: "here", price: 30, label: "Here", posId: "229", posName: "Clair Fl." },
+        { type: "togo", price: 17, label: "To Go", posId: "229", posName: "Clair Fl. To Go" }
       ]
     },
     {
@@ -268,8 +271,8 @@ export const MENU = {
       shortName: "Infra",
       subcategory: "natural",
       variants: [
-        { type: "here", price: 29, label: "Here", posId: "3511", posName: "Infra Fl." },
-        { type: "togo", price: 19, label: "To Go", posId: "3512", posName: "Infra Fl. To Go" }
+        { type: "here", price: 29, label: "Here", posId: "227", posName: "Infra Fl." },
+        { type: "togo", price: 19, label: "To Go", posId: "227", posName: "Infra Fl. To Go" }
       ]
     },
     {
@@ -278,8 +281,8 @@ export const MENU = {
       shortName: "Gren",
       subcategory: "natural",
       variants: [
-        { type: "here", price: 30, label: "Here", posId: "3513", posName: "Gren Fl." },
-        { type: "togo", price: 17, label: "To Go", posId: "3514", posName: "Gren Fl. To Go" }
+        { type: "here", price: 30, label: "Here", posId: "241", posName: "Gren Fl." },
+        { type: "togo", price: 17, label: "To Go", posId: "241", posName: "Gren Fl. To Go" }
       ]
     },
     {
@@ -288,8 +291,8 @@ export const MENU = {
       shortName: "TeteCla",
       subcategory: "natural",
       variants: [
-        { type: "here", price: 30, label: "Here", posId: "3515", posName: "TeteCla Fl." },
-        { type: "togo", price: 17, label: "To Go", posId: "3516", posName: "TeteCla Fl. To Go" }
+        { type: "here", price: 30, label: "Here", posId: "246", posName: "TeteCla Fl." },
+        { type: "togo", price: 17, label: "To Go", posId: "246", posName: "TeteCla Fl. To Go" }
       ]
     },
     {
@@ -298,8 +301,8 @@ export const MENU = {
       shortName: "DefRouge",
       subcategory: "natural",
       variants: [
-        { type: "here", price: 30, label: "Here", posId: "3517", posName: "DefRouge Fl." },
-        { type: "togo", price: 17, label: "To Go", posId: "3518", posName: "DefRouge Fl. To Go" }
+        { type: "here", price: 30, label: "Here", posId: "239", posName: "DefRouge Fl." },
+        { type: "togo", price: 17, label: "To Go", posId: "239", posName: "DefRouge Fl. To Go" }
       ]
     },
     {
@@ -308,8 +311,8 @@ export const MENU = {
       shortName: "YaPlusQ",
       subcategory: "natural",
       variants: [
-        { type: "here", price: 29, label: "Here", posId: "3519", posName: "YaPlusQ Fl." },
-        { type: "togo", price: 16, label: "To Go", posId: "3520", posName: "YaPlusQ Fl. To Go" }
+        { type: "here", price: 29, label: "Here", posId: "226", posName: "YaPlusQ Fl." },
+        { type: "togo", price: 16, label: "To Go", posId: "226", posName: "YaPlusQ Fl. To Go" }
       ]
     },
     {
@@ -318,8 +321,8 @@ export const MENU = {
       shortName: "DivRose",
       subcategory: "natural",
       variants: [
-        { type: "here", price: 25.5, label: "Here", posId: "3521", posName: "DivRose Fl." },
-        { type: "togo", price: 14, label: "To Go", posId: "3522", posName: "DivRose Fl. To Go" }
+        { type: "here", price: 25.5, label: "Here", posId: "151", posName: "DivRose Fl." },
+        { type: "togo", price: 14, label: "To Go", posId: "151", posName: "DivRose Fl. To Go" }
       ]
     },
     {
@@ -328,8 +331,8 @@ export const MENU = {
       shortName: "CremAls",
       subcategory: "natural",
       variants: [
-        { type: "here", price: 24, label: "Here", posId: "3523", posName: "CremAls Fl." },
-        { type: "togo", price: 21, label: "To Go", posId: "3524", posName: "CremAls Fl. To Go" }
+        { type: "here", price: 24, label: "Here", posId: "191", posName: "CremAls Fl." },
+        { type: "togo", price: 21, label: "To Go", posId: "191", posName: "CremAls Fl. To Go" }
       ]
     },
     {
@@ -338,8 +341,8 @@ export const MENU = {
       shortName: "ViNo",
       subcategory: "natural",
       variants: [
-        { type: "here", price: 25.5, label: "Here", posId: "3525", posName: "ViNo Fl." },
-        { type: "togo", price: 14, label: "To Go", posId: "3526", posName: "ViNo Fl. To Go" }
+        { type: "here", price: 25.5, label: "Here", posId: "153", posName: "ViNo Fl." },
+        { type: "togo", price: 14, label: "To Go", posId: "153", posName: "ViNo Fl. To Go" }
       ]
     },
     {
@@ -348,8 +351,8 @@ export const MENU = {
       shortName: "FritzM",
       subcategory: "natural",
       variants: [
-        { type: "here", price: 25.5, label: "Here", posId: "3527", posName: "FritzM Fl." },
-        { type: "togo", price: 14, label: "To Go", posId: "3528", posName: "FritzM Fl. To Go" }
+        { type: "here", price: 25.5, label: "Here", posId: "150", posName: "FritzM Fl." },
+        { type: "togo", price: 14, label: "To Go", posId: "150", posName: "FritzM Fl. To Go" }
       ]
     },
     {
@@ -358,8 +361,8 @@ export const MENU = {
       shortName: "DivPinNoir",
       subcategory: "natural",
       variants: [
-        { type: "here", price: 29, label: "Here", posId: "3529", posName: "DivPinNoir Fl." },
-        { type: "togo", price: 18.5, label: "To Go", posId: "3530", posName: "DivPinNoir Fl. To Go" }
+        { type: "here", price: 29, label: "Here", posId: "154", posName: "DivPinNoir Fl." },
+        { type: "togo", price: 18.5, label: "To Go", posId: "154", posName: "DivPinNoir Fl. To Go" }
       ]
     },
   ],
@@ -529,7 +532,7 @@ export const MENU = {
       id: "wg14",
       name: "Weißweinschorle",
       shortName: "WWS",
-      subcategory: "wine",
+      subcategory: "soft",
       variants: [
         { type: "small", price: 3, label: "0,1", posId: "69-1", posName: "WeinSch 0,1" },
         { type: "large", price: 6, label: "0,2", posId: "69-2", posName: "WeinSch 0,2" }
@@ -600,6 +603,8 @@ export const MENU = {
       shortName: "Sprudel Fl.",
       subcategory: "soft",
       price: 5.5,
+      posId: "52",
+      posName: "Wasser Sprudel Fl.",
       holdVariants: [
         { type: "small", price: 1.5, label: "0,2", posId: "50-1", posName: "WassSprud klein" },
         { type: "large", price: 2.8, label: "0,4", posId: "51-1", posName: "WassSprud groß" }
@@ -611,6 +616,8 @@ export const MENU = {
       shortName: "Wasser Fl.",
       subcategory: "soft",
       price: 5.5,
+      posId: "52",
+      posName: "Wasser Fl.",
       holdVariants: [
         { type: "small", price: 1.5, label: "0,2", posId: "50-2", posName: "Wass klein" },
         { type: "large", price: 2.8, label: "0,4", posId: "51-2", posName: "Wass groß" }
@@ -674,20 +681,71 @@ export const MENU = {
     { id: "te4", name: "Kräuter", shortName: "Kraut", price: 3, subcategory: "warm", posId: "93-4", posName: "Kraut" },
     { id: "te5", name: "Bergtee", shortName: "BergT", price: 3.7, subcategory: "warm", posId: "94-1", posName: "BergT" },
     { id: "te6", name: "Thymian", shortName: "Thym", price: 3.7, subcategory: "warm", posId: "94-2", posName: "Thym" },
-    { id: "te7", name: "Heiße Zitrone", shortName: "HeissZ", price: 3.7, subcategory: "warm", posId: "94-3", posName: "HeissZ" },
-    { id: "te8", name: "Heiße Orange", shortName: "Hot Orange", price: 5, subcategory: "warm", posId: "95", posName: "Hot Orange" },
+    { id: "te7", name: "Heiße Zitrone", shortName: "HeissZ", price: 3.7, subcategory: "warm", posId: "94-3", posName: "H. Zitrone" },
+    { id: "te8", name: "Heiße Orange", shortName: "Hot Orange", price: 5, subcategory: "warm", posId: "95", posName: "H. Orange" },
     // Coffee
-    { id: "co1", name: "Espresso", shortName: "Espr", price: 1.9, subcategory: "warm", posId: "91", posName: "Espr" },
-    { id: "co2", name: "Café Crème", shortName: "CafCr", price: 2.6, subcategory: "warm", posId: "90", posName: "CafCr" },
+    { id: "co1", name: "Espresso", shortName: "Espresso", price: 1.9, subcategory: "warm", posId: "91", posName: "Espr" },
+    { id: "co2", name: "Café Crème", shortName: "Café Crema", price: 2.6, subcategory: "warm", posId: "90", posName: "CafCr" },
   ],
   "Shop": [
-    { id: "sh1", name: "Rillettes Lachs", shortName: "Rill Lachs", price: 5.8, posId: "965", posName: "Rillettes Lachs / Thunfisch" },
-    { id: "sh2", name: "Rillettes Thunfisch", shortName: "Rill Thunfisch", price: 5.8, posId: "965", posName: "Rillettes Lachs / Thunfisch" },
-    { id: "sh3", name: "Cornichons Glass", shortName: "Corni Glass", price: 5.9, posId: "939", posName: "Cornichons Glass" },
-    { id: "sh4", name: "Biovette Meersalz", shortName: "Biovette", price: 4.8, posId: "973", posName: "Biovette Meersalz" },
-    { id: "sh5", name: "Sardines", shortName: "Sardines", price: 5.8, posId: "967", posName: "Sardines" },
-    { id: "sh6", name: "Makrele Sancerre", shortName: "Makrele", price: 6.7, posId: "968", posName: "Makrele Sancerre" },
-    { id: "sh7", name: "Terrine / Rillettes 100g", shortName: "Terrine 100g", price: 4.8 },
+    // Fish
+    { id: "sh1", name: "Rillettes Thunfisch", shortName: "Rill Thun", price: 5.8, subcategory: "fish", posId: "965", posName: "Rillettes Lachs/Thunfisch" },
+    { id: "sh2", name: "Rillettes Lachs", shortName: "Rill Lachs", price: 5.8, subcategory: "fish", posId: "965", posName: "Rillettes Lachs/Thunfisch" },
+    // Spreads
+    { id: "sh3", name: "Terrine 180g Schwein Speck", shortName: "Terr 180 Schw", price: 6.3, subcategory: "spreads", posId: "960", posName: "Terrine/Rillettes 180g" },
+    { id: "sh4", name: "Terrine 180g Fines", shortName: "Terr 180 Fines", price: 6.3, subcategory: "spreads", posId: "960", posName: "Terrine/Rillettes 180g" },
+    { id: "sh5", name: "Terrine 180g Lapin", shortName: "Terr 180 Lapin", price: 6.3, subcategory: "spreads", posId: "960", posName: "Terrine/Rillettes 180g" },
+    { id: "sh6", name: "Terrine 180g Canard", shortName: "Terr 180 Canard", price: 6.3, subcategory: "spreads", posId: "960", posName: "Terrine/Rillettes 180g" },
+    { id: "sh7", name: "Terrine 100g Canard", shortName: "Terr 100 Canard", price: 4.8, subcategory: "spreads", posId: "961", posName: "Terrine/Rillettes 100g" },
+    { id: "sh8", name: "Terrine 100g Oie", shortName: "Terr 100 Oie", price: 4.8, subcategory: "spreads", posId: "961", posName: "Terrine/Rillettes 100g" },
+    { id: "sh9", name: "Terrine 100g Riesling", shortName: "Terr 100 Riesl", price: 4.8, subcategory: "spreads", posId: "961", posName: "Terrine/Rillettes 100g" },
+    { id: "sh10", name: "Makrele Sancerre", shortName: "Makrele", price: 6.7, subcategory: "fish", posId: "968", posName: "Makrele Sancerre" },
+    { id: "sh11", name: "Sardinen Zitrone", shortName: "Sard Zitrone", price: 5.8, subcategory: "fish", posId: "967", posName: "Sardinen" },
+    { id: "sh12", name: "Sardinen Olivenöl", shortName: "Sard Olivenöl", price: 5.8, subcategory: "fish", posId: "967", posName: "Sardinen" },
+    { id: "sh13", name: "Sardinen Moutarde", shortName: "Sard Moutarde", price: 5.8, subcategory: "fish", posId: "967", posName: "Sardinen" },
+    { id: "sh14", name: "Sardinen Echalotes", shortName: "Sard Echalot", price: 5.8, subcategory: "fish", posId: "967", posName: "Sardinen" },
+    { id: "sh15", name: "Sardinen Olivenöl u. Zitrone", shortName: "Sard Öl+Zitr", price: 5.8, subcategory: "fish", posId: "967", posName: "Sardinen" },
+    { id: "sh16", name: "Antipasti Zwei Tomaten", shortName: "Anti 2Tom", price: 4.9, subcategory: "spreads", posId: "948", posName: "Antipasti Creme" },
+    { id: "sh17", name: "Antipasti Aubergine", shortName: "Anti Auberg", price: 4.9, subcategory: "spreads", posId: "948", posName: "Antipasti Creme" },
+    { id: "sh18", name: "Antipasti Tomate Basilikum", shortName: "Anti Tom Bas", price: 4.9, subcategory: "spreads", posId: "948", posName: "Antipasti Creme" },
+    { id: "sh19", name: "Kalamon Olivenpaste", shortName: "Oliv Paste", price: 6.75, subcategory: "spreads", posId: "903", posName: "Kalamon Olivenpaste" },
+    { id: "sh20", name: "Konfiture Lavendel", shortName: "Konf Lavend", price: 4, subcategory: "spreads", posId: "941", posName: "Konfiture Lavendel" },
+    { id: "sh21", name: "Fleur Orange", shortName: "Fleur Ora", price: 6.9, subcategory: "spreads", posId: "942", posName: "Fleur Orange" },
+    { id: "sh22", name: "Confit Feige Walnuss", shortName: "Conf Feige", price: 4.9, subcategory: "spreads", posId: "940", posName: "Confit" },
+    { id: "sh23", name: "Confit Apfel Calva", shortName: "Conf Apfel", price: 4.9, subcategory: "spreads", posId: "940", posName: "Confit" },
+    { id: "sh24", name: "Confit Birne Wein", shortName: "Conf Birne", price: 4.9, subcategory: "spreads", posId: "940", posName: "Confit" },
+    { id: "sh25", name: "Confit Aprikose Thym", shortName: "Conf Aprik", price: 4.9, subcategory: "spreads", posId: "940", posName: "Confit" },
+    { id: "sh26", name: "Confit Mango Pfeffer", shortName: "Conf Mango", price: 4.9, subcategory: "spreads", posId: "940", posName: "Confit" },
+    { id: "sh27", name: "Confit Zwiebel", shortName: "Conf Zwiebel", price: 4.9, subcategory: "spreads", posId: "940", posName: "Confit" },
+    { id: "sh28", name: "Wildblumen Pinien Honig", shortName: "Honig Pinien", price: 6.5, subcategory: "spreads", posId: "910", posName: "Wildblumen Pinien Honig" },
+    { id: "sh29", name: "Wildblumen Thymian Honig", shortName: "Honig Thym", price: 8, subcategory: "spreads", posId: "911", posName: "Wildblumen Thymian Honig" },
+    // Biscuits
+    { id: "sh30", name: "SandButterkekse", shortName: "SandButt", price: 3.5, subcategory: "biscuits", posId: "988", posName: "SandButterkekse" },
+    { id: "sh31", name: "Waffelrölchen", shortName: "Waffel", price: 4.2, subcategory: "biscuits", posId: "987", posName: "Waffelrölchen" },
+    { id: "sh32", name: "Zarbitterschokolade Kekse", shortName: "Zarbit Keks", price: 3.8, subcategory: "biscuits", posId: "996", posName: "Zarbitterschokolade Kekse" },
+    { id: "sh33", name: "Vollmilch Schoko", shortName: "Vollm Schoko", price: 3.8, subcategory: "biscuits", posId: "993", posName: "Vollmilch Schoko" },
+    { id: "sh34", name: "Schokostückchen", shortName: "Schoko Stück", price: 3.8, subcategory: "biscuits", posId: "990", posName: "Schokostückchen" },
+    { id: "sh35", name: "Calisson", shortName: "Calisson", price: 1, subcategory: "biscuits", posId: "980", posName: "Calisson" },
+    { id: "sh36", name: "Schokotruffel Snack", shortName: "Schoko Truff", price: 2.5, subcategory: "biscuits", posId: "981", posName: "Schokotruffel Snack" },
+    { id: "sh37", name: "Trüffel Pops 100g", shortName: "Trüff Pops", price: 5, subcategory: "biscuits", posId: "985", posName: "Trüffel Pops 100g" },
+    { id: "sh38", name: "Natürtruffel", shortName: "Natürtruff", price: 5.8, subcategory: "biscuits", posId: "983", posName: "Natürtruffel" },
+    { id: "sh39", name: "Mandelgebäch mit Feige Toast", shortName: "Mandel Feige", price: 4.9, subcategory: "biscuits", posId: "971", posName: "Mandelgebäch mit Feige Toast" },
+    { id: "sh40", name: "Linguettes Olivenöl", shortName: "Ling Olivenöl", price: 6.8, subcategory: "biscuits", posId: "976", posName: "Linguettes" },
+    { id: "sh41", name: "Linguettes Rosmarin", shortName: "Ling Rosmarin", price: 6.8, subcategory: "biscuits", posId: "976", posName: "Linguettes" },
+    { id: "sh42", name: "Cracker", shortName: "Cracker", price: 4.9, subcategory: "biscuits", posId: "975", posName: "Cracker" },
+    { id: "sh43", name: "Biovette", shortName: "Biovette", price: 4.8, subcategory: "biscuits", posId: "973", posName: "Biovette" },
+    { id: "sh44", name: "Megakitiki Oliven", shortName: "Megakit Oliv", price: 6.5, subcategory: "biscuits", posId: "901", posName: "Megakitiki Oliven" },
+    // Bottles
+    { id: "sh45", name: "Olivenöl 0,25l", shortName: "Olivenöl 0.25", price: 9, subcategory: "bottles", posId: "905", posName: "Olivenöl 0,25l" },
+    { id: "sh46", name: "Olivenöl 0,5l", shortName: "Olivenöl 0.5", price: 15, subcategory: "bottles", posId: "906", posName: "Olivenöl 0,5l" },
+    { id: "sh47", name: "Olivenöl 1l", shortName: "Olivenöl 1l", price: 26, subcategory: "bottles", posId: "907", posName: "Olivenöl 1l" },
+    { id: "sh48", name: "100pct. Bergtee", shortName: "Bergtee", price: 5, subcategory: "bottles", posId: "928", posName: "100pct. Bergtee" },
+    { id: "sh49", name: "Calvados Fl", shortName: "Calva Fl", price: 22, subcategory: "bottles", posId: "102", posName: "Calvados Fl" },
+    { id: "sh50", name: "Creme Calva Fl", shortName: "Creme Calva Fl", price: 26, subcategory: "bottles", posId: "103", posName: "Creme Calva Fl" },
+    { id: "sh51", name: "Mirabelle 0,375l", shortName: "Mirab 0.375", price: 13, subcategory: "bottles", posId: "104", posName: "Mirabelle 0,375l" },
+    { id: "sh52", name: "Mirabelle 0,5l", shortName: "Mirab 0.5", price: 15, subcategory: "bottles", posId: "105", posName: "Mirabelle 0,5l" },
+    { id: "sh53", name: "Picon Fl", shortName: "Picon Fl", price: 28, subcategory: "bottles", posId: "101", posName: "Picon Fl" },
+    { id: "sh54", name: "Winterlimo Fl 1l", shortName: "Winterlimo", price: 7.9, subcategory: "bottles", posId: "60", posName: "Winterlimo Fl 1l" },
   ],
 };
 
@@ -716,6 +774,13 @@ export const DRINKS_SUBCATEGORIES = [
 export const BOTTLES_SUBCATEGORIES = [
   { id: "glass", label: "By the glass" },
   { id: "bottle", label: "Bottle only" },
+];
+
+export const SHOP_SUBCATEGORIES = [
+  { id: "fish", label: "🐟 Fish" },
+  { id: "spreads", label: "🍯 Spreads" },
+  { id: "biscuits", label: "🍪 Biscuits" },
+  { id: "bottles", label: "🍾 Bottles" },
 ];
 
 // Items that must always be ordered in multiples of 2 (minimum 2 per order)

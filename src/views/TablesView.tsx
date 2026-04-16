@@ -83,27 +83,31 @@ export function TablesView() {
   return (
     <div style={S.page}>
       <header style={S.header}>
-        <span style={S.headerTitle}>Floor</span>
-        <span style={S.headerSub}>
+        <span style={{ fontWeight: 700, fontSize: 18, letterSpacing: "-0.3px" }}>
           {new Date().toLocaleDateString("en-GB", {
             weekday: "short",
             day: "numeric",
             month: "short",
           })}
         </span>
+        <button
+          style={{
+            background: "none",
+            border: "1.5px solid #ddd",
+            borderRadius: 8,
+            fontSize: 20,
+            cursor: "pointer",
+            padding: "6px 10px",
+            lineHeight: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center"
+          }}
+          onClick={() => setView("dailySales")}
+        >
+          📊
+        </button>
       </header>
-      <div style={S.legend}>
-        {Object.entries(STATUS_CONFIG).map(([k, v]) => (
-          <span key={k} style={S.legendItem}>
-            <span style={{ ...S.dot, background: v.dot }} />
-            {v.label}
-          </span>
-        ))}
-      </div>
-      <button style={S.salesBtn} onClick={() => setView("dailySales")}>
-        <span style={S.salesIcon}>📊</span>
-        Daily Sales
-      </button>
       <div style={{ ...S.grid, paddingBottom: swapSourceTable !== null ? 160 : 16 }}>
         {TABLES.map((t: any) => {
           if (t.isDivider) {
