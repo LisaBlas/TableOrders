@@ -45,7 +45,7 @@ export const MENU = {
     // Salads
     { id: "f17", name: "Basic", shortName: "BASIS", price: 7, subcategory: "salads", posId: "40" },
     { id: "f13", name: "Seguin", shortName: "SEG", price: 12.5, subcategory: "salads", posId: "41" },
-    { id: "f21", name: "Seguin + Speck", shortName: "SEG + Speck", price: 14.5, subcategory: "salads", posId: "1015" },
+    { id: "f21", name: "Seguin + Speck", shortName: "SEG + Speck", price: 14.5, subcategory: "salads", posId: "41-1" },
     { id: "f14", name: "Papillon", shortName: "PAP", price: 13.5, subcategory: "salads", posId: "43" },
     { id: "f22", name: "Papillon + Serrano", shortName: "PAP + Serrano", price: 15.5, subcategory: "salads", posId: "43-1" },
     { id: "f15", name: "Bauern", shortName: "BAU", price: 12.5, subcategory: "salads", posId: "44" },
