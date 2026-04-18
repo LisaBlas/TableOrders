@@ -57,7 +57,10 @@ export const MENU = {
     { id: "f27", name: "Tarte Tatin + Calvados", shortName: "TT + Calva", price: 10, subcategory: "snacks", posId: "30-1" },
     { id: "f19", name: "Olives", shortName: "OLV", price: 3, subcategory: "snacks", posId: "9" },
     { id: "f20", name: "Olives + Grissini", shortName: "OLV + Grissini", price: 5.5, subcategory: "snacks", posId: "9-1" },
-    { id: "f26", name: "Cornichons", shortName: "Cornichons", price: 2.5, subcategory: "snacks", posId: "20" },
+    // Extras
+    { id: "f26", name: "Cornichons", shortName: "Cornichons", price: 2.5, subcategory: "extras", posId: "20" },
+    { id: "f34", name: "Bratkartoffeln", shortName: "Bratkart", price: 4, subcategory: "extras", posId: "20" },
+    { id: "f35", name: "Salzkartoffeln", shortName: "Salzkart", price: 3, subcategory: "extras", posId: "20" },
   ],
   "Wines": [
     // White wines - Full variant structure for CMS flexibility
@@ -537,6 +540,16 @@ export const MENU = {
         { type: "togo", price: 17, label: "Fl. To Go", posId: "280", posName: "CuvGal Fl. To Go", bottleSubcategory: "natural" }
       ]
     },
+    {
+      id: "wg15",
+      name: "Vino Verde",
+      shortName: "VinVerd",
+      subcategory: "wine",
+      variants: [
+        { type: "small", price: 3.5, label: "0,1", posId: "253-1", posName: "VinVerd 0,1" },
+        { type: "large", price: 7, label: "0,2", posId: "253-2", posName: "VinVerd 0,2" },
+      ]
+    },
     // Weinschorle WITH SIZE VARIANTS
     {
       id: "wg14",
@@ -769,6 +782,7 @@ export const FOOD_SUBCATEGORIES = [
   { id: "cheese", label: "🧀 Cheese Counter" },
   { id: "salads", label: "🥗 Salads" },
   { id: "warm", label: "🍽️ Warm Dishes" },
+  { id: "extras", label: "🥔 Extras" },
   { id: "snacks", label: "🫒 Snacks" },
 ];
 
