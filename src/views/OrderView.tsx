@@ -39,8 +39,8 @@ export function OrderView() {
   const [noteSheetItem, setNoteSheetItem] = useState<MenuItem | null>(null);
   const [noteText, setNoteText] = useState("");
 
-  // Computed: show bill view if user explicitly chose it, or auto-show if sent items exist
-  const showBillView = userViewPreference === 'bill' || (userViewPreference === null && sent.length > 0);
+  // Only show bill view if user explicitly chose it (don't auto-switch)
+  const showBillView = userViewPreference === 'bill';
 
   // Clear subcategories when searching
   if (searchQuery) {
@@ -307,6 +307,7 @@ export function OrderView() {
           expanded={orderBarExpanded}
           onToggleExpand={() => setOrderBarExpanded(!orderBarExpanded)}
           onAddItem={handleAddItem}
+          onSendOrder={() => setOrderBarExpanded(true)}
         />
       )}
 

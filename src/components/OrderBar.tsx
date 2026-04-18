@@ -11,9 +11,10 @@ interface OrderBarProps {
   expanded: boolean;
   onToggleExpand: () => void;
   onAddItem: (item: any, variant: any) => void;
+  onSendOrder?: () => void;
 }
 
-export function OrderBar({ tableId, unsent, batches, expanded, onToggleExpand, onAddItem }: OrderBarProps) {
+export function OrderBar({ tableId, unsent, batches, expanded, onToggleExpand, onAddItem, onSendOrder }: OrderBarProps) {
   const table = useTable();
   const sentMode = unsent.length === 0;
 
@@ -60,7 +61,18 @@ export function OrderBar({ tableId, unsent, batches, expanded, onToggleExpand, o
                     </span>
                     <button style={{ ...S.markBtn, borderColor: accentColor }} onClick={() => {
                       table.toggleMarkBatch(tableId, actualBatchIdx);
-                      onToggleExpand();
+                      // Only close slider if marking the last unmarked batch
+                      const willBeMarked = !isMarked;
+                      if (willBeMarked) {
+                        // Check if all other batches are already marked
+                        const allOthersMarked = batches.every((_, i) =>
+                          i === actualBatchIdx || table.markedBatches[tableId]?.has(i)
+                        );
+                        if (allOthersMarked) {
+                          onToggleExpand(); // Close only if this was the last one
+                        }
+                      }
+                      // If unmarking, keep slider open
                     }}>
                       {isMarked ? "Unmark" : "Mark"}
                     </button>
@@ -148,7 +160,10 @@ export function OrderBar({ tableId, unsent, batches, expanded, onToggleExpand, o
               </div>
             ))}
           </div>
-          <button style={S.sendBtn} onClick={() => table.sendOrder(tableId)}>
+          <button style={S.sendBtn} onClick={() => {
+            table.sendOrder(tableId);
+            onSendOrder?.();
+          }}>
             Confirm
           </button>
         </>

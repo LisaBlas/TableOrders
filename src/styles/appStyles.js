@@ -304,7 +304,7 @@ export const S = {
     flexDirection: "column",
     gap: 10,
     zIndex: 100,
-    maxHeight: "50vh",
+    maxHeight: "75vh",
     overflowY: "auto"
   },
   orderBarHandle: {
@@ -333,7 +333,7 @@ export const S = {
     display: "flex",
     flexDirection: "column",
     gap: 8,
-    maxHeight: "200px",
+    maxHeight: "400px",
     overflowY: "auto",
     marginBottom: 4
   },
