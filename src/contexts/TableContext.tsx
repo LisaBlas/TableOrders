@@ -70,9 +70,7 @@ export function TableProvider({ children }: { children: ReactNode }) {
       ? {
           id: `${item.id}-${variant.type}`,
           name: `${item.name} (${variant.label})`,
-          shortName: variant.shortName
-            ? `${item.shortName || item.name} (${variant.label})`
-            : item.shortName,
+          shortName: variant.shortName || item.shortName,
           price: variant.price,
           baseId: item.id,
           variantType: variant.type,

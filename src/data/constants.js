@@ -224,6 +224,16 @@ export const MENU = {
         { type: "togo", price: 21.5, label: "Fl. To Go", posId: "213", posName: "Primit Fl. To Go" }
       ]
     },
+    {
+      id: "st_emilion_bottle",
+      name: "St. Emilion Fl.",
+      shortName: "StEmilion",
+      subcategory: "red",
+      variants: [
+        { type: "here", price: 29, label: "Here", posId: "209", posName: "StEmi Fl." },
+        { type: "togo", price: 18.5, label: "Fl. To Go", posId: "209", posName: "StEmi Fl. To Go" }
+      ]
+    },
     // Natural wines
     {
       id: "pinot_grisant_bottle",
@@ -600,20 +610,20 @@ export const MENU = {
     {
       id: "wasser_sprudel_bottle",
       name: "Wasser Sprudel Fl.",
-      shortName: "Sprudel Fl.",
+      shortName: "Sprud Wasser",
       subcategory: "soft",
       price: 5.5,
       posId: "52",
-      posName: "Wasser Sprudel Fl.",
+      posName: "Sprudel Fl.",
       holdVariants: [
-        { type: "small", price: 1.5, label: "0,2", posId: "50-1", posName: "WassSprud klein" },
-        { type: "large", price: 2.8, label: "0,4", posId: "51-1", posName: "WassSprud groß" }
+        { type: "small", price: 1.5, label: "0,2", posId: "50-1", posName: "Sprudel klein" },
+        { type: "large", price: 2.8, label: "0,4", posId: "51-1", posName: "Sprudel groß" }
       ]
     },
     {
       id: "wasser_bottle",
-      name: "Wasser Fl.",
-      shortName: "Wasser Fl.",
+      name: "Mineralwasser Fl.",
+      shortName: "M. Wasser",
       subcategory: "soft",
       price: 5.5,
       posId: "52",
@@ -720,22 +730,24 @@ export const MENU = {
     { id: "sh27", name: "Confit Zwiebel", shortName: "Conf Zwiebel", price: 4.9, subcategory: "spreads", posId: "940", posName: "Confit" },
     { id: "sh28", name: "Wildblumen Pinien Honig", shortName: "Honig Pinien", price: 6.5, subcategory: "spreads", posId: "910", posName: "Wildblumen Pinien Honig" },
     { id: "sh29", name: "Wildblumen Thymian Honig", shortName: "Honig Thym", price: 8, subcategory: "spreads", posId: "911", posName: "Wildblumen Thymian Honig" },
-    // Biscuits
-    { id: "sh30", name: "SandButterkekse", shortName: "SandButt", price: 3.5, subcategory: "biscuits", posId: "988", posName: "SandButterkekse" },
-    { id: "sh31", name: "Waffelrölchen", shortName: "Waffel", price: 4.2, subcategory: "biscuits", posId: "987", posName: "Waffelrölchen" },
-    { id: "sh32", name: "Zarbitterschokolade Kekse", shortName: "Zarbit Keks", price: 3.8, subcategory: "biscuits", posId: "996", posName: "Zarbitterschokolade Kekse" },
-    { id: "sh33", name: "Vollmilch Schoko", shortName: "Vollm Schoko", price: 3.8, subcategory: "biscuits", posId: "993", posName: "Vollmilch Schoko" },
-    { id: "sh34", name: "Schokostückchen", shortName: "Schoko Stück", price: 3.8, subcategory: "biscuits", posId: "990", posName: "Schokostückchen" },
-    { id: "sh35", name: "Calisson", shortName: "Calisson", price: 1, subcategory: "biscuits", posId: "980", posName: "Calisson" },
-    { id: "sh36", name: "Schokotruffel Snack", shortName: "Schoko Truff", price: 2.5, subcategory: "biscuits", posId: "981", posName: "Schokotruffel Snack" },
-    { id: "sh37", name: "Trüffel Pops 100g", shortName: "Trüff Pops", price: 5, subcategory: "biscuits", posId: "985", posName: "Trüffel Pops 100g" },
-    { id: "sh38", name: "Natürtruffel", shortName: "Natürtruff", price: 5.8, subcategory: "biscuits", posId: "983", posName: "Natürtruffel" },
-    { id: "sh39", name: "Mandelgebäch mit Feige Toast", shortName: "Mandel Feige", price: 4.9, subcategory: "biscuits", posId: "971", posName: "Mandelgebäch mit Feige Toast" },
-    { id: "sh40", name: "Linguettes Olivenöl", shortName: "Ling Olivenöl", price: 6.8, subcategory: "biscuits", posId: "976", posName: "Linguettes" },
-    { id: "sh41", name: "Linguettes Rosmarin", shortName: "Ling Rosmarin", price: 6.8, subcategory: "biscuits", posId: "976", posName: "Linguettes" },
-    { id: "sh42", name: "Cracker", shortName: "Cracker", price: 4.9, subcategory: "biscuits", posId: "975", posName: "Cracker" },
-    { id: "sh43", name: "Biovette", shortName: "Biovette", price: 4.8, subcategory: "biscuits", posId: "973", posName: "Biovette" },
-    { id: "sh44", name: "Megakitiki Oliven", shortName: "Megakit Oliv", price: 6.5, subcategory: "biscuits", posId: "901", posName: "Megakitiki Oliven" },
+    // Snacks
+    { id: "sh30", name: "SandButterkekse", shortName: "SandButt", price: 3.5, subcategory: "snacks", posId: "988", posName: "SandButterkekse" },
+    { id: "sh31", name: "Waffelrölchen", shortName: "Waffel", price: 4.2, subcategory: "snacks", posId: "987", posName: "Waffelrölchen" },
+    { id: "sh32", name: "Zarbitterschokolade Kekse", shortName: "Zarbit Keks", price: 3.8, subcategory: "snacks", posId: "996", posName: "Zarbitterschokolade Kekse" },
+    { id: "sh33", name: "Vollmilch Schoko", shortName: "Vollm Schoko", price: 3.8, subcategory: "snacks", posId: "993", posName: "Vollmilch Schoko" },
+    { id: "sh34", name: "Schokostückchen", shortName: "Schoko Stück", price: 3.8, subcategory: "snacks", posId: "990", posName: "Schokostückchen" },
+    { id: "sh35", name: "Calisson", shortName: "Calisson", price: 1, subcategory: "snacks", posId: "980", posName: "Calisson" },
+    { id: "sh36", name: "Schokotruffel Snack", shortName: "Schoko Truff", price: 2.5, subcategory: "snacks", posId: "981", posName: "Schokotruffel Snack" },
+    { id: "sh37", name: "Trüffel Pops 100g", shortName: "Trüff Pops", price: 5, subcategory: "snacks", posId: "985", posName: "Trüffel Pops 100g" },
+    { id: "sh38", name: "Natürtruffel", shortName: "Natürtruff", price: 5.8, subcategory: "snacks", posId: "983", posName: "Natürtruffel" },
+    { id: "sh39", name: "Mandelgebäch mit Feige Toast", shortName: "Mandel Feige", price: 4.9, subcategory: "snacks", posId: "971", posName: "Mandelgebäch mit Feige Toast" },
+    { id: "sh40", name: "Linguettes Olivenöl", shortName: "Ling Olivenöl", price: 6.8, subcategory: "snacks", posId: "976", posName: "Linguettes" },
+    { id: "sh41", name: "Linguettes Rosmarin", shortName: "Ling Rosmarin", price: 6.8, subcategory: "snacks", posId: "976", posName: "Linguettes" },
+    { id: "sh42", name: "Cracker", shortName: "Cracker", price: 4.9, subcategory: "snacks", posId: "975", posName: "Cracker" },
+    { id: "sh43", name: "Biovette", shortName: "Biovette", price: 4.8, subcategory: "snacks", posId: "973", posName: "Biovette" },
+    { id: "sh44", name: "Megakitiki Oliven", shortName: "Megakit Oliv", price: 6.5, subcategory: "snacks", posId: "901", posName: "Megakitiki Oliven" },
+    { id: "sh55", name: "Chips Bonilla", shortName: "Chips Bon.", price: 2.3, subcategory: "snacks", posId: "978", posName: "Chips Bonilla" },
+    { id: "sh56", name: "Feigenbrot Mandeln", shortName: "FeigenBrot Mand.", price: 6.5, subcategory: "snacks", posId: "952", posName: "Feigenbrot Mandeln" },
     // Bottles
     { id: "sh45", name: "Olivenöl 0,25l", shortName: "Olivenöl 0.25", price: 9, subcategory: "bottles", posId: "905", posName: "Olivenöl 0,25l" },
     { id: "sh46", name: "Olivenöl 0,5l", shortName: "Olivenöl 0.5", price: 15, subcategory: "bottles", posId: "906", posName: "Olivenöl 0,5l" },
@@ -780,7 +792,7 @@ export const BOTTLES_SUBCATEGORIES = [
 export const SHOP_SUBCATEGORIES = [
   { id: "fish", label: "🐟 Fish" },
   { id: "spreads", label: "🍯 Spreads" },
-  { id: "biscuits", label: "🍪 Biscuits" },
+  { id: "snacks", label: "🍪 Snacks" },
   { id: "bottles", label: "🍾 Bottles" },
 ];
 

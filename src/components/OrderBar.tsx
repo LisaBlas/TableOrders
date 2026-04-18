@@ -72,7 +72,7 @@ export function OrderBar({ tableId, unsent, batches, expanded, onToggleExpand, o
                       {batchByDest.bar.map((o) => (
                         <div key={o.id} style={S.sentItem}>
                           <span>
-                            {o.qty}× {o.shortName || o.name}
+                            {o.qty}× {(o as any).posName || o.name}
                             {o.note && <span style={{ fontSize: 11, color: "#888", fontStyle: "italic", marginLeft: 4 }}>({o.note})</span>}
                           </span>
                           <span style={S.sentPrice}>{(o.price * o.qty).toFixed(2)}€</span>
@@ -86,7 +86,7 @@ export function OrderBar({ tableId, unsent, batches, expanded, onToggleExpand, o
                       {batchByDest.counter.map((o) => (
                         <div key={o.id} style={S.sentItem}>
                           <span>
-                            {o.qty}× {o.shortName || o.name}
+                            {o.qty}× {(o as any).posName || o.name}
                             {o.note && <span style={{ fontSize: 11, color: "#888", fontStyle: "italic", marginLeft: 4 }}>({o.note})</span>}
                           </span>
                           <span style={S.sentPrice}>{(o.price * o.qty).toFixed(2)}€</span>
@@ -100,7 +100,7 @@ export function OrderBar({ tableId, unsent, batches, expanded, onToggleExpand, o
                       {batchByDest.kitchen.map((o) => (
                         <div key={o.id} style={S.sentItem}>
                           <span>
-                            {o.qty}× {o.shortName || o.name}
+                            {o.qty}× {(o as any).posName || o.name}
                             {o.note && <span style={{ fontSize: 11, color: "#888", fontStyle: "italic", marginLeft: 4 }}>({o.note})</span>}
                           </span>
                           <span style={S.sentPrice}>{(o.price * o.qty).toFixed(2)}€</span>
@@ -120,7 +120,7 @@ export function OrderBar({ tableId, unsent, batches, expanded, onToggleExpand, o
               <div key={o.id} style={S.orderBarItemWrapper}>
                 <div style={S.orderBarItem}>
                   <div style={S.orderBarItemInfo}>
-                    <div style={S.orderBarItemName}>{o.shortName || o.name}</div>
+                    <div style={S.orderBarItemName}>{(o as any).posName || o.name}</div>
                     {o.note && (
                       <div style={{ fontSize: 11, color: "#888", fontStyle: "italic", marginTop: 1 }}>
                         {o.note}
