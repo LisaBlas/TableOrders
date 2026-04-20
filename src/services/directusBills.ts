@@ -43,15 +43,14 @@ function billFromDirectus(d: any): Bill {
 // Fetch today's active (non-cleared) bills with their items
 export async function fetchTodayBills(): Promise<Bill[]> {
   const { gte, lte } = todayBounds();
-  const params = new URLSearchParams({
-    "filter[timestamp][_gte]": gte,
-    "filter[timestamp][_lte]": lte,
-    "filter[cleared_at][_null]": "true",
-    "fields": "*,items.*",
-    "sort": "timestamp",
-    "limit": "-1",
-  });
-  const res = await fetch(`${DIRECTUS_URL}/items/bills?${params}`);
+  const url = `${DIRECTUS_URL}/items/bills`
+    + `?filter[timestamp][_gte]=${gte}`
+    + `&filter[timestamp][_lte]=${lte}`
+    + `&filter[cleared_at][_null]=true`
+    + `&fields=*,items.*`
+    + `&sort=timestamp`
+    + `&limit=-1`;
+  const res = await fetch(url);
   if (!res.ok) throw new Error(`Directus ${res.status}`);
   const { data } = await res.json();
   return data.map(billFromDirectus);
@@ -133,14 +132,13 @@ export async function patchBillItem(directusId: string, data: object): Promise<v
 // Soft-delete: set cleared_at on all today's non-cleared bills
 export async function clearTodayBillsInDirectus(): Promise<void> {
   const { gte, lte } = todayBounds();
-  const params = new URLSearchParams({
-    "filter[timestamp][_gte]": gte,
-    "filter[timestamp][_lte]": lte,
-    "filter[cleared_at][_null]": "true",
-    "fields": "id",
-    "limit": "-1",
-  });
-  const res = await fetch(`${DIRECTUS_URL}/items/bills?${params}`);
+  const url = `${DIRECTUS_URL}/items/bills`
+    + `?filter[timestamp][_gte]=${gte}`
+    + `&filter[timestamp][_lte]=${lte}`
+    + `&filter[cleared_at][_null]=true`
+    + `&fields=id`
+    + `&limit=-1`;
+  const res = await fetch(url);
   if (!res.ok) throw new Error(`Fetch for clear failed: ${res.status}`);
   const { data } = await res.json();
   if (data.length === 0) return;
