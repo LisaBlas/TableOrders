@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MenuProvider, useMenu } from "./contexts/MenuContext";
 import { AppProvider, useApp } from "./contexts/AppContext";
 import { TableProvider } from "./contexts/TableContext";
@@ -79,8 +80,11 @@ function SplitRouter() {
   return <SplitItemView />;
 }
 
+const queryClient = new QueryClient();
+
 export default function App() {
   return (
+    <QueryClientProvider client={queryClient}>
     <ErrorBoundary>
       <MenuProvider>
         <AppProvider>
@@ -92,5 +96,6 @@ export default function App() {
         </AppProvider>
       </MenuProvider>
     </ErrorBoundary>
+    </QueryClientProvider>
   );
 }

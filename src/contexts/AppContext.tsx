@@ -1,7 +1,12 @@
-import { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { migratePaidBills } from "../utils/migration";
 import { fetchTodayBills, saveTodayBills } from "../services/directusBills";
 import type { View, Bill, DailySalesTab, TableId } from "../types";
+
+function todayKey() {
+  return new Date().toISOString().slice(0, 10);
+}
 
 interface AppContextValue {
   // Navigation
@@ -35,45 +40,36 @@ interface AppContextValue {
 const AppContext = createContext<AppContextValue | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient();
   const [view, setView] = useState<View>("tables");
   const [activeTable, setActiveTable] = useState<TableId | null>(null);
   const [ticketTable, setTicketTable] = useState<TableId | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  const [rawPaidBills, setRawPaidBills] = useState<Bill[]>([]);
-  const [billsLoaded, setBillsLoaded] = useState(false);
-  const syncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [dailySalesTab, setDailySalesTab] = useState<DailySalesTab>("chronological");
   const [editingBillIndex, setEditingBillIndex] = useState<number | null>(null);
   const [billSnapshot, setBillSnapshot] = useState<Bill | null>(null);
   const [deletingBillIndex, setDeletingBillIndex] = useState<number | null>(null);
 
-  // On mount: load today's bills from Directus, fall back to localStorage
-  useEffect(() => {
-    fetchTodayBills()
-      .then((bills) => {
-        if (bills !== null) setRawPaidBills(bills);
-      })
-      .catch(() => {
+  const BILLS_KEY = ["daily_sales", todayKey()];
+
+  // Load today's bills from Directus; localStorage as offline fallback
+  const { data: rawPaidBills = [] } = useQuery<Bill[]>({
+    queryKey: BILLS_KEY,
+    queryFn: async () => {
+      try {
+        const bills = await fetchTodayBills();
+        return bills ?? [];
+      } catch {
         try {
-          const local = JSON.parse(localStorage.getItem("paidBills") || "[]");
-          if (local.length > 0) setRawPaidBills(local);
-        } catch {}
-      })
-      .finally(() => setBillsLoaded(true));
-  }, []);
+          return JSON.parse(localStorage.getItem("paidBills") || "[]");
+        } catch { return []; }
+      }
+    },
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+  });
 
-  // Debounced sync to Directus on every bills change (skip until initial load completes)
-  useEffect(() => {
-    if (!billsLoaded) return;
-    if (syncTimer.current) clearTimeout(syncTimer.current);
-    syncTimer.current = setTimeout(() => {
-      saveTodayBills(rawPaidBills).catch((err) =>
-        console.warn("Bills sync failed:", err.message)
-      );
-    }, 800);
-  }, [rawPaidBills, billsLoaded]);
-
-  // Migrate legacy bills on first access (computed, no effect)
+  // Migrate legacy bills (bills created before posId field existed)
   const paidBills = useMemo(() => {
     if (rawPaidBills.length === 0) return rawPaidBills;
     const needsMigration = rawPaidBills.some((bill) =>
@@ -82,10 +78,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return needsMigration ? migratePaidBills(rawPaidBills) : rawPaidBills;
   }, [rawPaidBills]);
 
+  // Update query cache + persist to Directus in one call — no effect needed
   const setPaidBills = useCallback((update: React.SetStateAction<Bill[]>) => {
-    const resolved = typeof update === 'function' ? update(paidBills) : update;
-    setRawPaidBills(resolved);
-  }, [paidBills, setRawPaidBills]);
+    const resolved = typeof update === "function" ? update(paidBills) : update;
+    queryClient.setQueryData<Bill[]>(BILLS_KEY, resolved);
+    saveTodayBills(resolved).catch((err) =>
+      console.warn("Bills sync failed:", err.message)
+    );
+  }, [paidBills, queryClient]);
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
