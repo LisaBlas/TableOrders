@@ -64,6 +64,7 @@ export interface Subcategory {
 
 export interface OrderItem {
   id: string;
+  directusId?: string;
   name: string;
   shortName?: string;
   price: number;
@@ -97,6 +98,7 @@ export type GutscheinAmounts = Record<string, number>;
 // ── Bill ──
 
 export interface Bill {
+  directusId?: string;
   tableId: TableId;
   items: OrderItem[];
   total: number;

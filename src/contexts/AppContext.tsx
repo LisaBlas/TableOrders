@@ -1,7 +1,13 @@
 import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { migratePaidBills } from "../utils/migration";
-import { fetchTodayBills, saveTodayBills } from "../services/directusBills";
+import {
+  fetchTodayBills,
+  createBillInDirectus,
+  patchBill,
+  patchBillItem,
+  clearTodayBillsInDirectus,
+} from "../services/directusBills";
 import type { View, Bill, DailySalesTab, TableId } from "../types";
 
 function todayKey() {
@@ -21,18 +27,27 @@ interface AppContextValue {
   toast: string | null;
   showToast: (msg: string) => void;
 
-  // Paid bills
+  // Paid bills (read)
   paidBills: Bill[];
-  setPaidBills: React.Dispatch<React.SetStateAction<Bill[]>>;
-  addPaidBill: (bill: Bill) => void;
 
-  // Daily sales
+  // Bill actions (write — each syncs to Directus)
+  addPaidBill: (bill: Bill) => void;
+  clearTodayBills: () => void;
+  markBillAddedToPOS: (billIndex: number) => void;
+  restoreBillFromPOS: (billIndex: number) => void;
+  removePaidBillItem: (billIndex: number, itemId: string) => void;
+  restorePaidBillItem: (billIndex: number, itemId: string) => void;
+
+  // Edit mode
+  editingBillIndex: number | null;
+  billSnapshot: Bill | null;
+  enterBillEditMode: (billIndex: number) => void;
+  exitBillEditMode: () => void;
+  cancelBillEditMode: () => void;
+
+  // Daily sales UI
   dailySalesTab: DailySalesTab;
   setDailySalesTab: (tab: DailySalesTab) => void;
-  editingBillIndex: number | null;
-  setEditingBillIndex: (idx: number | null) => void;
-  billSnapshot: Bill | null;
-  setBillSnapshot: (snap: Bill | null) => void;
   deletingBillIndex: number | null;
   setDeletingBillIndex: (idx: number | null) => void;
 }
@@ -50,15 +65,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [billSnapshot, setBillSnapshot] = useState<Bill | null>(null);
   const [deletingBillIndex, setDeletingBillIndex] = useState<number | null>(null);
 
-  const BILLS_KEY = ["daily_sales", todayKey()];
+  const BILLS_KEY = ["bills", todayKey()];
 
   // Load today's bills from Directus; localStorage as offline fallback
   const { data: rawPaidBills = [] } = useQuery<Bill[]>({
     queryKey: BILLS_KEY,
     queryFn: async () => {
       try {
-        const bills = await fetchTodayBills();
-        return bills ?? [];
+        return await fetchTodayBills();
       } catch {
         try {
           return JSON.parse(localStorage.getItem("paidBills") || "[]");
@@ -78,23 +92,140 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return needsMigration ? migratePaidBills(rawPaidBills) : rawPaidBills;
   }, [rawPaidBills]);
 
-  // Update query cache + persist to Directus in one call — no effect needed
-  const setPaidBills = useCallback((update: React.SetStateAction<Bill[]>) => {
-    const resolved = typeof update === "function" ? update(paidBills) : update;
-    queryClient.setQueryData<Bill[]>(BILLS_KEY, resolved);
-    saveTodayBills(resolved).catch((err) =>
-      console.warn("Bills sync failed:", err.message)
-    );
-  }, [paidBills, queryClient]);
+  const setCachedBills = useCallback((bills: Bill[]) => {
+    queryClient.setQueryData<Bill[]>(BILLS_KEY, bills);
+  }, [queryClient]);
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 2000);
   }, []);
 
+  // Add a new paid bill: optimistic add → create in Directus → update cache with IDs
   const addPaidBill = useCallback((bill: Bill) => {
-    setPaidBills((prev) => [...prev, bill]);
-  }, [setPaidBills]);
+    setCachedBills([...paidBills, bill]);
+    createBillInDirectus(bill)
+      .then((savedBill) => {
+        setCachedBills((queryClient.getQueryData<Bill[]>(BILLS_KEY) ?? []).map((b) =>
+          b.timestamp === savedBill.timestamp && b.tableId === savedBill.tableId
+            ? savedBill
+            : b
+        ));
+      })
+      .catch((err) => console.warn("Failed to save bill to Directus:", err.message));
+  }, [paidBills, setCachedBills, queryClient]);
+
+  const clearTodayBills = useCallback(() => {
+    setCachedBills([]);
+    clearTodayBillsInDirectus().catch((err) =>
+      console.warn("Failed to clear bills in Directus:", err.message)
+    );
+  }, [setCachedBills]);
+
+  const markBillAddedToPOS = useCallback((billIndex: number) => {
+    const updated = paidBills.map((b, i) =>
+      i === billIndex ? { ...b, addedToPOS: true } : b
+    );
+    setCachedBills(updated);
+    setEditingBillIndex(null);
+    setBillSnapshot(null);
+    const bill = paidBills[billIndex];
+    if (bill?.directusId) {
+      patchBill(bill.directusId, { added_to_pos: true }).catch((err) =>
+        console.warn("Failed to patch bill:", err.message)
+      );
+    }
+  }, [paidBills, setCachedBills]);
+
+  const restoreBillFromPOS = useCallback((billIndex: number) => {
+    const bill = paidBills[billIndex];
+    const restoredItems = bill.items.map(({ crossedQty: _, crossed: __, ...rest }) => rest);
+    const restoredBill = { ...bill, addedToPOS: false, items: restoredItems };
+    setCachedBills(paidBills.map((b, i) => i === billIndex ? restoredBill : b));
+    if (bill?.directusId) {
+      patchBill(bill.directusId, { added_to_pos: false }).catch((err) =>
+        console.warn("Failed to patch bill:", err.message)
+      );
+      restoredItems.forEach((item) => {
+        if (item.directusId) {
+          patchBillItem(item.directusId, { crossed_qty: 0 }).catch((err) =>
+            console.warn("Failed to patch bill item:", err.message)
+          );
+        }
+      });
+    }
+  }, [paidBills, setCachedBills]);
+
+  const removePaidBillItem = useCallback((billIndex: number, itemId: string) => {
+    const bill = paidBills[billIndex];
+    const updatedItems = bill.items.map((o) =>
+      o.id === itemId
+        ? { ...o, crossedQty: Math.min((o.crossedQty ?? 0) + 1, o.qty) }
+        : o
+    );
+    setCachedBills(paidBills.map((b, i) =>
+      i === billIndex ? { ...b, items: updatedItems } : b
+    ));
+    const item = updatedItems.find((o) => o.id === itemId);
+    if (item?.directusId) {
+      patchBillItem(item.directusId, { crossed_qty: item.crossedQty }).catch((err) =>
+        console.warn("Failed to patch bill item:", err.message)
+      );
+    }
+  }, [paidBills, setCachedBills]);
+
+  const restorePaidBillItem = useCallback((billIndex: number, itemId: string) => {
+    const bill = paidBills[billIndex];
+    const updatedItems = bill.items.map((o) =>
+      o.id === itemId
+        ? { ...o, crossedQty: Math.max((o.crossedQty ?? 0) - 1, 0), crossed: false }
+        : o
+    );
+    setCachedBills(paidBills.map((b, i) =>
+      i === billIndex ? { ...b, items: updatedItems } : b
+    ));
+    const item = updatedItems.find((o) => o.id === itemId);
+    if (item?.directusId) {
+      patchBillItem(item.directusId, { crossed_qty: item.crossedQty }).catch((err) =>
+        console.warn("Failed to patch bill item:", err.message)
+      );
+    }
+  }, [paidBills, setCachedBills]);
+
+  // Edit mode: mutations during edit are local only; sync happens on exit
+  const enterBillEditMode = useCallback((billIndex: number) => {
+    setBillSnapshot({ ...paidBills[billIndex] });
+    setEditingBillIndex(billIndex);
+  }, [paidBills]);
+
+  const exitBillEditMode = useCallback(() => {
+    // Sync the current state of the edited bill to Directus
+    if (editingBillIndex !== null) {
+      const bill = paidBills[editingBillIndex];
+      if (bill?.directusId) {
+        patchBill(bill.directusId, { added_to_pos: bill.addedToPOS ?? false }).catch((err) =>
+          console.warn("Failed to sync bill on exit:", err.message)
+        );
+        bill.items.forEach((item) => {
+          if (item.directusId) {
+            patchBillItem(item.directusId, { crossed_qty: item.crossedQty ?? 0 }).catch((err) =>
+              console.warn("Failed to sync bill item on exit:", err.message)
+            );
+          }
+        });
+      }
+    }
+    setEditingBillIndex(null);
+    setBillSnapshot(null);
+  }, [editingBillIndex, paidBills]);
+
+  const cancelBillEditMode = useCallback(() => {
+    if (billSnapshot !== null && editingBillIndex !== null) {
+      setCachedBills(paidBills.map((b, i) => i === editingBillIndex ? billSnapshot : b));
+    }
+    setEditingBillIndex(null);
+    setBillSnapshot(null);
+  }, [billSnapshot, editingBillIndex, paidBills, setCachedBills]);
 
   return (
     <AppContext.Provider value={{
@@ -102,10 +233,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
       activeTable, setActiveTable,
       ticketTable, setTicketTable,
       toast, showToast,
-      paidBills, setPaidBills, addPaidBill,
+      paidBills,
+      addPaidBill,
+      clearTodayBills,
+      markBillAddedToPOS,
+      restoreBillFromPOS,
+      removePaidBillItem,
+      restorePaidBillItem,
+      editingBillIndex,
+      billSnapshot,
+      enterBillEditMode,
+      exitBillEditMode,
+      cancelBillEditMode,
       dailySalesTab, setDailySalesTab,
-      editingBillIndex, setEditingBillIndex,
-      billSnapshot, setBillSnapshot,
       deletingBillIndex, setDeletingBillIndex,
     }}>
       {children}

@@ -9,96 +9,26 @@ import { BackIcon } from "../components/icons";
 export function DailySalesView() {
   const app = useApp();
   const {
-    paidBills, setPaidBills,
+    paidBills,
+    clearTodayBills,
+    markBillAddedToPOS,
+    restoreBillFromPOS,
+    removePaidBillItem,
+    restorePaidBillItem,
+    editingBillIndex,
+    enterBillEditMode,
+    exitBillEditMode,
+    cancelBillEditMode,
     dailySalesTab, setDailySalesTab,
-    editingBillIndex, setEditingBillIndex,
-    billSnapshot, setBillSnapshot,
-    showToast,
   } = app;
 
   const [showClearConfirm, setShowClearConfirm] = useState(false);
 
-  const clearDailySales = () => {
+  const handleClear = () => {
     if (paidBills.length === 0) return;
-    setPaidBills([]);
+    clearTodayBills();
     setShowClearConfirm(false);
-    showToast("Daily sales cleared");
-  };
-
-  const removePaidBillItem = (billIndex: number, itemId: string) => {
-    setPaidBills((prev) => {
-      const bills = [...prev];
-      const bill = { ...bills[billIndex] };
-      bill.items = bill.items.map((o) =>
-        o.id === itemId
-          ? { ...o, crossedQty: Math.min((o.crossedQty || 0) + 1, o.qty) }
-          : o
-      );
-      bills[billIndex] = bill;
-      return bills;
-    });
-  };
-
-  const markBillAsAddedToPOS = (billIndex: number) => {
-    setPaidBills((prev) => {
-      const bills = [...prev];
-      bills[billIndex] = { ...bills[billIndex], addedToPOS: true };
-      return bills;
-    });
-    setEditingBillIndex(null);
-    setBillSnapshot(null);
-    showToast("Bill marked as Added To POS");
-  };
-
-  const enterEditMode = (billIndex: number) => {
-    setBillSnapshot({ ...paidBills[billIndex] });
-    setEditingBillIndex(billIndex);
-  };
-
-  const cancelEditMode = () => {
-    if (billSnapshot && editingBillIndex !== null) {
-      setPaidBills((prev) => {
-        const bills = [...prev];
-        bills[editingBillIndex] = billSnapshot;
-        return bills;
-      });
-    }
-    setEditingBillIndex(null);
-    setBillSnapshot(null);
-  };
-
-  const exitEditMode = () => {
-    setEditingBillIndex(null);
-    setBillSnapshot(null);
-  };
-
-  const restoreBillFromPOS = (billIndex: number) => {
-    setPaidBills((prev) => {
-      const bills = [...prev];
-      const restoredBill = { ...bills[billIndex], addedToPOS: false };
-      // Clear crossedQty from all items when restoring
-      restoredBill.items = restoredBill.items.map((item) => {
-        const { crossedQty, crossed, ...rest } = item as any;
-        return rest;
-      });
-      bills[billIndex] = restoredBill;
-      return bills;
-    });
-    showToast("Bill restored");
-  };
-
-  const restorePaidBillItem = (billIndex: number, itemId: string) => {
-    setPaidBills((prev) => {
-      const bills = [...prev];
-      const bill = { ...bills[billIndex] };
-      bill.items = bill.items.map((o) =>
-        o.id === itemId
-          ? { ...o, crossedQty: Math.max((o.crossedQty || 0) - 1, 0), crossed: false }
-          : o
-      );
-      bills[billIndex] = bill;
-      return bills;
-    });
+    app.showToast("Daily sales cleared");
   };
 
   // Total tab aggregation - by POS ID for easy POS entry
@@ -119,30 +49,25 @@ export function DailySalesView() {
     };
 
     paidBills.forEach((bill) => {
-      const billRemoved = !!(bill as any).addedToPOS;
+      const billRemoved = !!bill.addedToPOS;
       const billRemovedMap = new Map<string, PosEntry>();
 
       bill.items.forEach((item) => {
-        const posId = (item as any).posId || "NO_POS_ID";
-        const posName = (item as any).posName || (item as any).shortName || item.name;
-        const crossedCount = (item as any).crossedQty ?? ((item as any).crossed ? item.qty : 0);
+        const posId = item.posId || "NO_POS_ID";
+        const posName = item.posName || item.shortName || item.name;
+        const crossedCount = item.crossedQty ?? (item.crossed ? item.qty : 0);
         const activeCount = billRemoved ? 0 : item.qty - crossedCount;
         const removedCount = billRemoved ? item.qty : crossedCount;
 
         addToMap(activeMap, posId, posName, item, activeCount);
-
-        // Add removed items to bill-scoped map (aggregates by posId within this bill)
-        if (removedCount > 0) {
-          addToMap(billRemovedMap, posId, posName, item, removedCount);
-        }
+        if (removedCount > 0) addToMap(billRemovedMap, posId, posName, item, removedCount);
       });
 
-      // Convert aggregated map to array for this bill
       if (billRemovedMap.size > 0) {
         removedBillGroups.push({
           tableId: bill.tableId as number,
           timestamp: bill.timestamp,
-          items: Array.from(billRemovedMap.values())
+          items: Array.from(billRemovedMap.values()),
         });
       }
     });
@@ -159,22 +84,13 @@ export function DailySalesView() {
       });
 
     const isMissingPosId = (id: string) => id === "NO_POS_ID" || id === "0000";
-
     const activeAll = sort(activeMap);
-
     const withPosId = activeAll.filter((i) => !isMissingPosId(i.posId));
     const missingPosId = activeAll.filter((i) => isMissingPosId(i.posId));
 
     const renderPosRow = (item: PosEntry, color: string, compact?: boolean) => (
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-        <span style={{
-          fontFamily: "monospace",
-          fontSize: compact ? 14 : 20,
-          fontWeight: 900,
-          color,
-          width: compact ? "6ch" : "8ch",
-          flexShrink: 0
-        }}>
+        <span style={{ fontFamily: "monospace", fontSize: compact ? 14 : 20, fontWeight: 900, color, width: compact ? "6ch" : "8ch", flexShrink: 0 }}>
           [{item.posId}]
         </span>
         <span style={{ flex: 1, fontSize: compact ? 12 : 15, fontWeight: 600, color }}>
@@ -205,47 +121,18 @@ export function DailySalesView() {
     const renderRemovedBillGroups = () => {
       if (removedBillGroups.length === 0) return null;
       return (
-        <div
-          style={{
-            ...S.billCard,
-            borderLeft: "3px solid #c0392b",
-            background: "#fff5f5",
-            padding: "12px"
-          }}
-        >
-          <div style={{
-            fontSize: 13,
-            fontWeight: 700,
-            color: "#1a1a1a",
-            marginBottom: 10,
-            paddingBottom: 8,
-            borderBottom: "1px solid #f5c2c2"
-          }}>
+        <div style={{ ...S.billCard, borderLeft: "3px solid #c0392b", background: "#fff5f5", padding: "12px" }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1a1a", marginBottom: 10, paddingBottom: 8, borderBottom: "1px solid #f5c2c2" }}>
             Already added
           </div>
           {removedBillGroups.map((group, groupIdx) => {
-            const date = new Date(group.timestamp);
-            const timeStr = date.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+            const timeStr = new Date(group.timestamp).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
             return (
               <div key={groupIdx}>
                 {groupIdx > 0 && (
-                  <div style={{
-                    ...S.divider,
-                    margin: "10px -12px",
-                    borderTopWidth: 2,
-                    borderTopStyle: "dashed",
-                    borderTopColor: "#f5c2c2"
-                  }} />
+                  <div style={{ ...S.divider, margin: "10px -12px", borderTopWidth: 2, borderTopStyle: "dashed", borderTopColor: "#f5c2c2" }} />
                 )}
-                <div style={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  color: "#666",
-                  marginBottom: 6,
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center"
-                }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: "#666", marginBottom: 6, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span>Table {group.tableId}</span>
                   <span style={{ fontSize: 10, fontWeight: 400 }}>{timeStr}</span>
                 </div>
@@ -267,14 +154,7 @@ export function DailySalesView() {
         {renderRemovedBillGroups()}
         {withPosId.length > 0 && (
           <div style={S.billCard}>
-            <div style={{
-              fontSize: 13,
-              fontWeight: 700,
-              color: "#1a1a1a",
-              marginBottom: 10,
-              paddingBottom: 8,
-              borderBottom: "1px solid #ebe9e3"
-            }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1a1a", marginBottom: 10, paddingBottom: 8, borderBottom: "1px solid #ebe9e3" }}>
               Sales
             </div>
             {withPosId.map((item, idx) => (
@@ -308,9 +188,7 @@ export function DailySalesView() {
       {paidBills.length === 0 ? (
         <div style={S.emptyState}>
           <div style={S.emptyStateIcon}>📊</div>
-          <div style={S.emptyStateText}>
-            No sales yet today.<br />Closed bills will appear here.
-          </div>
+          <div style={S.emptyStateText}>No sales yet today.<br />Closed bills will appear here.</div>
         </div>
       ) : (
         <>
@@ -324,10 +202,7 @@ export function DailySalesView() {
                 style={{ ...S.tab, ...(dailySalesTab === "total" ? S.tabActive : {}) }}
                 onClick={() => setDailySalesTab("total")}
               >Total</button>
-              <div style={{
-                ...S.tabIndicator,
-                transform: dailySalesTab === "total" ? "translateX(100%)" : "translateX(0)",
-              }} />
+              <div style={{ ...S.tabIndicator, transform: dailySalesTab === "total" ? "translateX(100%)" : "translateX(0)" }} />
             </div>
           </div>
 
@@ -342,10 +217,10 @@ export function DailySalesView() {
                     key={reverseIdx}
                     bill={bill}
                     isEditing={editingBillIndex === billIndex}
-                    onEdit={() => enterEditMode(billIndex)}
-                    onDone={exitEditMode}
-                    onCancel={cancelEditMode}
-                    onDelete={() => markBillAsAddedToPOS(billIndex)}
+                    onEdit={() => enterBillEditMode(billIndex)}
+                    onDone={exitBillEditMode}
+                    onCancel={cancelBillEditMode}
+                    onDelete={() => markBillAddedToPOS(billIndex)}
                     onRestore={() => restoreBillFromPOS(billIndex)}
                     onRemoveItem={(itemId) => removePaidBillItem(billIndex, itemId)}
                     onRestoreItem={(itemId) => restorePaidBillItem(billIndex, itemId)}
@@ -365,12 +240,12 @@ export function DailySalesView() {
         <Modal
           title="Clear Daily Sales?"
           onClose={() => setShowClearConfirm(false)}
-          onConfirm={clearDailySales}
+          onConfirm={handleClear}
           confirmText="Clear"
           confirmStyle={S.modalDeleteBtn}
         >
           <div style={S.modalMessage}>
-            This will permanently remove all bills from today's sales. This action cannot be undone.
+            This will clear today's sales from view. Bills are preserved in the database for reporting.
           </div>
         </Modal>
       )}
