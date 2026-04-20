@@ -43,17 +43,41 @@ function billFromDirectus(d: any): Bill {
 // Fetch today's active (non-cleared) bills with their items
 export async function fetchTodayBills(): Promise<Bill[]> {
   const { gte, lte } = todayBounds();
-  const url = `${DIRECTUS_URL}/items/bills`
+
+  // Fetch bills
+  const billsRes = await fetch(
+    `${DIRECTUS_URL}/items/bills`
     + `?filter[timestamp][_gte]=${gte}`
     + `&filter[timestamp][_lte]=${lte}`
     + `&filter[cleared_at][_null]=true`
-    + `&fields=*,items.*`
+    + `&fields=*`
     + `&sort=timestamp`
-    + `&limit=-1`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Directus ${res.status}`);
-  const { data } = await res.json();
-  return data.map(billFromDirectus);
+    + `&limit=-1`
+  );
+  if (!billsRes.ok) throw new Error(`Directus bills ${billsRes.status}`);
+  const { data: bills } = await billsRes.json();
+  if (bills.length === 0) return [];
+
+  // Fetch items for those bills
+  const ids = bills.map((b: any) => b.id).join(",");
+  const itemsRes = await fetch(
+    `${DIRECTUS_URL}/items/bill_items`
+    + `?filter[bill_id][_in]=${ids}`
+    + `&fields=*`
+    + `&limit=-1`
+  );
+  if (!itemsRes.ok) throw new Error(`Directus bill_items ${itemsRes.status}`);
+  const { data: items } = await itemsRes.json();
+
+  // Map items onto their bills
+  const itemsByBill: Record<string, any[]> = {};
+  for (const item of items) {
+    const bid = item.bill_id;
+    if (!itemsByBill[bid]) itemsByBill[bid] = [];
+    itemsByBill[bid].push(item);
+  }
+
+  return bills.map((b: any) => billFromDirectus({ ...b, items: itemsByBill[b.id] ?? [] }));
 }
 
 // Create a bill + all its items; returns the bill with directusIds populated
