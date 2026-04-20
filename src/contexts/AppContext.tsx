@@ -1,6 +1,6 @@
-import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from "react";
-import { useLocalStorage } from "../hooks/useLocalStorage";
+import { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef, type ReactNode } from "react";
 import { migratePaidBills } from "../utils/migration";
+import { fetchTodayBills, saveTodayBills } from "../services/directusBills";
 import type { View, Bill, DailySalesTab, TableId } from "../types";
 
 interface AppContextValue {
@@ -39,11 +39,39 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [activeTable, setActiveTable] = useState<TableId | null>(null);
   const [ticketTable, setTicketTable] = useState<TableId | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  const [rawPaidBills, setRawPaidBills] = useLocalStorage<Bill[]>("paidBills", []);
+  const [rawPaidBills, setRawPaidBills] = useState<Bill[]>([]);
+  const [billsLoaded, setBillsLoaded] = useState(false);
+  const syncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [dailySalesTab, setDailySalesTab] = useState<DailySalesTab>("chronological");
   const [editingBillIndex, setEditingBillIndex] = useState<number | null>(null);
   const [billSnapshot, setBillSnapshot] = useState<Bill | null>(null);
   const [deletingBillIndex, setDeletingBillIndex] = useState<number | null>(null);
+
+  // On mount: load today's bills from Directus, fall back to localStorage
+  useEffect(() => {
+    fetchTodayBills()
+      .then((bills) => {
+        if (bills !== null) setRawPaidBills(bills);
+      })
+      .catch(() => {
+        try {
+          const local = JSON.parse(localStorage.getItem("paidBills") || "[]");
+          if (local.length > 0) setRawPaidBills(local);
+        } catch {}
+      })
+      .finally(() => setBillsLoaded(true));
+  }, []);
+
+  // Debounced sync to Directus on every bills change (skip until initial load completes)
+  useEffect(() => {
+    if (!billsLoaded) return;
+    if (syncTimer.current) clearTimeout(syncTimer.current);
+    syncTimer.current = setTimeout(() => {
+      saveTodayBills(rawPaidBills).catch((err) =>
+        console.warn("Bills sync failed:", err.message)
+      );
+    }, 800);
+  }, [rawPaidBills, billsLoaded]);
 
   // Migrate legacy bills on first access (computed, no effect)
   const paidBills = useMemo(() => {
