@@ -1,4 +1,4 @@
-import { MenuProvider } from "./contexts/MenuContext";
+import { MenuProvider, useMenu } from "./contexts/MenuContext";
 import { AppProvider, useApp } from "./contexts/AppContext";
 import { TableProvider } from "./contexts/TableContext";
 import { SplitProvider, useSplit } from "./contexts/SplitContext";
@@ -11,10 +11,48 @@ import { SplitConfirmView } from "./views/SplitConfirmView";
 import { SplitDoneView } from "./views/SplitDoneView";
 import { DailySalesView } from "./views/DailySalesView";
 import { Toast } from "./components/Toast";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { S } from "./styles/appStyles";
+
+function LoadingScreen() {
+  return (
+    <div style={S.root}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "100vh",
+          gap: "20px",
+        }}
+      >
+        <div
+          style={{
+            width: "40px",
+            height: "40px",
+            border: "3px solid #f3f3f3",
+            borderTop: "3px solid #000",
+            borderRadius: "50%",
+            animation: "spin 1s linear infinite",
+          }}
+        />
+        <style>{`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    </div>
+  );
+}
 
 function Router() {
   const { view, toast } = useApp();
+  const { menuLoading } = useMenu();
+
+  if (menuLoading) return <LoadingScreen />;
 
   return (
     <div style={S.root}>
@@ -43,14 +81,16 @@ function SplitRouter() {
 
 export default function App() {
   return (
-    <MenuProvider>
-      <AppProvider>
-        <TableProvider>
-          <SplitProvider>
-            <Router />
-          </SplitProvider>
-        </TableProvider>
-      </AppProvider>
-    </MenuProvider>
+    <ErrorBoundary>
+      <MenuProvider>
+        <AppProvider>
+          <TableProvider>
+            <SplitProvider>
+              <Router />
+            </SplitProvider>
+          </TableProvider>
+        </AppProvider>
+      </MenuProvider>
+    </ErrorBoundary>
   );
 }
