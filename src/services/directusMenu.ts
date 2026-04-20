@@ -1,4 +1,4 @@
-const DIRECTUS_URL = (import.meta as any).env?.VITE_DIRECTUS_URL ?? "http://142.93.103.185:8055";
+const DIRECTUS_URL = (import.meta as any).env?.VITE_DIRECTUS_URL ?? "https://cms.blasalviz.com";
 
 function transformItem(item: any, categoryName: string) {
   const base = {
