@@ -93,8 +93,8 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
           });
           return (
             <>
-              {activeItems.map((item) => (
-                <div key={item.id} style={isEditing ? S.billItemEditable : S.billItem}>
+              {activeItems.map((item, i) => (
+                <div key={`active-${item.id}-${i}`} style={isEditing ? S.billItemEditable : S.billItem}>
                   {isEditing && !bill.addedToPOS && !allItemsCrossed && (
                     <button style={S.billItemRemoveBtn} onClick={() => onRemoveItem(item.id)} title="Remove one">−</button>
                   )}
@@ -120,8 +120,8 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
                   }}>
                     Added to POS
                   </div>
-                  {crossedItems.map((item) => (
-                    <div key={`crossed-${item.id}`} style={isEditing && !bill.addedToPOS ? S.billItemEditable : S.billItem}>
+                  {crossedItems.map((item, i) => (
+                    <div key={`crossed-${item.id}-${i}`} style={isEditing && !bill.addedToPOS ? S.billItemEditable : S.billItem}>
                       {isEditing && !bill.addedToPOS && (
                         <button style={{ ...S.billItemRemoveBtn, background: "#2d7a3a", color: "#fff" }} onClick={() => onRestoreItem(item.id)} title="Un-cross one">+</button>
                       )}
