@@ -2,17 +2,13 @@ import { createContext, useContext, useState, useCallback, useMemo, type ReactNo
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { migratePaidBills } from "../utils/migration";
 import {
-  fetchTodayBills,
+  fetchBillsByDate,
   createBillInDirectus,
   patchBill,
   patchBillItem,
-  clearTodayBillsInDirectus,
+  todayBerlinDate,
 } from "../services/directusBills";
 import type { View, Bill, DailySalesTab, TableId } from "../types";
-
-function todayKey() {
-  return new Date().toISOString().slice(0, 10);
-}
 
 interface AppContextValue {
   // Navigation
@@ -30,9 +26,12 @@ interface AppContextValue {
   // Paid bills (read)
   paidBills: Bill[];
 
+  // Date selection for Daily Sales
+  selectedDate: string;
+  setSelectedDate: (date: string) => void;
+
   // Bill actions (write — each syncs to Directus)
   addPaidBill: (bill: Bill) => void;
-  clearTodayBills: () => void;
   markBillAddedToPOS: (billIndex: number) => void;
   restoreBillFromPOS: (billIndex: number) => void;
   removePaidBillItem: (billIndex: number, itemId: string) => void;
@@ -64,23 +63,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [editingBillIndex, setEditingBillIndex] = useState<number | null>(null);
   const [billSnapshot, setBillSnapshot] = useState<Bill | null>(null);
   const [deletingBillIndex, setDeletingBillIndex] = useState<number | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string>(todayBerlinDate);
 
-  const BILLS_KEY = ["bills", todayKey()];
+  const BILLS_KEY = ["bills", selectedDate];
+  const isToday = selectedDate === todayBerlinDate();
 
-  // Load today's bills from Directus; localStorage as offline fallback
   const { data: rawPaidBills = [] } = useQuery<Bill[]>({
     queryKey: BILLS_KEY,
     queryFn: async () => {
       try {
-        return await fetchTodayBills();
+        return await fetchBillsByDate(selectedDate);
       } catch {
-        try {
-          return JSON.parse(localStorage.getItem("paidBills") || "[]");
-        } catch { return []; }
+        if (isToday) {
+          try {
+            return JSON.parse(localStorage.getItem("paidBills") || "[]");
+          } catch { return []; }
+        }
+        return [];
       }
     },
     staleTime: 5_000,
-    refetchInterval: 5_000,
+    refetchInterval: isToday ? 5_000 : false,
     refetchOnWindowFocus: true,
   });
 
@@ -95,33 +98,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const setCachedBills = useCallback((bills: Bill[]) => {
     queryClient.setQueryData<Bill[]>(BILLS_KEY, bills);
-  }, [queryClient]);
+  }, [queryClient, selectedDate]);
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 2000);
   }, []);
 
-  // Add a new paid bill: optimistic add → create in Directus → update cache with IDs
+  // Add a new paid bill: optimistic add → create in Directus → update cache with IDs.
+  // Always targets today's cache key regardless of the selected date in Daily Sales.
   const addPaidBill = useCallback((bill: Bill) => {
-    setCachedBills([...paidBills, bill]);
+    const todayKey = ["bills", todayBerlinDate()];
+    const current = queryClient.getQueryData<Bill[]>(todayKey) ?? [];
+    queryClient.setQueryData<Bill[]>(todayKey, [...current, bill]);
     createBillInDirectus(bill)
       .then((savedBill) => {
-        setCachedBills((queryClient.getQueryData<Bill[]>(BILLS_KEY) ?? []).map((b) =>
+        const latest = queryClient.getQueryData<Bill[]>(todayKey) ?? [];
+        queryClient.setQueryData<Bill[]>(todayKey, latest.map((b) =>
           b.timestamp === savedBill.timestamp && b.tableId === savedBill.tableId
             ? savedBill
             : b
         ));
       })
       .catch((err) => console.warn("Failed to save bill to Directus:", err.message));
-  }, [paidBills, setCachedBills, queryClient]);
-
-  const clearTodayBills = useCallback(() => {
-    setCachedBills([]);
-    clearTodayBillsInDirectus().catch((err) =>
-      console.warn("Failed to clear bills in Directus:", err.message)
-    );
-  }, [setCachedBills]);
+  }, [queryClient]);
 
   const markBillAddedToPOS = useCallback((billIndex: number) => {
     const updated = paidBills.map((b, i) =>
@@ -235,8 +235,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       ticketTable, setTicketTable,
       toast, showToast,
       paidBills,
+      selectedDate, setSelectedDate,
       addPaidBill,
-      clearTodayBills,
       markBillAddedToPOS,
       restoreBillFromPOS,
       removePaidBillItem,

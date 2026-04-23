@@ -1,18 +1,17 @@
-import { useState } from "react";
 import { useApp } from "../contexts/AppContext";
 import { useBreakpoint } from "../hooks/useBreakpoint";
 import { S } from "../styles/appStyles";
-import { Modal } from "../components/Modal";
 import { BillCard } from "../components/BillCard";
 import { SalesSummary } from "../components/SalesSummary";
 import { BackIcon } from "../components/icons";
+import { todayBerlinDate } from "../services/directusBills";
 
 export function DailySalesView() {
   const app = useApp();
   const { isTablet, isTabletLandscape, isDesktop } = useBreakpoint();
   const {
     paidBills,
-    clearTodayBills,
+    selectedDate, setSelectedDate,
     markBillAddedToPOS,
     restoreBillFromPOS,
     removePaidBillItem,
@@ -23,15 +22,6 @@ export function DailySalesView() {
     cancelBillEditMode,
     dailySalesTab, setDailySalesTab,
   } = app;
-
-  const [showClearConfirm, setShowClearConfirm] = useState(false);
-
-  const handleClear = () => {
-    if (paidBills.length === 0) return;
-    clearTodayBills();
-    setShowClearConfirm(false);
-    app.showToast("Daily sales cleared");
-  };
 
   // Total tab aggregation - by POS ID for easy POS entry
   const renderTotalTab = () => {
@@ -211,13 +201,29 @@ export function DailySalesView() {
           <BackIcon size={22} />
         </button>
         <span style={S.headerTitle}>Daily Sales</span>
-        <span />
+        <input
+          type="date"
+          value={selectedDate}
+          max={todayBerlinDate()}
+          onChange={(e) => e.target.value && setSelectedDate(e.target.value)}
+          style={{
+            fontSize: 13,
+            fontWeight: 600,
+            border: "1.5px solid #e0e0e0",
+            borderRadius: 8,
+            padding: "4px 8px",
+            background: "#f8f8f8",
+            color: "#1a1a1a",
+            outline: "none",
+            fontFamily: "inherit",
+          }}
+        />
       </header>
 
       {paidBills.length === 0 ? (
         <div style={S.emptyState}>
           <div style={S.emptyStateIcon}>📊</div>
-          <div style={S.emptyStateText}>No sales yet today.<br />Closed bills will appear here.</div>
+          <div style={S.emptyStateText}>No sales for this date.<br />Closed bills will appear here.</div>
         </div>
       ) : (
         <>
@@ -260,23 +266,7 @@ export function DailySalesView() {
           )}
 
           {dailySalesTab === "total" && renderTotalTab()}
-
-          <button style={S.clearDayBtn} onClick={() => setShowClearConfirm(true)}>Clear Daily Sales</button>
         </>
-      )}
-
-      {showClearConfirm && (
-        <Modal
-          title="Clear Daily Sales?"
-          onClose={() => setShowClearConfirm(false)}
-          onConfirm={handleClear}
-          confirmText="Clear"
-          confirmStyle={S.modalDeleteBtn}
-        >
-          <div style={S.modalMessage}>
-            This will clear today's sales from view. Bills are preserved in the database for reporting.
-          </div>
-        </Modal>
       )}
     </div>
   );

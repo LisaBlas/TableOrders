@@ -2,15 +2,22 @@ import type { Bill, OrderItem } from "../types";
 
 const DIRECTUS_URL = (import.meta as any).env?.VITE_DIRECTUS_URL ?? "https://cms.blasalviz.com";
 
-function todayBounds() {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return {
-    gte: `${y}-${m}-${day}T00:00:00.000Z`,
-    lte: `${y}-${m}-${day}T23:59:59.999Z`,
-  };
+export function todayBerlinDate(): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin" }).format(new Date());
+}
+
+// Returns UTC bounds for a full calendar day in Europe/Berlin time.
+function berlinDayBoundsUTC(berlinDate: string): { gte: string; lte: string } {
+  const [year, month, day] = berlinDate.split("-").map(Number);
+  // Probe noon UTC to find the Berlin UTC offset (1 = CET, 2 = CEST)
+  const noonUTC = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+  const berlinNoonHour = Number(
+    new Intl.DateTimeFormat("en-US", { timeZone: "Europe/Berlin", hour: "numeric", hour12: false }).format(noonUTC)
+  );
+  const offsetHours = berlinNoonHour - 12;
+  const gte = new Date(Date.UTC(year, month - 1, day, -offsetHours, 0, 0, 0));
+  const lte = new Date(Date.UTC(year, month - 1, day, 23 - offsetHours, 59, 59, 999));
+  return { gte: gte.toISOString(), lte: lte.toISOString() };
 }
 
 function billFromDirectus(d: any): Bill {
@@ -40,16 +47,13 @@ function billFromDirectus(d: any): Bill {
   };
 }
 
-// Fetch today's active (non-cleared) bills with their items
-export async function fetchTodayBills(): Promise<Bill[]> {
-  const { gte, lte } = todayBounds();
+export async function fetchBillsByDate(berlinDate: string): Promise<Bill[]> {
+  const { gte, lte } = berlinDayBoundsUTC(berlinDate);
 
-  // Fetch bills
   const billsRes = await fetch(
     `${DIRECTUS_URL}/items/bills`
     + `?filter[timestamp][_gte]=${gte}`
     + `&filter[timestamp][_lte]=${lte}`
-    + `&filter[cleared_at][_null]=true`
     + `&fields=*`
     + `&sort=timestamp`
     + `&limit=-1`
@@ -153,27 +157,3 @@ export async function patchBillItem(directusId: string, data: object): Promise<v
   if (!res.ok) throw new Error(`PATCH bill item failed: ${res.status}`);
 }
 
-// Soft-delete: set cleared_at on all today's non-cleared bills
-export async function clearTodayBillsInDirectus(): Promise<void> {
-  const { gte, lte } = todayBounds();
-  const url = `${DIRECTUS_URL}/items/bills`
-    + `?filter[timestamp][_gte]=${gte}`
-    + `&filter[timestamp][_lte]=${lte}`
-    + `&filter[cleared_at][_null]=true`
-    + `&fields=id`
-    + `&limit=-1`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Fetch for clear failed: ${res.status}`);
-  const { data } = await res.json();
-  if (data.length === 0) return;
-
-  const patchRes = await fetch(`${DIRECTUS_URL}/items/bills`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      keys: data.map((d: any) => d.id),
-      data: { cleared_at: new Date().toISOString() },
-    }),
-  });
-  if (!patchRes.ok) throw new Error(`Batch clear failed: ${patchRes.status}`);
-}
