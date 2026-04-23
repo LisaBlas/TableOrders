@@ -91,7 +91,7 @@ export async function createBillInDirectus(bill: Bill): Promise<Bill> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       table_id: bill.tableId,
-      total: bill.total,
+      total: Math.round(bill.total * 100) / 100,
       gutschein: bill.gutschein ?? null,
       tip: (bill as any).tip ?? null,
       payment_mode: bill.paymentMode,
