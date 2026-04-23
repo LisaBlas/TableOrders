@@ -97,6 +97,7 @@ export function OrderView() {
     const customItem = {
       id: `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       name, price, qty, sentQty: 0,
+      posId: "???", destination: "counter",
     };
     table.addCustomItem(tableId, customItem);
     app.showToast(`+ ${name} (${qty}×)`);

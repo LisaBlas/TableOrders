@@ -1,11 +1,24 @@
 import { useState, useRef, useCallback } from "react";
 import { TABLES, STATUS_CONFIG } from "../data/constants";
-import { getTableStatus } from "../utils/helpers";
+import { getTableStatus, getItemDestination } from "../utils/helpers";
 import { useApp } from "../contexts/AppContext";
 import { useTable } from "../contexts/TableContext";
 import { useBreakpoint } from "../hooks/useBreakpoint";
 import { S } from "../styles/appStyles";
 import { Modal } from "../components/Modal";
+
+const DESTINATION_EMOJI: Record<string, string> = { bar: "🍷", counter: "🧀", kitchen: "🍽️" };
+const DESTINATION_ORDER = ["bar", "counter", "kitchen"];
+
+function getTableDestinations(tableId: string | number, orders: any, sentBatches: any): string[] {
+  const key = String(tableId);
+  const allItems = [
+    ...(orders[key] || []),
+    ...((sentBatches[key] || []).flatMap((b: any) => b.items)),
+  ];
+  const found = new Set(allItems.map((item: any) => getItemDestination(item)));
+  return DESTINATION_ORDER.filter((d) => found.has(d));
+}
 
 const LONG_PRESS_MS = 500;
 
@@ -183,6 +196,15 @@ export function TablesView() {
               <span style={{ ...S.tableStatus, color: isSource ? "#f59e0b" : isTarget ? "#3b82f6" : cfg.text }}>
                 {isSource ? "moving" : isTarget ? "selected" : cfg.label}
               </span>
+              {(() => {
+                const dests = getTableDestinations(t.id, orders, sentBatches);
+                if (!dests.length) return null;
+                return (
+                  <span style={{ fontSize: 14, letterSpacing: 2, marginTop: 2 }}>
+                    {dests.map((d) => DESTINATION_EMOJI[d]).join("")}
+                  </span>
+                );
+              })()}
             </button>
           );
         })}

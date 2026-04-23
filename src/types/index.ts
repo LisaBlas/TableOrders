@@ -78,6 +78,7 @@ export interface OrderItem {
   crossed?: boolean;
   crossedQty?: number;
   note?: string;
+  destination?: string;
 }
 
 export type Orders = Record<string, OrderItem[]>;
