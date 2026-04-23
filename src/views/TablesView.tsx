@@ -200,7 +200,7 @@ export function TablesView() {
                 const dests = getTableDestinations(t.id, orders, sentBatches);
                 if (!dests.length) return null;
                 return (
-                  <span style={{ position: "absolute", bottom: 5, fontSize: 13, letterSpacing: 1, lineHeight: 1 }}>
+                  <span style={{ position: "absolute", top: 5, right: 6, fontSize: isDesktop || isTabletLandscape ? 11 : 9, letterSpacing: 1, lineHeight: 1 }}>
                     {dests.map((d) => DESTINATION_EMOJI[d]).join("")}
                   </span>
                 );

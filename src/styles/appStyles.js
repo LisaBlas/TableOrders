@@ -183,7 +183,7 @@ export const S = {
     justifyContent: "center",
     gap: 4,
     padding: "18px 8px",
-    borderRadius: 12,
+    borderRadius: 6,
     cursor: "pointer"
   },
   tableCardTablet: {
@@ -194,7 +194,7 @@ export const S = {
     justifyContent: "center",
     gap: 6,
     padding: "22px 10px",
-    borderRadius: 14,
+    borderRadius: 6,
     cursor: "pointer"
   },
   tableCardTabletLandscape: {
@@ -205,7 +205,7 @@ export const S = {
     justifyContent: "center",
     gap: 8,
     padding: "26px 12px",
-    borderRadius: 16,
+    borderRadius: 6,
     cursor: "pointer"
   },
   tableDot: {
