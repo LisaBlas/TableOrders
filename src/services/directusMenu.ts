@@ -7,7 +7,7 @@ function transformItem(item: any, categoryName: string) {
     shortName: item.short_name,
     subcategory: item.subcategory,
     posId: item.pos_id,
-    posName: item.pos_name,
+    posName: item.short_name,
     destination: item.destination,
     minQty: item.min_qty ?? 1,
     available: item.available,
@@ -22,7 +22,7 @@ function transformItem(item: any, categoryName: string) {
         label: v.label,
         price: v.price,
         posId: v.pos_id,
-        posName: v.pos_name,
+        posName: item.short_name,
         bottleSubcategory: v.bottle_subcategory,
       })),
     };
