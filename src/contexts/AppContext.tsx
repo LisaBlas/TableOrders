@@ -79,7 +79,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         } catch { return []; }
       }
     },
-    staleTime: 30_000,
+    staleTime: 5_000,
+    refetchInterval: 5_000,
     refetchOnWindowFocus: true,
   });
 
