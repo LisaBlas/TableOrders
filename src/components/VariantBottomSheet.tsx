@@ -36,7 +36,7 @@ export function VariantBottomSheet({ item, unsent, onSelectVariant, onClose, var
             return (
               <button
                 key={variant.type}
-                style={{ ...S.variantBtn, flex: "1 1 auto", justifyContent: "center", marginBottom: 0 }}
+                style={{ ...S.variantSheetBtn, flex: "1 1 auto", justifyContent: "center", marginBottom: 0 }}
                 onClick={() => {
                   onSelectVariant(variant);
                   onClose();
