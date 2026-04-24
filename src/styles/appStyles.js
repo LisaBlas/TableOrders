@@ -2024,5 +2024,91 @@ export const S = {
     background: "#f4fbf6",
     border: "1px solid #ebe9e3",
     borderLeft: "3px solid #52b87a"
+  },
+
+  // Login styles
+  loginContainer: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: "100vh",
+    background: "#f5f4f0",
+    padding: 20
+  },
+  loginCard: {
+    background: "#fff",
+    borderRadius: 16,
+    padding: "32px 24px",
+    maxWidth: 360,
+    width: "100%",
+    boxShadow: "0 4px 16px rgba(0, 0, 0, 0.08)"
+  },
+  loginTitle: {
+    fontSize: 24,
+    fontWeight: 800,
+    textAlign: "center",
+    marginBottom: 8,
+    letterSpacing: "-0.5px"
+  },
+  loginSubtitle: {
+    fontSize: 14,
+    color: "#888",
+    textAlign: "center",
+    marginBottom: 28
+  },
+  loginForm: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 16
+  },
+  loginLabel: {
+    fontSize: 13,
+    fontWeight: 600,
+    color: "#555",
+    marginBottom: 6
+  },
+  loginInput: {
+    width: "100%",
+    padding: "12px 14px",
+    fontSize: 15,
+    border: "1.5px solid #ddd",
+    borderRadius: 10,
+    background: "#fafaf8",
+    outline: "none",
+    fontFamily: "inherit",
+    boxSizing: "border-box"
+  },
+  loginButton: {
+    width: "100%",
+    padding: "14px",
+    borderRadius: 10,
+    border: "none",
+    background: "#1a1a1a",
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: 700,
+    cursor: "pointer",
+    marginTop: 8,
+    transition: "background 0.2s ease-out"
+  },
+  loginError: {
+    fontSize: 13,
+    color: "#c0392b",
+    textAlign: "center",
+    marginTop: -8,
+    marginBottom: 4
+  },
+
+  // Logout button
+  logoutButton: {
+    background: "none",
+    border: "1.5px solid #ccc",
+    borderRadius: 8,
+    padding: "6px 12px",
+    fontSize: 13,
+    fontWeight: 600,
+    color: "#555",
+    cursor: "pointer",
+    transition: "all 0.2s ease-out"
   }
 };

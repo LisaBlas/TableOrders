@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { MenuProvider, useMenu } from "./contexts/MenuContext";
 import { AppProvider, useApp } from "./contexts/AppContext";
 import { TableProvider } from "./contexts/TableContext";
@@ -12,6 +13,7 @@ import { SplitItemView } from "./views/SplitItemView";
 import { SplitConfirmView } from "./views/SplitConfirmView";
 import { SplitDoneView } from "./views/SplitDoneView";
 import { DailySalesView } from "./views/DailySalesView";
+import LoginView from "./views/LoginView";
 import { Toast } from "./components/Toast";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { S } from "./styles/appStyles";
@@ -56,9 +58,13 @@ function LoadingScreen() {
 function Router() {
   const { view, toast } = useApp();
   const { menuLoading } = useMenu();
+  const { isAuthenticated } = useAuth();
   const { isTabletLandscape, isTablet, isDesktop } = useBreakpoint();
 
   if (menuLoading) return <LoadingScreen />;
+
+  // Auth guard: show login if not authenticated
+  if (!isAuthenticated) return <LoginView />;
 
   const rootStyle = isDesktop || isTabletLandscape ? S.rootTabletLandscape : isTablet ? S.rootTablet : S.root;
 
@@ -94,13 +100,15 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
     <ErrorBoundary>
       <MenuProvider>
-        <AppProvider>
-          <TableProvider>
-            <SplitProvider>
-              <Router />
-            </SplitProvider>
-          </TableProvider>
-        </AppProvider>
+        <AuthProvider>
+          <AppProvider>
+            <TableProvider>
+              <SplitProvider>
+                <Router />
+              </SplitProvider>
+            </TableProvider>
+          </AppProvider>
+        </AuthProvider>
       </MenuProvider>
     </ErrorBoundary>
     </QueryClientProvider>

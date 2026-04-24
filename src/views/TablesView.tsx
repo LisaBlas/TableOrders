@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from "react";
 import { TABLES, STATUS_CONFIG } from "../data/constants";
 import { getTableStatus, getItemDestination } from "../utils/helpers";
 import { useApp } from "../contexts/AppContext";
+import { useAuth } from "../contexts/AuthContext";
 import { useTable } from "../contexts/TableContext";
 import { useBreakpoint } from "../hooks/useBreakpoint";
 import { S } from "../styles/appStyles";
@@ -24,11 +25,13 @@ const LONG_PRESS_MS = 500;
 
 export function TablesView() {
   const { setView, setActiveTable, showToast } = useApp();
+  const { logout } = useAuth();
   const { orders, seatedTables, seatTable, sentBatches, markedBatches, swapTables } = useTable();
   const { isMobile, isTablet, isTabletLandscape, isDesktop } = useBreakpoint();
   const [seatConfirmTable, setSeatConfirmTable] = useState<string | number | null>(null);
   const [swapSourceTable, setSwapSourceTable] = useState<string | number | null>(null);
   const [swapTargetTable, setSwapTargetTable] = useState<string | number | null>(null);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longFiredRef = useRef(false);
@@ -110,25 +113,33 @@ export function TablesView() {
             month: "short",
           })}
         </span>
-        <button
-          style={{
-            background: "none",
-            border: "1.5px solid #ddd",
-            borderRadius: 8,
-            fontSize: 14,
-            fontWeight: 600,
-            cursor: "pointer",
-            padding: "8px 12px",
-            lineHeight: 1,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 6
-          }}
-          onClick={() => setView("dailySales")}
-        >
-          <span>Daily Sales</span>
-        </button>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <button
+            style={{
+              background: "none",
+              border: "1.5px solid #ddd",
+              borderRadius: 8,
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: "pointer",
+              padding: "8px 12px",
+              lineHeight: 1,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 6
+            }}
+            onClick={() => setView("dailySales")}
+          >
+            <span>Daily Sales</span>
+          </button>
+          <button
+            style={S.logoutButton}
+            onClick={() => setShowLogoutModal(true)}
+          >
+            Logout
+          </button>
+        </div>
       </header>
       <div style={{ ...gridStyle, paddingBottom: swapSourceTable !== null ? 160 : (isTablet || isTabletLandscape || isDesktop ? 20 : 16) }}>
         {TABLES.map((t: any) => {
@@ -270,6 +281,24 @@ export function TablesView() {
               </button>
             </div>
         </div>
+      )}
+
+      {/* Logout confirmation */}
+      {showLogoutModal && (
+        <Modal
+          title="Log Out"
+          onClose={() => setShowLogoutModal(false)}
+          onConfirm={() => {
+            logout();
+            setShowLogoutModal(false);
+            showToast("Logged out");
+          }}
+          confirmText="Log Out"
+        >
+          <div style={S.modalMessage}>
+            Are you sure you want to log out?
+          </div>
+        </Modal>
       )}
     </div>
   );
