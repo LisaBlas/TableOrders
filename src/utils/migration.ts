@@ -36,12 +36,12 @@ function findMenuItem(itemId: string, itemName: string): { posId: string; posNam
   for (const category of Object.values(MENU)) {
     for (const item of category) {
       // Simple items (no variants)
-      if ("posId" in item && item.id === itemId) {
-        return { posId: item.posId, posName: (item as any).posName || item.shortName };
+      if ("posId" in item && item.posId && item.id === itemId) {
+        return { posId: item.posId, posName: (item as any).posName || item.shortName || item.name };
       }
 
       // Items with variants (check both full itemId and baseId)
-      if ("variants" in item && (item.id === itemId || item.id === baseId)) {
+      if ("variants" in item && item.variants && (item.id === itemId || item.id === baseId)) {
         // Try to match by item name pattern (e.g., "Picpoul (0,2)" -> find variant with "0,2" label)
         const variantMatch = itemName.match(/\(([^)]+)\)/);
         if (variantMatch) {

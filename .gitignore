@@ -12,7 +12,6 @@ dist
 dist-ssr
 *.local
 
-CLAUDE.md
 REFACTOR_PLAN.md
 DETAILED_REFACTOR_PLAN.md
 DIRECTUS_SETUP.md

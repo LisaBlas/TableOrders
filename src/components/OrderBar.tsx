@@ -147,7 +147,7 @@ export function OrderBar({ tableId, unsent, batches, expanded, onToggleExpand, o
                     <button
                       style={S.orderBarQtyBtn}
                       onClick={() => {
-                        const baseItem = (o as any).baseId
+                        const baseItem = (o as any).baseId && o.category
                           ? (menu as any)[o.category]?.find((i: any) => i.id === (o as any).baseId) || o
                           : o;
                         const variant = (o as any).variantType

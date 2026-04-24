@@ -18,7 +18,7 @@ export interface TableDivider {
 
 export type TableConfig = TableEntry | TableDivider;
 
-export type TableStatus = "open" | "taken" | "ordered";
+export type TableStatus = "open" | "seated" | "unconfirmed" | "confirmed";
 
 export interface StatusConfig {
   label: string;
@@ -74,6 +74,8 @@ export interface OrderItem {
   subcategory?: string;
   posId?: string;
   posName?: string;
+  baseId?: string;
+  variantType?: string;
   _uid?: string;
   crossed?: boolean;
   crossedQty?: number;
@@ -106,6 +108,7 @@ export interface Bill {
   total: number;
   subtotal?: number;
   gutschein?: number;
+  tip?: number;
   timestamp: string;
   paymentMode: "full" | "equal" | "item";
   splitData?: EqualSplitData | ItemSplitData;

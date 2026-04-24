@@ -27,6 +27,8 @@ npm run dev
 npm run build
 npm run preview
 npm run deploy
+npm.cmd run build
+npm.cmd exec tsc -- --noEmit
 ```
 
 Notes:
@@ -35,6 +37,8 @@ Notes:
 - `npm run deploy` builds via `predeploy` and publishes `dist` to GitHub Pages.
 - Run `npm run build` before considering code changes complete unless the task
   is docs-only.
+- On Windows PowerShell, use `npm.cmd` when `npm.ps1` is blocked by execution
+  policy.
 
 ## Deployment Rules
 - Before source changes, pull latest `main`:
@@ -125,6 +129,7 @@ src/
 
 ## Testing And Verification
 - Primary verification is `npm run build`.
+- Type-check with `npm.cmd exec tsc -- --noEmit`.
 - For UI behavior changes, run `npm run dev` and manually check the affected
   flow at mobile and tablet/desktop widths.
 - For sync, bill creation, POS crossing, clearing sales, or split payments,

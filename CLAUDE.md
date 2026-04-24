@@ -235,6 +235,8 @@ src/
 npm install        # Install dependencies
 npm run dev        # Start dev server (localhost:3000)
 npm run build      # Production build
+npm.cmd run build  # Windows PowerShell fallback when npm.ps1 is blocked
+npm.cmd exec tsc -- --noEmit  # Type-check without building
 npm run preview    # Preview production build
 ```
 

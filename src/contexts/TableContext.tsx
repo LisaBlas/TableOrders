@@ -193,6 +193,11 @@ export function TableProvider({ children }: { children: ReactNode }) {
   }, [scheduleWrite]);
 
   const addItem = useCallback((tableId: TableId, item: MenuItem, variant: MenuItemVariant | null, category: MenuCategory, note?: string) => {
+    if (!variant && item.price == null) {
+      showToast("Item is missing a price");
+      return;
+    }
+
     const baseOrderItem = variant
       ? {
           id: `${item.id}-${variant.type}`,
@@ -206,7 +211,16 @@ export function TableProvider({ children }: { children: ReactNode }) {
           posId: variant.posId,
           posName: item.shortName,
         }
-      : { ...item, category };
+      : {
+          id: item.id,
+          name: item.name,
+          shortName: item.shortName,
+          price: item.price ?? 0,
+          subcategory: item.subcategory,
+          posId: item.posId,
+          posName: item.posName,
+          category,
+        };
 
     const orderItem = note
       ? { ...baseOrderItem, id: `${baseOrderItem.id}-note-${Date.now()}`, note }
