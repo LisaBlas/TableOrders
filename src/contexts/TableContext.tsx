@@ -2,10 +2,9 @@ import {
   createContext, useContext, useState, useCallback, useEffect, useRef, useMemo,
   type ReactNode,
 } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { useApp } from "./AppContext";
 import { useMenu } from "./MenuContext";
-import { fetchAllSessions, upsertSession, deleteSession, parseTableId } from "../services/directusSessions";
+import { useDirectusSync } from "../hooks/useDirectusSync";
 import type {
   Orders, OrderItem, SentBatches, Batch, GutscheinAmounts,
   TableId, MenuItem, MenuItemVariant, MenuCategory, ExpandedItem,
@@ -42,6 +41,7 @@ export function TableProvider({ children }: { children: ReactNode }) {
   const { showToast } = useApp();
   const { minQty2Ids } = useMenu();
 
+  // ── State ─────────────────────────────────────────────────────────────────
   const [orders, setOrders] = useState<Orders>({});
   const [seatedTablesArr, setSeatedTablesArr] = useState<TableId[]>([]);
   const [sentBatches, setSentBatches] = useState<SentBatches>({});
@@ -50,136 +50,16 @@ export function TableProvider({ children }: { children: ReactNode }) {
 
   const seatedTables = useMemo(() => new Set<TableId>(seatedTablesArr), [seatedTablesArr]);
 
-  // ── Refs for async reads in debounced writes ──────────────────────────────
+  // sendOrder reads orders synchronously before any setState fires
   const ordersRef = useRef(orders);
-  const seatedTablesArrRef = useRef(seatedTablesArr);
-  const sentBatchesRef = useRef(sentBatches);
-  const gutscheinRef = useRef(gutscheinAmounts);
-  const markedBatchesRef = useRef(markedBatches);
-
   useEffect(() => { ordersRef.current = orders; }, [orders]);
-  useEffect(() => { seatedTablesArrRef.current = seatedTablesArr; }, [seatedTablesArr]);
-  useEffect(() => { sentBatchesRef.current = sentBatches; }, [sentBatches]);
-  useEffect(() => { gutscheinRef.current = gutscheinAmounts; }, [gutscheinAmounts]);
-  useEffect(() => { markedBatchesRef.current = markedBatches; }, [markedBatches]);
 
-  // ── Directus sync refs ────────────────────────────────────────────────────
-  const sessionIdMap = useRef<Record<string, number>>({});   // tableId → Directus record id
-  const lastWriteTime = useRef<Record<string, number>>({});  // tableId → epoch ms of last write
-  const pendingWrites = useRef(new Set<string>());           // tableIds with scheduled writes
-  const writeTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
-  const retryCountsRef = useRef<Record<string, number>>({});
-
-  // ── Poll remote sessions ──────────────────────────────────────────────────
-  const { data: remoteSessions } = useQuery({
-    queryKey: ["table_sessions"],
-    queryFn: fetchAllSessions,
-    refetchInterval: 2000,
-    refetchOnWindowFocus: true,
-    staleTime: 1000,
-  });
-
-  // ── Merge remote state ────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!remoteSessions) return;
-
-    const now = Date.now();
-    const remoteMap = new Map(remoteSessions.map((s) => [s.table_id, s]));
-
-    // Update Directus ID map
-    remoteSessions.forEach((s) => { sessionIdMap.current[s.table_id] = s.id; });
-
-    const isLocallyOwned = (key: string) =>
-      pendingWrites.current.has(key) || now - (lastWriteTime.current[key] ?? 0) < 3000;
-
-    // All table IDs known to either side
-    const allKeys = new Set([
-      ...remoteMap.keys(),
-      ...Object.keys(ordersRef.current),
-      ...seatedTablesArrRef.current.map(String),
-      ...Object.keys(sentBatchesRef.current),
-    ]);
-
-    const newOrders: Orders = {};
-    const newSeated = new Set<TableId>();
-    const newSentBatches: SentBatches = {};
-    const newGutschein: GutscheinAmounts = {};
-    const newMarkedBatches: Record<string, Set<number>> = {};
-
-    allKeys.forEach((key) => {
-      if (isLocallyOwned(key)) {
-        // Keep local state for this table
-        const tableId = parseTableId(key);
-        if (ordersRef.current[key]?.length) newOrders[key] = ordersRef.current[key];
-        if (seatedTablesArrRef.current.some((id) => String(id) === key)) newSeated.add(tableId);
-        if (sentBatchesRef.current[key]?.length) newSentBatches[key] = sentBatchesRef.current[key];
-        if (gutscheinRef.current[key] != null) newGutschein[key] = gutscheinRef.current[key];
-        if (markedBatchesRef.current[key]?.size) newMarkedBatches[key] = markedBatchesRef.current[key];
-      } else {
-        const session = remoteMap.get(key);
-        if (!session) return; // deleted remotely — exclude from new state
-
-        const tableId = parseTableId(key);
-        if (session.orders?.length) newOrders[key] = session.orders;
-        if (session.seated) newSeated.add(tableId);
-        if (session.sent_batches?.length) newSentBatches[key] = session.sent_batches;
-        if (session.gutschein != null) newGutschein[key] = session.gutschein;
-        if (session.marked_batches?.length) newMarkedBatches[key] = new Set(session.marked_batches);
-      }
-    });
-
-    setOrders(newOrders);
-    setSeatedTablesArr(Array.from(newSeated));
-    setSentBatches(newSentBatches);
-    setGutscheinAmounts(newGutschein);
-    setMarkedBatches(newMarkedBatches);
-  }, [remoteSessions]);
-
-  // ── Debounced write to Directus ───────────────────────────────────────────
-  const scheduleWrite = useCallback((tableId: TableId) => {
-    const key = String(tableId);
-    pendingWrites.current.add(key);
-    clearTimeout(writeTimers.current[key]);
-    writeTimers.current[key] = setTimeout(async () => {
-      const session = {
-        table_id: key,
-        seated: seatedTablesArrRef.current.some((id) => String(id) === key),
-        gutschein: gutscheinRef.current[key] ?? null,
-        orders: ordersRef.current[key] ?? [],
-        sent_batches: sentBatchesRef.current[key] ?? [],
-        marked_batches: Array.from(markedBatchesRef.current[key] ?? new Set<number>()),
-      };
-
-      try {
-        const newId = await upsertSession(sessionIdMap.current[key] ?? null, session);
-        sessionIdMap.current[key] = newId;
-        // Success: clear retry count and release ownership
-        delete retryCountsRef.current[key];
-        pendingWrites.current.delete(key);
-        lastWriteTime.current[key] = Date.now();
-      } catch (e) {
-        const attempts = (retryCountsRef.current[key] ?? 0) + 1;
-        retryCountsRef.current[key] = attempts;
-        console.error(`Session write failed (attempt ${attempts}/3):`, e);
-
-        if (attempts < 3) {
-          // Show toast only on first failure
-          if (attempts === 1) {
-            showToast("Table state not saved - retrying");
-          }
-          // Refresh lastWriteTime to maintain local ownership during retry
-          lastWriteTime.current[key] = Date.now();
-          // Retry immediately
-          scheduleWrite(tableId);
-        } else {
-          // Final failure: show hard error and release ownership
-          showToast("Table state not saved - check network");
-          delete retryCountsRef.current[key];
-          pendingWrites.current.delete(key);
-        }
-      }
-    }, 500);
-  }, [showToast]);
+  // ── Directus sync (polling, debounced writes, conflict resolution) ─────────
+  const { scheduleWrite, cancelAndDelete } = useDirectusSync(
+    { orders, seatedTablesArr, sentBatches, gutscheinAmounts, markedBatches },
+    { setOrders, setSeatedTablesArr, setSentBatches, setGutscheinAmounts, setMarkedBatches },
+    showToast
+  );
 
   // ── Actions ───────────────────────────────────────────────────────────────
 
@@ -369,23 +249,13 @@ export function TableProvider({ children }: { children: ReactNode }) {
 
   const cleanupTable = useCallback((tableId: TableId) => {
     const key = String(tableId);
-
     setOrders((prev) => { const n = { ...prev }; delete n[key]; return n; });
     setSeatedTablesArr((prev) => prev.filter((id) => String(id) !== key));
     setSentBatches((prev) => { const n = { ...prev }; delete n[key]; return n; });
     setGutscheinAmounts((prev) => { const n = { ...prev }; delete n[key]; return n; });
     setMarkedBatches((prev) => { const n = { ...prev }; delete n[key]; return n; });
-
-    // Cancel any pending write and delete from Directus
-    clearTimeout(writeTimers.current[key]);
-    pendingWrites.current.delete(key);
-    delete lastWriteTime.current[key];
-    const directusId = sessionIdMap.current[key];
-    if (directusId) {
-      delete sessionIdMap.current[key];
-      deleteSession(directusId).catch(console.error);
-    }
-  }, []);
+    cancelAndDelete(tableId);
+  }, [cancelAndDelete]);
 
   const removePaidItems = useCallback((tableId: TableId, paidItems: ExpandedItem[]) => {
     setOrders((prev) => {
