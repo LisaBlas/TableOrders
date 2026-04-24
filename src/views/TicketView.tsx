@@ -4,6 +4,7 @@ import { useTable } from "../contexts/TableContext";
 import { useTableOrder } from "../hooks/useTableOrder";
 import { useSplit } from "../contexts/SplitContext";
 import { useBreakpoint } from "../hooks/useBreakpoint";
+import { createFullTableBill } from "../utils/billFactory";
 import { Receipt } from "../components/Receipt";
 import { BackIcon } from "../components/icons";
 import { S } from "../styles/appStyles";
@@ -21,24 +22,15 @@ export function TicketView() {
   const [showSplitOptions, setShowSplitOptions] = useState(false);
 
   const confirmClose = () => {
-    const items = ticketItems.filter((o: OrderItem) => (o.sentQty || 0) > 0);
-    const subtotal = items.reduce((s: number, o: OrderItem) => s + o.price * (o.sentQty || 0), 0);
-    const gutschein = table.gutscheinAmounts[tableId] || 0;
-    const total = Math.max(0, subtotal - gutschein);
-
-    const bill = {
+    const bill = createFullTableBill({
       tableId,
-      items: items.map((o: OrderItem) => ({ ...o, qty: o.sentQty || 0 })),
-      total,
-      subtotal: gutschein > 0 ? subtotal : undefined,
-      gutschein: gutschein > 0 ? gutschein : undefined,
-      timestamp: new Date().toISOString(),
-      paymentMode: "full" as const,
-    };
+      orders: table.orders,
+      gutschein: table.gutscheinAmounts[tableId] || 0,
+    });
 
     app.addPaidBill(bill);
     table.cleanupTable(tableId);
-    app.showToast(`Table ${tableId} closed — ${total.toFixed(2)}€`);
+    app.showToast(`Table ${tableId} closed — ${bill.total.toFixed(2)}€`);
     app.setView("tables");
   };
 
@@ -109,3 +101,4 @@ export function TicketView() {
     </div>
   );
 }
+

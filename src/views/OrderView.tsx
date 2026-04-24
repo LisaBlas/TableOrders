@@ -6,10 +6,9 @@ import { useTable } from "../contexts/TableContext";
 import { useTableOrder } from "../hooks/useTableOrder";
 import { useMenuItems } from "../hooks/useMenuItems";
 import { useBreakpoint } from "../hooks/useBreakpoint";
-import { groupBy } from "../utils/helpers";
 import { S } from "../styles/appStyles";
 import { Modal } from "../components/Modal";
-import { MenuItemCard } from "../components/MenuItemCard";
+import { MenuGrid } from "../components/MenuGrid";
 import { VariantBottomSheet } from "../components/VariantBottomSheet";
 import { NoteBottomSheet } from "../components/NoteBottomSheet";
 import { OrderBar } from "../components/OrderBar";
@@ -145,48 +144,6 @@ export function OrderView() {
     searchQuery,
   });
 
-  const renderMenuGrid = () => {
-    // Responsive grid style
-    const menuGridStyle = isDesktop || isTabletLandscape ? S.grid4TabletLandscape : isTablet ? S.grid4Tablet : S.grid4;
-
-    if (filteredItems.length === 0) {
-      return (
-        <div style={S.noResults}>
-          <span style={S.noResultsText}>No items found for "{searchQuery}"</span>
-        </div>
-      );
-    }
-
-    // Group by subcategory and render with dividers
-    const grouped = groupBy(filteredItems, "subcategory");
-
-    return (
-      <div style={menuGridStyle}>
-        {Object.entries(grouped).map(([subcategoryId, items]: [string, any]) => {
-          // Find subcategory label
-          const subcategoryObj = subcategoryConfig.find((s: any) => s.id === subcategoryId);
-          const subcategoryLabel = subcategoryObj?.label || subcategoryId;
-
-          return (
-            <div key={subcategoryId} style={{ gridColumn: "1 / -1", display: "contents" }}>
-              {subcategoryConfig.length > 0 && <div style={S.subcategoryDivider}>{subcategoryLabel}</div>}
-              {items.map((item: any) => (
-                <MenuItemCard
-                  key={item.id}
-                  item={item}
-                  unsent={unsent}
-                  showCategory={!!searchQuery}
-                  onTap={handleCardTap}
-                  onLongPress={handleCardLongPress}
-                />
-              ))}
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
-
   // Show BillView if active
   if (showBillView) {
     return <BillView tableId={tableId} sent={sent} onClose={() => setUserViewPreference('order')} />;
@@ -237,7 +194,14 @@ export function OrderView() {
       </div>
 
       <div style={{ ...S.orderContent, paddingBottom: (unsent.length > 0 || batches.length > 0) ? 180 : 36 }}>
-        {renderMenuGrid()}
+        <MenuGrid
+          filteredItems={filteredItems}
+          subcategoryConfig={subcategoryConfig}
+          searchQuery={searchQuery}
+          unsent={unsent}
+          onTap={handleCardTap}
+          onLongPress={handleCardLongPress}
+        />
       </div>
 
       {(unsent.length > 0 || batches.length > 0) && (

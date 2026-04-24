@@ -3,9 +3,9 @@ import { useTable } from "../contexts/TableContext";
 import { useTableOrder } from "../hooks/useTableOrder";
 import { useSplit } from "../contexts/SplitContext";
 import { useBreakpoint } from "../hooks/useBreakpoint";
+import { createEqualSplitTableBill } from "../utils/billFactory";
 import { BackIcon } from "../components/icons";
 import { S } from "../styles/appStyles";
-import type { OrderItem } from "../types";
 
 export function SplitEqualView() {
   const app = useApp();
@@ -18,32 +18,19 @@ export function SplitEqualView() {
   const equalShare = state.equalGuests > 0 ? ticketTotal / state.equalGuests : 0;
 
   const closeSplitTable = () => {
-    const items = (table.orders[tableId] || []).filter((o: OrderItem) => (o.sentQty || 0) > 0);
-    const subtotal = items.reduce((s: number, o: OrderItem) => s + o.price * (o.sentQty || 0), 0);
-    const gutschein = table.gutscheinAmounts[tableId] || 0;
-    const total = Math.max(0, subtotal - gutschein);
-
-    // Calculate total tips
-    const confirmedPayments = state.equalPayments.filter((p) => p.confirmed);
-    const totalPaid = confirmedPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0);
-    const totalTip = totalPaid > 0 ? totalPaid - (confirmedPayments.length * equalShare) : 0;
-
-    const bill = {
+    const bill = createEqualSplitTableBill({
       tableId,
-      items: items.map((o: OrderItem) => ({ ...o, qty: o.sentQty || 0 })),
-      total,
-      subtotal: gutschein > 0 ? subtotal : undefined,
-      gutschein: gutschein > 0 ? gutschein : undefined,
-      timestamp: new Date().toISOString(),
-      paymentMode: "equal" as const,
-      splitData: { guests: state.equalGuests },
-      tip: totalTip !== 0 ? totalTip : undefined,
-    };
+      orders: table.orders,
+      gutschein: table.gutscheinAmounts[tableId] || 0,
+      guests: state.equalGuests,
+      equalPayments: state.equalPayments,
+      equalShare,
+    });
 
     app.addPaidBill(bill);
     table.cleanupTable(tableId);
     dispatch({ type: "RESET" });
-    app.showToast(`Table ${tableId} closed — ${total.toFixed(2)}€`);
+    app.showToast(`Table ${tableId} closed — ${bill.total.toFixed(2)}€`);
     app.setView("tables");
   };
 

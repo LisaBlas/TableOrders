@@ -3,8 +3,8 @@ import { useTable } from "../contexts/TableContext";
 import { useTableOrder } from "../hooks/useTableOrder";
 import { useSplit } from "../contexts/SplitContext";
 import { useBreakpoint } from "../hooks/useBreakpoint";
+import { calculateItemSplitTip, createItemSplitTableBill } from "../utils/billFactory";
 import { S } from "../styles/appStyles";
-import type { OrderItem } from "../types";
 
 export function SplitDoneView() {
   const app = useApp();
@@ -13,36 +13,22 @@ export function SplitDoneView() {
   const { isTablet, isTabletLandscape, isDesktop } = useBreakpoint();
   const tableId = app.ticketTable!;
   const { total: ticketTotal } = useTableOrder(tableId);
+  const totalTip = calculateItemSplitTip(state.payments, state.itemPayments);
+  const hasConfirmedPayments = state.payments.some((payment) => state.itemPayments[payment.guestNum]?.confirmed);
 
   const closeSplitTable = () => {
-    const items = (table.orders[tableId] || []).filter((o: OrderItem) => (o.sentQty || 0) > 0);
-    const subtotal = items.reduce((s: number, o: OrderItem) => s + o.price * (o.sentQty || 0), 0);
-    const gutschein = table.gutscheinAmounts[tableId] || 0;
-    const total = Math.max(0, subtotal - gutschein);
-
-    // Calculate total tips from item split
-    const guestsWithPayment = state.payments.filter((p) => state.itemPayments[p.guestNum]?.confirmed);
-    const totalTip = guestsWithPayment.reduce((sum, p) => {
-      const paid = parseFloat(state.itemPayments[p.guestNum].amount);
-      return sum + (paid - p.total);
-    }, 0);
-
-    const bill = {
+    const bill = createItemSplitTableBill({
       tableId,
-      items: items.map((o: OrderItem) => ({ ...o, qty: o.sentQty || 0 })),
-      total,
-      subtotal: gutschein > 0 ? subtotal : undefined,
-      gutschein: gutschein > 0 ? gutschein : undefined,
-      timestamp: new Date().toISOString(),
-      paymentMode: "item" as const,
-      splitData: { payments: state.payments },
-      tip: totalTip !== 0 ? totalTip : undefined,
-    };
+      orders: table.orders,
+      gutschein: table.gutscheinAmounts[tableId] || 0,
+      payments: state.payments,
+      itemPayments: state.itemPayments,
+    });
 
     app.addPaidBill(bill);
     table.cleanupTable(tableId);
     dispatch({ type: "RESET" });
-    app.showToast(`Table ${tableId} closed — ${total.toFixed(2)}€`);
+    app.showToast(`Table ${tableId} closed — ${bill.total.toFixed(2)}€`);
     app.setView("tables");
   };
 
@@ -81,26 +67,16 @@ export function SplitDoneView() {
             <span>Total collected</span>
             <span>{state.payments.reduce((s, p) => s + p.total, 0).toFixed(2)}€</span>
           </div>
-          {(() => {
-            const guestsWithPayment = state.payments.filter((p) => state.itemPayments[p.guestNum]?.confirmed);
-            if (guestsWithPayment.length > 0) {
-              const totalTip = guestsWithPayment.reduce((sum, p) => {
-                const paid = parseFloat(state.itemPayments[p.guestNum].amount);
-                return sum + (paid - p.total);
-              }, 0);
-              return (
-                <div style={{
-                  display: "flex", justifyContent: "space-between",
-                  fontSize: 15, color: totalTip >= 0 ? "#2d5a35" : "#c0392b",
-                  marginTop: 8, fontWeight: 600,
-                }}>
-                  <span>Total tip</span>
-                  <span>{totalTip >= 0 ? `+${totalTip.toFixed(2)}€` : `${totalTip.toFixed(2)}€`}</span>
-                </div>
-              );
-            }
-            return null;
-          })()}
+          {hasConfirmedPayments && (
+            <div style={{
+              display: "flex", justifyContent: "space-between",
+              fontSize: 15, color: totalTip >= 0 ? "#2d5a35" : "#c0392b",
+              marginTop: 8, fontWeight: 600,
+            }}>
+              <span>Total tip</span>
+              <span>{totalTip >= 0 ? `+${totalTip.toFixed(2)}€` : `${totalTip.toFixed(2)}€`}</span>
+            </div>
+          )}
         </div>
         <div style={S.ticketActions}>
           <button style={S.closeBtn} onClick={closeSplitTable}>
@@ -146,26 +122,16 @@ export function SplitDoneView() {
               <span>Total collected</span>
               <span>{state.payments.reduce((s, p) => s + p.total, 0).toFixed(2)}€</span>
             </div>
-            {(() => {
-              const guestsWithPayment = state.payments.filter((p) => state.itemPayments[p.guestNum]?.confirmed);
-              if (guestsWithPayment.length > 0) {
-                const totalTip = guestsWithPayment.reduce((sum, p) => {
-                  const paid = parseFloat(state.itemPayments[p.guestNum].amount);
-                  return sum + (paid - p.total);
-                }, 0);
-                return (
-                  <div style={{
-                    display: "flex", justifyContent: "space-between",
-                    fontSize: 15, color: totalTip >= 0 ? "#2d5a35" : "#c0392b",
-                    marginTop: 8, fontWeight: 600,
-                  }}>
-                    <span>Total tip</span>
-                    <span>{totalTip >= 0 ? `+${totalTip.toFixed(2)}€` : `${totalTip.toFixed(2)}€`}</span>
-                  </div>
-                );
-              }
-              return null;
-            })()}
+            {hasConfirmedPayments && (
+              <div style={{
+                display: "flex", justifyContent: "space-between",
+                fontSize: 15, color: totalTip >= 0 ? "#2d5a35" : "#c0392b",
+                marginTop: 8, fontWeight: 600,
+              }}>
+                <span>Total tip</span>
+                <span>{totalTip >= 0 ? `+${totalTip.toFixed(2)}€` : `${totalTip.toFixed(2)}€`}</span>
+              </div>
+            )}
           </div>
         </div>
 

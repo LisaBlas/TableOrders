@@ -5,6 +5,7 @@ import { BillCard } from "../components/BillCard";
 import { SalesSummary } from "../components/SalesSummary";
 import { BackIcon } from "../components/icons";
 import { todayBerlinDate } from "../services/directusBills";
+import { aggregateDailySales, type PosEntry } from "../utils/salesAggregation";
 
 export function DailySalesView() {
   const app = useApp();
@@ -25,60 +26,7 @@ export function DailySalesView() {
 
   // Total tab aggregation - by POS ID for easy POS entry
   const renderTotalTab = () => {
-    type PosEntry = { posId: string; posName: string; qty: number; revenue: number; items: string[] };
-    type BillGroup = { tableId: number; timestamp: string; items: PosEntry[] };
-    const activeMap = new Map<string, PosEntry>();
-    const removedBillGroups: BillGroup[] = [];
-
-    const addToMap = (map: Map<string, PosEntry>, posId: string, posName: string, item: typeof paidBills[0]["items"][0], qty: number) => {
-      if (qty <= 0) return;
-      const key = `${posId}::${posName}::${item.name}`;
-      if (!map.has(key)) map.set(key, { posId, posName, qty: 0, revenue: 0, items: [] });
-      const entry = map.get(key)!;
-      entry.qty += qty;
-      entry.revenue += item.price * qty;
-      if (!entry.items.includes(item.name)) entry.items.push(item.name);
-    };
-
-    paidBills.forEach((bill) => {
-      const billRemoved = !!bill.addedToPOS;
-      const billRemovedMap = new Map<string, PosEntry>();
-
-      bill.items.forEach((item) => {
-        const posId = item.posId || "NO_POS_ID";
-        const posName = item.posName || item.shortName || item.name;
-        const crossedCount = item.crossedQty ?? (item.crossed ? item.qty : 0);
-        const activeCount = billRemoved ? 0 : item.qty - crossedCount;
-        const removedCount = billRemoved ? item.qty : crossedCount;
-
-        addToMap(activeMap, posId, posName, item, activeCount);
-        if (removedCount > 0) addToMap(billRemovedMap, posId, posName, item, removedCount);
-      });
-
-      if (billRemovedMap.size > 0) {
-        removedBillGroups.push({
-          tableId: bill.tableId as number,
-          timestamp: bill.timestamp,
-          items: Array.from(billRemovedMap.values()),
-        });
-      }
-    });
-
-    const parsePos = (id: string) => {
-      const parts = id.split("-");
-      return { base: parseInt(parts[0]) || 0, suffix: parseInt(parts[1]) || 0 };
-    };
-    const sort = (m: Map<string, PosEntry>) =>
-      Array.from(m.values()).sort((a, b) => {
-        const pa = parsePos(a.posId);
-        const pb = parsePos(b.posId);
-        return pa.base !== pb.base ? pa.base - pb.base : pa.suffix - pb.suffix;
-      });
-
-    const isMissingPosId = (id: string) => id === "NO_POS_ID" || id === "0000";
-    const activeAll = sort(activeMap);
-    const withPosId = activeAll.filter((i) => !isMissingPosId(i.posId));
-    const missingPosId = activeAll.filter((i) => isMissingPosId(i.posId));
+    const { addedToPOSBills, withPosId, missingPosId } = aggregateDailySales(paidBills);
 
     const renderPosRow = (item: PosEntry, color: string, compact?: boolean) => (
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
@@ -111,9 +59,6 @@ export function DailySalesView() {
     };
 
     const isWideScreen = isDesktop || isTabletLandscape || isTablet;
-
-    // Find bills that have been added to POS
-    const addedToPOSBills = paidBills.filter(bill => bill.addedToPOS);
 
     // Sales items grid style - multiple columns on larger screens
     const salesGridStyle = isWideScreen ? {
