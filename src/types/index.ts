@@ -99,6 +99,7 @@ export type GutscheinAmounts = Record<string, number>;
 // ── Bill ──
 
 export interface Bill {
+  tempId?: string;      // Client-only optimistic ID (not persisted to Directus)
   directusId?: string;
   tableId: TableId;
   items: OrderItem[];

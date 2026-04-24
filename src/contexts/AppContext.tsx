@@ -109,19 +109,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Always targets today's cache key regardless of the selected date in Daily Sales.
   const addPaidBill = useCallback((bill: Bill) => {
     const todayKey = ["bills", todayBerlinDate()];
+
+    // Backstop: generate tempId if missing (race-condition fix)
+    const tempId = bill.tempId ?? crypto.randomUUID();
+    const optimisticBill = { ...bill, tempId };
+
+    // Optimistic update
     const current = queryClient.getQueryData<Bill[]>(todayKey) ?? [];
-    queryClient.setQueryData<Bill[]>(todayKey, [...current, bill]);
-    createBillInDirectus(bill)
+    queryClient.setQueryData<Bill[]>(todayKey, [...current, optimisticBill]);
+
+    createBillInDirectus(optimisticBill)
       .then((savedBill) => {
         const latest = queryClient.getQueryData<Bill[]>(todayKey) ?? [];
         queryClient.setQueryData<Bill[]>(todayKey, latest.map((b) =>
-          b.timestamp === savedBill.timestamp && b.tableId === savedBill.tableId
-            ? savedBill
+          b.tempId === tempId  // Match by captured tempId (closure)
+            ? { ...savedBill, tempId: undefined }  // Strip tempId after sync
             : b
         ));
       })
-      .catch((err) => console.warn("Failed to save bill to Directus:", err.message));
-  }, [queryClient]);
+      .catch((err) => {
+        console.warn("Failed to save bill to Directus:", err.message);
+        // Remove optimistic bill on failure
+        const latest = queryClient.getQueryData<Bill[]>(todayKey) ?? [];
+        queryClient.setQueryData<Bill[]>(todayKey, latest.filter((b) => b.tempId !== tempId));
+        showToast("Bill not saved - check connection");
+      });
+  }, [queryClient, showToast]);
 
   const markBillAddedToPOS = useCallback((billIndex: number) => {
     const updated = paidBills.map((b, i) =>

@@ -36,6 +36,7 @@ export function SplitConfirmView() {
 
     // Create bill record
     const bill = {
+      tempId: crypto.randomUUID(),
       tableId,
       items: paidItems.map(i => ({ ...i })),
       total: paidTotal,

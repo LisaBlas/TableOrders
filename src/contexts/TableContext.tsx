@@ -68,6 +68,7 @@ export function TableProvider({ children }: { children: ReactNode }) {
   const lastWriteTime = useRef<Record<string, number>>({});  // tableId → epoch ms of last write
   const pendingWrites = useRef(new Set<string>());           // tableIds with scheduled writes
   const writeTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const retryCountsRef = useRef<Record<string, number>>({});
 
   // ── Poll remote sessions ──────────────────────────────────────────────────
   const { data: remoteSessions } = useQuery({
@@ -140,9 +141,6 @@ export function TableProvider({ children }: { children: ReactNode }) {
     pendingWrites.current.add(key);
     clearTimeout(writeTimers.current[key]);
     writeTimers.current[key] = setTimeout(async () => {
-      pendingWrites.current.delete(key);
-      lastWriteTime.current[key] = Date.now();
-
       const session = {
         table_id: key,
         seated: seatedTablesArrRef.current.some((id) => String(id) === key),
@@ -155,11 +153,33 @@ export function TableProvider({ children }: { children: ReactNode }) {
       try {
         const newId = await upsertSession(sessionIdMap.current[key] ?? null, session);
         sessionIdMap.current[key] = newId;
+        // Success: clear retry count and release ownership
+        delete retryCountsRef.current[key];
+        pendingWrites.current.delete(key);
+        lastWriteTime.current[key] = Date.now();
       } catch (e) {
-        console.error("Session write failed:", e);
+        const attempts = (retryCountsRef.current[key] ?? 0) + 1;
+        retryCountsRef.current[key] = attempts;
+        console.error(`Session write failed (attempt ${attempts}/3):`, e);
+
+        if (attempts < 3) {
+          // Show toast only on first failure
+          if (attempts === 1) {
+            showToast("Table state not saved - retrying");
+          }
+          // Refresh lastWriteTime to maintain local ownership during retry
+          lastWriteTime.current[key] = Date.now();
+          // Retry immediately
+          scheduleWrite(tableId);
+        } else {
+          // Final failure: show hard error and release ownership
+          showToast("Table state not saved - check network");
+          delete retryCountsRef.current[key];
+          pendingWrites.current.delete(key);
+        }
       }
     }, 500);
-  }, []);
+  }, [showToast]);
 
   // ── Actions ───────────────────────────────────────────────────────────────
 

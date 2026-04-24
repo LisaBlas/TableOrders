@@ -24,6 +24,7 @@ function baseTableBill(tableId: TableId, items: OrderItem[], gutschein = 0) {
   const total = getBillTotal(subtotal, gutschein);
 
   return {
+    tempId: crypto.randomUUID(),
     tableId,
     items: toPaidBillItems(items),
     total,

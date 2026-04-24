@@ -79,6 +79,7 @@ export function BillTab({ tableId, sent }: BillTabProps) {
     const tip = paid - total;
 
     const bill = {
+      tempId: crypto.randomUUID(),
       tableId,
       items: items.map((o: OrderItem) => ({ ...o, qty: o.sentQty || 0 })),
       total,

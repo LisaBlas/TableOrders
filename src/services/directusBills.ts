@@ -104,6 +104,12 @@ export async function createBillInDirectus(bill: Bill): Promise<Bill> {
   });
   if (!billRes.ok) throw new Error(`Create bill failed: ${billRes.status}`);
   const { data: billData } = await billRes.json();
+
+  // Validate Directus response
+  if (!billData?.id) {
+    throw new Error("Directus did not return bill ID");
+  }
+
   const billDirectusId: string = billData.id;
 
   // Batch-create all items
