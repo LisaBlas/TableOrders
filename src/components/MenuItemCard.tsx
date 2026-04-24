@@ -1,8 +1,7 @@
-import { useRef } from "react";
 import { S } from "../styles/appStyles";
+import { useLongPress } from "../hooks/useLongPress";
+import { LONG_PRESS_MS } from "../config/appConfig";
 import type { MenuItem, OrderItem } from "../types";
-
-const LONG_PRESS_MS = 500;
 
 interface MenuItemCardProps {
   item: MenuItem;
@@ -13,8 +12,10 @@ interface MenuItemCardProps {
 }
 
 export function MenuItemCard({ item, unsent, showCategory, onTap, onLongPress }: MenuItemCardProps) {
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const longFiredRef = useRef(false);
+  const { start, cancel, didFireRef } = useLongPress<MenuItem>(
+    (mi) => onLongPress?.(mi),
+    LONG_PRESS_MS,
+  );
 
   const getUnsentQty = () => {
     if (item.variants) {
@@ -41,36 +42,19 @@ export function MenuItemCard({ item, unsent, showCategory, onTap, onLongPress }:
   };
   const wineColor = WINE_COLORS[(item as any).wineType];
 
-  const startPress = () => {
-    longFiredRef.current = false;
-    if (onLongPress) {
-      timerRef.current = setTimeout(() => {
-        longFiredRef.current = true;
-        onLongPress(item);
-      }, LONG_PRESS_MS);
-    }
-  };
-
-  const cancelPress = () => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-  };
-
   const handleClick = () => {
-    if (longFiredRef.current) return;
-    cancelPress();
+    if (didFireRef.current) return;
+    cancel();
     onTap(item);
   };
 
   return (
     <button
       style={S.menuCard as any}
-      onPointerDown={startPress}
-      onPointerUp={cancelPress}
-      onPointerLeave={cancelPress}
-      onPointerCancel={cancelPress}
+      onPointerDown={() => { if (onLongPress) start(item); else didFireRef.current = false; }}
+      onPointerUp={cancel}
+      onPointerLeave={cancel}
+      onPointerCancel={cancel}
       onClick={handleClick}
       onContextMenu={(e) => e.preventDefault()}
     >

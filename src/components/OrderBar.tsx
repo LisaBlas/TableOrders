@@ -1,6 +1,6 @@
 import { useMenu } from "../contexts/MenuContext";
 import { useTable } from "../contexts/TableContext";
-import { getItemDestination } from "../utils/helpers";
+import { groupByDestination, DESTINATIONS, DEST_LABELS } from "../utils/batchGrouping";
 import { S } from "../styles/appStyles";
 import type { OrderItem, Batch, TableId } from "../types";
 
@@ -48,10 +48,7 @@ export function OrderBar({ tableId, unsent, batches, expanded, onToggleExpand, o
               const isMarked = table.markedBatches[tableId]?.has(actualBatchIdx) || false;
               const accentColor = isMarked ? "#52b87a" : "#e05252";
               const sectionStyle = { ...S.sentSection, ...(isMarked ? S.sentSectionMarked : S.sentSectionPending) };
-              const batchByDest: Record<string, OrderItem[]> = { bar: [], counter: [], kitchen: [] };
-              batch.items.forEach((item: OrderItem) => {
-                batchByDest[getItemDestination(item)].push(item);
-              });
+              const batchByDest = groupByDestination(batch.items);
               const ts = typeof batch.timestamp === "string" ? new Date(batch.timestamp) : batch.timestamp;
               return (
                 <div key={batchIdx}>
@@ -79,10 +76,10 @@ export function OrderBar({ tableId, unsent, batches, expanded, onToggleExpand, o
                     </button>
                     <div style={{ ...S.sentDividerLine, background: accentColor }} />
                   </div>
-                  {batchByDest.bar.length > 0 && (
-                    <div style={sectionStyle}>
-                      <span style={S.sentLabel}>🍷 Bar</span>
-                      {batchByDest.bar.map((o) => (
+                  {DESTINATIONS.map((dest) => batchByDest[dest].length > 0 && (
+                    <div key={dest} style={sectionStyle}>
+                      <span style={S.sentLabel}>{DEST_LABELS[dest]}</span>
+                      {batchByDest[dest].map((o) => (
                         <div key={o.id} style={S.sentItem}>
                           <span>
                             {o.qty}× {(o as any).shortName || o.name}
@@ -92,35 +89,7 @@ export function OrderBar({ tableId, unsent, batches, expanded, onToggleExpand, o
                         </div>
                       ))}
                     </div>
-                  )}
-                  {batchByDest.counter.length > 0 && (
-                    <div style={sectionStyle}>
-                      <span style={S.sentLabel}>🧀 Counter</span>
-                      {batchByDest.counter.map((o) => (
-                        <div key={o.id} style={S.sentItem}>
-                          <span>
-                            {o.qty}× {(o as any).shortName || o.name}
-                            {o.note && <span style={{ fontSize: 11, color: "#888", fontStyle: "italic", marginLeft: 4 }}>({o.note})</span>}
-                          </span>
-                          <span style={S.sentPrice}>{(o.price * o.qty).toFixed(2)}€</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {batchByDest.kitchen.length > 0 && (
-                    <div style={sectionStyle}>
-                      <span style={S.sentLabel}>🍽️ Kitchen</span>
-                      {batchByDest.kitchen.map((o) => (
-                        <div key={o.id} style={S.sentItem}>
-                          <span>
-                            {o.qty}× {(o as any).shortName || o.name}
-                            {o.note && <span style={{ fontSize: 11, color: "#888", fontStyle: "italic", marginLeft: 4 }}>({o.note})</span>}
-                          </span>
-                          <span style={S.sentPrice}>{(o.price * o.qty).toFixed(2)}€</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  ))}
                 </div>
               );
             })}

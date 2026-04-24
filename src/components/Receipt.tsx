@@ -1,6 +1,7 @@
 import { S } from "../styles/appStyles";
 import { useMenu } from "../contexts/MenuContext";
 import { consolidateItems } from "../utils/helpers";
+import { RESTAURANT_NAME } from "../config/appConfig";
 import type { ReceiptProps } from "../types";
 
 export function Receipt({
@@ -23,7 +24,7 @@ export function Receipt({
     <>
       {!skipHeader && (
         <>
-          <div style={S.closeReceiptBrand}>Käserei Camidi</div>
+          <div style={S.closeReceiptBrand}>{RESTAURANT_NAME}</div>
           <div style={S.closeReceiptMeta}>
             Table {tableId}
             {guestNum && ` · Guest ${guestNum}`}

@@ -1,7 +1,7 @@
 import { useTable } from "../contexts/TableContext";
-import { getItemDestination } from "../utils/helpers";
+import { groupByDestination, DESTINATIONS, DEST_LABELS } from "../utils/batchGrouping";
 import { S } from "../styles/appStyles";
-import type { OrderItem, Batch, TableId } from "../types";
+import type { Batch, TableId } from "../types";
 
 interface SentBatchCardProps {
   batches: Batch[];
@@ -19,11 +19,7 @@ export function SentBatchCard({ batches, tableId }: SentBatchCardProps) {
         const actualBatchIdx = batches.length - 1 - batchIdx;
         const isMarked = table.markedBatches[tableId]?.has(actualBatchIdx) || false;
 
-        const batchByDest: Record<string, OrderItem[]> = { bar: [], counter: [], kitchen: [] };
-        batch.items.forEach((item: OrderItem) => {
-          const dest = getItemDestination(item);
-          batchByDest[dest].push(item);
-        });
+        const batchByDest = groupByDestination(batch.items);
         const ts = typeof batch.timestamp === "string" ? new Date(batch.timestamp) : batch.timestamp;
         const accentColor = isMarked ? "#b8e6c8" : "#f0bfbf";
         const sectionStyle = { ...S.sentSection, ...(isMarked ? S.sentSectionMarked : S.sentSectionPending) };
@@ -43,39 +39,17 @@ export function SentBatchCard({ batches, tableId }: SentBatchCardProps) {
               </button>
               <div style={{ ...S.sentDividerLine, background: accentColor }} />
             </div>
-            {batchByDest.bar.length > 0 && (
-              <div style={sectionStyle}>
-                <span style={S.sentLabel}>🍷 Bar</span>
-                {batchByDest.bar.map((o) => (
+            {DESTINATIONS.map((dest) => batchByDest[dest].length > 0 && (
+              <div key={dest} style={sectionStyle}>
+                <span style={S.sentLabel}>{DEST_LABELS[dest]}</span>
+                {batchByDest[dest].map((o) => (
                   <div key={o.id} style={S.sentItem}>
                     <span>{o.qty}× {o.name}</span>
                     <span style={S.sentPrice}>{(o.price * o.qty).toFixed(2)}€</span>
                   </div>
                 ))}
               </div>
-            )}
-            {batchByDest.counter.length > 0 && (
-              <div style={sectionStyle}>
-                <span style={S.sentLabel}>🧀 Counter </span>
-                {batchByDest.counter.map((o) => (
-                  <div key={o.id} style={S.sentItem}>
-                    <span>{o.qty}× {o.name}</span>
-                    <span style={S.sentPrice}>{(o.price * o.qty).toFixed(2)}€</span>
-                  </div>
-                ))}
-              </div>
-            )}
-            {batchByDest.kitchen.length > 0 && (
-              <div style={sectionStyle}>
-                <span style={S.sentLabel}>🍽️ Kitchen </span>
-                {batchByDest.kitchen.map((o) => (
-                  <div key={o.id} style={S.sentItem}>
-                    <span>{o.qty}× {o.name}</span>
-                    <span style={S.sentPrice}>{(o.price * o.qty).toFixed(2)}€</span>
-                  </div>
-                ))}
-              </div>
-            )}
+            ))}
           </div>
         );
       })}
