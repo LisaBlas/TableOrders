@@ -50,38 +50,18 @@ function billFromDirectus(d: any): Bill {
 export async function fetchBillsByDate(berlinDate: string): Promise<Bill[]> {
   const { gte, lte } = berlinDayBoundsUTC(berlinDate);
 
-  const billsRes = await fetch(
+  const res = await fetch(
     `${DIRECTUS_URL}/items/bills`
     + `?filter[timestamp][_gte]=${gte}`
     + `&filter[timestamp][_lte]=${lte}`
-    + `&fields=*`
+    + `&fields=*,items.*`
     + `&sort=timestamp`
     + `&limit=-1`
   );
-  if (!billsRes.ok) throw new Error(`Directus bills ${billsRes.status}`);
-  const { data: bills } = await billsRes.json();
-  if (bills.length === 0) return [];
+  if (!res.ok) throw new Error(`Directus bills ${res.status}`);
+  const { data: bills } = await res.json();
 
-  // Fetch items for those bills
-  const ids = bills.map((b: any) => b.id).join(",");
-  const itemsRes = await fetch(
-    `${DIRECTUS_URL}/items/bill_items`
-    + `?filter[bill_id][_in]=${ids}`
-    + `&fields=*`
-    + `&limit=-1`
-  );
-  if (!itemsRes.ok) throw new Error(`Directus bill_items ${itemsRes.status}`);
-  const { data: items } = await itemsRes.json();
-
-  // Map items onto their bills
-  const itemsByBill: Record<string, any[]> = {};
-  for (const item of items) {
-    const bid = item.bill_id;
-    if (!itemsByBill[bid]) itemsByBill[bid] = [];
-    itemsByBill[bid].push(item);
-  }
-
-  return bills.map((b: any) => billFromDirectus({ ...b, items: itemsByBill[b.id] ?? [] }));
+  return bills.map((b: any) => billFromDirectus(b));
 }
 
 // Create a bill + all its items; returns the bill with directusIds populated
