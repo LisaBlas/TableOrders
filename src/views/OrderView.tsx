@@ -1,18 +1,18 @@
 import { useState } from "react";
-import { FOOD_SUBCATEGORIES, DRINKS_SUBCATEGORIES, BOTTLES_SUBCATEGORIES, SHOP_SUBCATEGORIES } from "../data/constants";
 import { useMenu } from "../contexts/MenuContext";
 import { useApp } from "../contexts/AppContext";
 import { useTable } from "../contexts/TableContext";
 import { useTableOrder } from "../hooks/useTableOrder";
 import { useMenuItems } from "../hooks/useMenuItems";
 import { useBreakpoint } from "../hooks/useBreakpoint";
+import { FOOD_SUBCATEGORIES, DRINKS_SUBCATEGORIES, BOTTLES_SUBCATEGORIES, SHOP_SUBCATEGORIES } from "../data/constants";
 import { S } from "../styles/appStyles";
-import { Modal } from "../components/Modal";
 import { MenuGrid } from "../components/MenuGrid";
 import { VariantBottomSheet } from "../components/VariantBottomSheet";
 import { NoteBottomSheet } from "../components/NoteBottomSheet";
 import { OrderBar } from "../components/OrderBar";
 import { BillView } from "../components/BillView";
+import { CustomItemModal } from "../components/CustomItemModal";
 import { BackIcon, BillIcon } from "../components/icons";
 import type { MenuCategory, MenuItem, MenuItemVariant } from "../types";
 
@@ -22,20 +22,17 @@ export function OrderView() {
   const { menu: MENU } = useMenu();
   const { isTablet, isTabletLandscape, isDesktop } = useBreakpoint();
   const tableId = app.activeTable!;
-  const { unsent, sent, unsentTotal, batches } = useTableOrder(tableId);
+  const { unsent, sent, batches } = useTableOrder(tableId);
 
   // Local UI state
   const [activeCategory, setActiveCategory] = useState<string>("Food");
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedFoodSubcategory, setSelectedFoodSubcategory] = useState<string | null>(null);
-  const [selectedDrinksSubcategory, setSelectedDrinksSubcategory] = useState<string | null>(null);
-  const [selectedBottlesSubcategory, setSelectedBottlesSubcategory] = useState<string | null>(null);
-  const [selectedShopSubcategory, setSelectedShopSubcategory] = useState<string | null>(null);
+  const SUBCATEGORY_CONFIG: Record<string, typeof FOOD_SUBCATEGORIES> = {
+    Food: FOOD_SUBCATEGORIES, Drinks: DRINKS_SUBCATEGORIES, Wines: BOTTLES_SUBCATEGORIES, Shop: SHOP_SUBCATEGORIES,
+  };
+  const subcategoryConfig = SUBCATEGORY_CONFIG[activeCategory] ?? [];
   const [orderBarExpanded, setOrderBarExpanded] = useState(false);
   const [showCustomModal, setShowCustomModal] = useState(false);
-  const [customName, setCustomName] = useState("");
-  const [customPrice, setCustomPrice] = useState("");
-  const [customQty, setCustomQty] = useState("1");
   const [userViewPreference, setUserViewPreference] = useState<'order' | 'bill' | null>(null);
   const [showVariantSheet, setShowVariantSheet] = useState(false);
   const [selectedItemForVariant, setSelectedItemForVariant] = useState<MenuItem | null>(null);
@@ -45,14 +42,6 @@ export function OrderView() {
 
   // Only show bill view if user explicitly chose it (don't auto-switch)
   const showBillView = userViewPreference === 'bill';
-
-  // Clear subcategories when searching
-  if (searchQuery) {
-    if (selectedFoodSubcategory) setSelectedFoodSubcategory(null);
-    if (selectedDrinksSubcategory) setSelectedDrinksSubcategory(null);
-    if (selectedBottlesSubcategory) setSelectedBottlesSubcategory(null);
-    if (selectedShopSubcategory) setSelectedShopSubcategory(null);
-  }
 
   const handleAddItem = (item: MenuItem, variant: MenuItemVariant | null = null, note?: string) => {
     table.addItem(tableId, item, variant, activeCategory as MenuCategory, note);
@@ -80,69 +69,11 @@ export function OrderView() {
   };
 
   const handleSelectVariant = (variant: MenuItemVariant) => {
-    if (selectedItemForVariant) {
-      handleAddItem(selectedItemForVariant, variant);
-    }
+    handleAddItem(selectedItemForVariant!, variant);
   };
-
-  const addCustomItem = () => {
-    const name = customName.trim();
-    const price = parseFloat(customPrice.replace(",", "."));
-    const qty = parseInt(customQty);
-    if (!name) { app.showToast("⚠ Item name required"); return; }
-    if (isNaN(price) || price <= 0) { app.showToast("⚠ Valid price required"); return; }
-    if (isNaN(qty) || qty < 1) { app.showToast("⚠ Valid quantity required"); return; }
-
-    const customItem = {
-      id: `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      name, price, qty, sentQty: 0,
-      posId: "???", destination: "counter",
-    };
-    table.addCustomItem(tableId, customItem);
-    app.showToast(`+ ${name} (${qty}×)`);
-    setCustomName(""); setCustomPrice(""); setCustomQty("1"); setShowCustomModal(false);
-  };
-
-  // Subcategory helpers
-  const getSelectedSubcategory = () => {
-    if (activeCategory === "Food") return selectedFoodSubcategory;
-    if (activeCategory === "Drinks") return selectedDrinksSubcategory;
-    if (activeCategory === "Wines") return selectedBottlesSubcategory;
-    if (activeCategory === "Shop") return selectedShopSubcategory;
-    return null;
-  };
-
-  const clearAllSubcategories = () => {
-    setSelectedFoodSubcategory(null);
-    setSelectedDrinksSubcategory(null);
-    setSelectedBottlesSubcategory(null);
-    setSelectedShopSubcategory(null);
-  };
-
-  const setSubcategoryForCategory = (sub: string) => {
-    if (activeCategory === "Food") setSelectedFoodSubcategory(sub);
-    else if (activeCategory === "Drinks") setSelectedDrinksSubcategory(sub);
-    else if (activeCategory === "Wines") setSelectedBottlesSubcategory(sub);
-    else if (activeCategory === "Shop") setSelectedShopSubcategory(sub);
-  };
-
-  const getSubcategoryConfig = () => {
-    if (activeCategory === "Food") return FOOD_SUBCATEGORIES;
-    if (activeCategory === "Drinks") return DRINKS_SUBCATEGORIES;
-    if (activeCategory === "Wines") return BOTTLES_SUBCATEGORIES;
-    if (activeCategory === "Shop") return SHOP_SUBCATEGORIES;
-    return [];
-  };
-
-  const selectedSubcategory = getSelectedSubcategory();
-  const subcategoryConfig = getSubcategoryConfig();
 
   // Get filtered menu items via hook
-  const filteredItems = useMenuItems({
-    activeCategory,
-    selectedSubcategory,
-    searchQuery,
-  });
+  const filteredItems = useMenuItems({ activeCategory, searchQuery });
 
   // Show BillView if active
   if (showBillView) {
@@ -167,11 +98,11 @@ export function OrderView() {
       {/* Category Tabs */}
       <div style={S.tabs}>
         <div style={S.tabsContainer}>
-          {Object.keys(MENU).map((category, idx) => (
+          {Object.keys(MENU).map((category) => (
             <button
               key={category}
               style={{ ...S.tab, ...(activeCategory === category ? S.tabActive : {}) }}
-              onClick={() => { setActiveCategory(category); clearAllSubcategories(); }}
+              onClick={() => setActiveCategory(category)}
             >
               {category}
             </button>
@@ -218,33 +149,7 @@ export function OrderView() {
 
       {/* Custom Item Modal */}
       {showCustomModal && (
-        <Modal
-          title="Add Custom Item"
-          onClose={() => setShowCustomModal(false)}
-          onConfirm={addCustomItem}
-          confirmText="Add to order"
-          closeOnBackdrop={false}
-        >
-          <div style={S.customModalForm}>
-            <div style={S.customModalField}>
-              <label style={S.customModalLabel}>Item name</label>
-              <input type="text" placeholder="e.g., Special request" value={customName}
-                onChange={(e) => setCustomName(e.target.value)} style={S.customModalInput} autoFocus />
-            </div>
-            <div style={S.customModalRow}>
-              <div style={S.customModalField}>
-                <label style={S.customModalLabel}>Price (€)</label>
-                <input type="text" inputMode="decimal" placeholder="0.00" value={customPrice}
-                  onChange={(e) => setCustomPrice(e.target.value)} style={S.customModalInput} />
-              </div>
-              <div style={S.customModalFieldSmall}>
-                <label style={S.customModalLabel}>Quantity</label>
-                <input type="number" placeholder="1" value={customQty}
-                  onChange={(e) => setCustomQty(e.target.value)} min="1" style={S.customModalInput} />
-              </div>
-            </div>
-          </div>
-        </Modal>
+        <CustomItemModal tableId={tableId} onClose={() => setShowCustomModal(false)} />
       )}
 
       {/* Variant Bottom Sheet */}

@@ -4,15 +4,10 @@ import type { MenuItem } from "../types";
 
 interface UseMenuItemsParams {
   activeCategory: string;
-  selectedSubcategory: string | null;
   searchQuery: string;
 }
 
-export function useMenuItems({
-  activeCategory,
-  selectedSubcategory,
-  searchQuery,
-}: UseMenuItemsParams): MenuItem[] {
+export function useMenuItems({ activeCategory, searchQuery }: UseMenuItemsParams): MenuItem[] {
   const { menu: MENU } = useMenu();
 
   return useMemo(() => {
@@ -33,7 +28,7 @@ export function useMenuItems({
       return results;
     }
 
-    // Special handling for Bottles category: wines with glass sizes first, then static bottles
+    // Special handling for Wines: wines with glass sizes first, then static bottles
     if (activeCategory === "Wines") {
       const winesWithGlasses =
         (MENU as any)["Drinks"]
@@ -56,43 +51,21 @@ export function useMenuItems({
       return [...winesWithGlasses, ...staticBottles];
     }
 
-    // Special handling for Drinks category: exclude wines entirely, hide bottle variants on others
+    // Special handling for Drinks: exclude wines, hide bottle variants
     if (activeCategory === "Drinks") {
-      let items =
-        (MENU as any)["Drinks"]
-          ?.map((item: any) => {
-            // Exclude wine items — they now live in the Bottles tab
-            if (item.subcategory === "wine") return null;
-            // If item has variants, filter out bottle variants
-            if (item.variants) {
-              const filteredVariants = item.variants.filter((v: any) => !v.bottleSubcategory);
-              // Only include item if it has non-bottle variants
-              if (filteredVariants.length > 0) {
-                return {
-                  ...item,
-                  category: "Drinks",
-                  variants: filteredVariants,
-                };
-              }
-              return null;
-            }
-            // Regular items without variants
-            return { ...item, category: "Drinks" };
-          })
-          .filter(Boolean) || [];
-
-      if (selectedSubcategory) {
-        items = items.filter((item: any) => item.subcategory === selectedSubcategory);
-      }
-
-      return items;
+      return (MENU as any)["Drinks"]
+        ?.map((item: any) => {
+          if (item.subcategory === "wine") return null;
+          if (item.variants) {
+            const filteredVariants = item.variants.filter((v: any) => !v.bottleSubcategory);
+            return filteredVariants.length > 0 ? { ...item, category: "Drinks", variants: filteredVariants } : null;
+          }
+          return { ...item, category: "Drinks" };
+        })
+        .filter(Boolean) || [];
     }
 
-    // Default category handling (Food, Shop, etc.)
-    let items = (MENU as any)[activeCategory]?.map((item: any) => ({ ...item, category: activeCategory })) || [];
-    if (selectedSubcategory) {
-      items = items.filter((item: any) => item.subcategory === selectedSubcategory);
-    }
-    return items;
-  }, [MENU, activeCategory, selectedSubcategory, searchQuery]);
+    // Default (Food, Shop, etc.)
+    return (MENU as any)[activeCategory]?.map((item: any) => ({ ...item, category: activeCategory })) || [];
+  }, [MENU, activeCategory, searchQuery]);
 }

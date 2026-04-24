@@ -13,6 +13,7 @@ dist-ssr
 *.local
 
 DETAILED_REFACTOR_PLAN.md
+DIRECTUS_SETUP.md
 
 # Editor directories and files
 .vscode/*
