@@ -24,8 +24,10 @@ export function OrderBar({ tableId, unsent, batches, expanded, onToggleExpand, o
   const handleSend = () => {
     if (firing) return;
     setFiring(true);
-    table.sendOrder(tableId);
-    onSendOrder?.();
+    setTimeout(() => {
+      table.sendOrder(tableId);
+      onSendOrder?.();
+    }, 500);
     setTimeout(() => setFiring(false), 600);
   };
 
@@ -37,7 +39,7 @@ export function OrderBar({ tableId, unsent, batches, expanded, onToggleExpand, o
       <div style={S.orderBarHandle} onClick={onToggleExpand}>
         <div style={S.orderBarHandleLine} />
         {sentMode ? (
-          <span style={{ ...S.orderBarHandleText, display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ ...S.orderBarHandleText, display: "flex", alignItems: "center", gap: 6, animation: "fadeIn 0.4s ease-out" }}>
             <span style={{ width: 7, height: 7, borderRadius: "50%", background: statusDotColor, display: "inline-block", flexShrink: 0 }} />
             {expanded ? "Hide sent" : `${batches.length} batch${batches.length > 1 ? "es" : ""} sent`}
           </span>
@@ -52,7 +54,7 @@ export function OrderBar({ tableId, unsent, batches, expanded, onToggleExpand, o
 
       {sentMode ? (
         expanded && (
-          <div style={{ animation: "slideUpFade 0.3s ease-out" }}>
+          <div style={{ animation: "slideUpFade 0.4s ease-out", animationFillMode: "both" }}>
             {[...batches].reverse().map((batch, batchIdx) => {
               const actualBatchIdx = batches.length - 1 - batchIdx;
               const isMarked = table.markedBatches[tableId]?.has(actualBatchIdx) || false;
