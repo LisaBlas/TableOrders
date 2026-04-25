@@ -90,9 +90,9 @@ export function SplitConfirmView() {
     return (
       <div style={S.page}>
         <header style={headerStyle}>
-          <span />
+          <span style={{ width: 22, height: 22 }} />
           <span style={S.headerTitle}>Guest {lastPayment.guestNum} — pays</span>
-          <span />
+          <span style={{ width: 22, height: 22 }} />
         </header>
 
         <div style={ticketStyle}>
@@ -197,9 +197,9 @@ export function SplitConfirmView() {
   return (
     <div style={S.page}>
       <header style={headerStyle}>
-        <span />
+        <span style={{ width: 22, height: 22 }} />
         <span style={S.headerTitle}>Guest {lastPayment.guestNum} — pays</span>
-        <span />
+        <span style={{ width: 22, height: 22 }} />
       </header>
 
       <div style={isDesktop ? S.billContainerTabletLandscape : S.billContainerTablet}>
