@@ -1,6 +1,6 @@
 """
 Seed Directus menu_items and menu_item_variants from constants.js data.
-Reads credentials from ~/services/directus/.env
+Reads credentials from project root .env
 """
 import os, json, requests
 from pathlib import Path
@@ -8,7 +8,7 @@ from dotenv import dotenv_values
 
 DIRECTUS_URL = "https://cms.blasalviz.com"
 
-cfg = dotenv_values(Path.home() / "services/directus/.env")
+cfg = dotenv_values(Path(__file__).parent / ".env")
 ADMIN_EMAIL = cfg["ADMIN_EMAIL"]
 ADMIN_PASSWORD = cfg["ADMIN_PASSWORD"]
 
@@ -17,13 +17,36 @@ r = requests.post(f"{DIRECTUS_URL}/auth/login", json={"email": ADMIN_EMAIL, "pas
 r.raise_for_status()
 token = r.json()["data"]["access_token"]
 H = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-print("✓ authenticated")
+print("[OK] authenticated")
 
 # ── Fetch categories ──────────────────────────────────────────────────────────
 r = requests.get(f"{DIRECTUS_URL}/items/categories?limit=-1", headers=H)
 r.raise_for_status()
 categories = {c["name"]: c["id"] for c in r.json()["data"]}
-print(f"✓ categories: {list(categories.keys())}")
+print(f"[OK] categories: {list(categories.keys())}")
+
+# ── Clear existing menu items ─────────────────────────────────────────────────
+print("[INFO] Deleting existing menu items...")
+
+# Get all variants and delete individually
+r = requests.get(f"{DIRECTUS_URL}/items/menu_item_variants?limit=-1", headers=H)
+if r.ok:
+    variants = r.json()["data"]
+    for v in variants:
+        requests.delete(f"{DIRECTUS_URL}/items/menu_item_variants/{v['id']}", headers=H)
+    print(f"[OK] Deleted {len(variants)} variants")
+else:
+    print(f"[WARN] Could not fetch variants: {r.status_code}")
+
+# Get all menu items and delete individually
+r = requests.get(f"{DIRECTUS_URL}/items/menu_items?limit=-1", headers=H)
+if r.ok:
+    items = r.json()["data"]
+    for item in items:
+        requests.delete(f"{DIRECTUS_URL}/items/menu_items/{item['id']}", headers=H)
+    print(f"[OK] Deleted {len(items)} menu items")
+else:
+    print(f"[WARN] Could not fetch menu items: {r.status_code}")
 
 MIN_QTY_2 = {"f2", "f11", "f12", "f28"}
 
@@ -111,7 +134,7 @@ MENU = {
         {"id_local": "wg12", "name": "Yellow Muskateller",   "short_name": "Y. Muskat",  "subcategory": "wine",   "variants": [{"type":"small","price":4.5, "label":"0,1","pos_id":"194-1","pos_name":"YellM 0,1"},    {"type":"large","price":9,   "label":"0,2","pos_id":"194-2","pos_name":"YellM 0,2"},    {"type":"here","price":30,  "label":"Fl.","pos_id":"194","pos_name":"YellM Fl.","bottle_subcategory":"natural"},    {"type":"togo","price":17,  "label":"Fl. To Go","pos_id":"194","pos_name":"YellM Fl. To Go","bottle_subcategory":"natural"}]},
         {"id_local": "wg13", "name": "Cuvée des Galets",     "short_name": "C. Galets",  "subcategory": "wine",   "variants": [{"type":"small","price":4.5, "label":"0,1","pos_id":"280-1","pos_name":"CuvGal 0,1"},   {"type":"large","price":9,   "label":"0,2","pos_id":"280-2","pos_name":"CuvGal 0,2"},   {"type":"here","price":27,  "label":"Fl.","pos_id":"280","pos_name":"CuvGal Fl.","bottle_subcategory":"natural"},    {"type":"togo","price":17,  "label":"Fl. To Go","pos_id":"280","pos_name":"CuvGal Fl. To Go","bottle_subcategory":"natural"}]},
         {"id_local": "wg15", "name": "Vino Verde",           "short_name": "VV",         "subcategory": "wine",   "variants": [{"type":"small","price":3.5, "label":"0,1","pos_id":"253-1","pos_name":"VV 0,1"},       {"type":"large","price":7,   "label":"0,2","pos_id":"253-2","pos_name":"VV 0,2"},       {"type":"here","price":24,  "label":"Fl.","pos_id":"253","pos_name":"VV Fl.","bottle_subcategory":"white"},         {"type":"togo","price":12.5,"label":"Fl. To Go","pos_id":"253","pos_name":"VV Fl. To Go","bottle_subcategory":"white"}]},
-        {"id_local": "wg14", "name": "Weißweinschorle",      "short_name": "WWS",        "subcategory": "soft",   "variants": [{"type":"small","price":3,   "label":"0,1","pos_id":"69-1", "pos_name":"WeinSch 0,1"},  {"type":"large","price":6,   "label":"0,2","pos_id":"69-2", "pos_name":"WeinSch 0,2"}]},
+        {"id_local": "wg14", "name": "Weißweinschorle",      "short_name": "WWS",        "subcategory": "wine",   "variants": [{"type":"small","price":3,   "label":"0,1","pos_id":"69-1", "pos_name":"WeinSch 0,1"},  {"type":"large","price":6,   "label":"0,2","pos_id":"69-2", "pos_name":"WeinSch 0,2"}]},
         {"id_local": "dr1",  "name": "Aperol",               "short_name": "Aperol",     "price": 8,   "subcategory": "cocktail", "pos_id": "73"},
         {"id_local": "dr2",  "name": "Cynar",                "short_name": "Cynar",      "price": 8,   "subcategory": "cocktail", "pos_id": "76"},
         {"id_local": "dr3",  "name": "Campari",              "short_name": "Campari",    "price": 8,   "subcategory": "cocktail", "pos_id": "74"},
@@ -212,6 +235,7 @@ MENU = {
 
 # ── Seed items ────────────────────────────────────────────────────────────────
 created = 0
+variants_created = 0
 errors = 0
 
 for category_name, items in MENU.items():
@@ -234,6 +258,9 @@ for category_name, items in MENU.items():
         }
         if "price" in item:
             payload["price"] = item["price"]
+        elif "variants" in item:
+            # Items with variants don't have a base price
+            payload["price"] = 0
 
         r = requests.post(f"{DIRECTUS_URL}/items/menu_items", headers=H, json=payload)
         if not r.ok:
@@ -259,12 +286,15 @@ for category_name, items in MENU.items():
                 if not vr.ok:
                     print(f"    ✗ variant {v['type']} for {item['name']}: {vr.status_code} {vr.text[:80]}")
                     errors += 1
+                else:
+                    variants_created += 1
 
         created += 1
 
 print(f"\n{'='*40}")
-print(f"✓ {created} menu items created")
+print(f"[OK] {created} menu items created")
+print(f"[OK] {variants_created} variants created")
 if errors:
-    print(f"✗ {errors} errors — check output above")
+    print(f"[ERROR] {errors} errors — check output above")
 else:
-    print("✓ no errors")
+    print("[OK] no errors")

@@ -557,7 +557,7 @@ export const MENU = {
       id: "wg14",
       name: "Weißweinschorle",
       shortName: "WWS",
-      subcategory: "soft",
+      subcategory: "wine",
       variants: [
         { type: "small", price: 3, label: "0,1", posId: "69-1", posName: "WeinSch 0,1" },
         { type: "large", price: 6, label: "0,2", posId: "69-2", posName: "WeinSch 0,2" }
