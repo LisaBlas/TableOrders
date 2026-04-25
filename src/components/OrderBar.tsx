@@ -49,7 +49,7 @@ export function OrderBar({ tableId, unsent, batches, expanded, onToggleExpand, o
         <div style={S.orderBarHandleLine} />
         {sentMode ? (
           <span style={{ ...S.orderBarHandleText, display: "flex", alignItems: "center", gap: 6, animation: "fadeIn 0.4s ease-out" }}>
-            <span style={{ width: 7, height: 7, borderRadius: "50%", background: statusDotColor, display: "inline-block", flexShrink: 0 }} />
+            <span style={{ width: 7, height: 7, borderRadius: "50%", background: statusDotColor, display: "inline-block", flexShrink: 0, ...(allMarked ? {} : { animation: "pulseRed 2s ease-out infinite" }) }} />
             {expanded ? "Hide sent" : `${batches.length} batch${batches.length > 1 ? "es" : ""} sent`}
           </span>
         ) : (

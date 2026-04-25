@@ -100,6 +100,11 @@ button:active {
   }
 }
 
+@keyframes pulseRed {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(224, 82, 82, 0.5); }
+  55%       { box-shadow: 0 0 0 5px rgba(224, 82, 82, 0); }
+}
+
 /* OrderBar exit on confirm — mirrors slideUpFromBottom */
 @keyframes slideDownOut {
   from {
