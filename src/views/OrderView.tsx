@@ -68,8 +68,8 @@ export function OrderView() {
     }
   };
 
-  const handleSelectVariant = (variant: MenuItemVariant) => {
-    handleAddItem(selectedItemForVariant!, variant);
+  const handleSelectVariant = (variant: MenuItemVariant, note?: string) => {
+    handleAddItem(selectedItemForVariant!, variant, note);
   };
 
   // Get filtered menu items via hook

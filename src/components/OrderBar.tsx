@@ -102,7 +102,7 @@ export function OrderBar({ tableId, unsent, batches, expanded, onToggleExpand, o
               <div key={o.id} style={S.orderBarItemWrapper}>
                 <div style={S.orderBarItem}>
                   <div style={S.orderBarItemInfo}>
-                    <div style={S.orderBarItemName}>{(o as any).shortName || o.name}</div>
+                    <div style={S.orderBarItemName}>{o.name}</div>
                     {o.note && (
                       <div style={{ fontSize: 11, color: "#888", fontStyle: "italic", marginTop: 1 }}>
                         {o.note}
