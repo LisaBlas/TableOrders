@@ -126,7 +126,7 @@ export function OrderBar({ tableId, unsent, batches, expanded, onToggleExpand, o
         <>
           <div style={expanded ? S.orderBarList : S.orderBarListCollapsed}>
             {unsent.slice().reverse().map((o) => (
-              <div key={o.id} style={S.orderBarItemWrapper}>
+              <div key={`${o.id}-${o.qty}`} style={S.orderBarItemWrapper}>
                 <div style={S.orderBarItem}>
                   <div style={S.orderBarItemInfo}>
                     <div style={S.orderBarItemName}>{o.name}</div>

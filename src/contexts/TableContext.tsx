@@ -112,10 +112,9 @@ export function TableProvider({ children }: { children: ReactNode }) {
       if (existing) {
         return {
           ...prev,
-          [String(tableId)]: [
-            ...current.filter((o: OrderItem) => o.id !== orderItem.id),
-            { ...existing, qty: existing.qty + 1 },
-          ],
+          [String(tableId)]: current.map((o: OrderItem) =>
+            o.id === orderItem.id ? { ...o, qty: o.qty + 1 } : o
+          ),
         };
       }
       const initialQty = minQty2Ids.has(item.id) ? 2 : 1;
