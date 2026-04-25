@@ -33,7 +33,6 @@ export function OrderView() {
   const subcategoryConfig = SUBCATEGORY_CONFIG[activeCategory] ?? [];
   const [orderBarExpanded, setOrderBarExpanded] = useState(false);
   const [showCustomModal, setShowCustomModal] = useState(false);
-  const [userViewPreference, setUserViewPreference] = useState<'order' | 'bill' | null>(null);
   const [showVariantSheet, setShowVariantSheet] = useState(false);
   const [selectedItemForVariant, setSelectedItemForVariant] = useState<MenuItem | null>(null);
   const [showNoteSheet, setShowNoteSheet] = useState(false);
@@ -41,7 +40,7 @@ export function OrderView() {
   const [noteText, setNoteText] = useState("");
 
   // Only show bill view if user explicitly chose it (don't auto-switch)
-  const showBillView = userViewPreference === 'bill';
+  const showBillView = app.orderViewTab === 'bill';
 
   const handleAddItem = (item: MenuItem, variant: MenuItemVariant | null = null, note?: string) => {
     table.addItem(tableId, item, variant, activeCategory as MenuCategory, note);
@@ -77,7 +76,7 @@ export function OrderView() {
 
   // Show BillView if active
   if (showBillView) {
-    return <BillView tableId={tableId} sent={sent} onClose={() => setUserViewPreference('order')} />;
+    return <BillView tableId={tableId} sent={sent} onClose={() => app.setOrderViewTab('order')} />;
   }
 
   // Responsive styles
@@ -86,11 +85,14 @@ export function OrderView() {
   return (
     <div style={{ ...S.page, height: "100vh", overflow: "hidden" }}>
       <header style={headerStyle}>
-        <button style={S.back} onClick={() => app.setView("tables")}>
+        <button style={S.back} onClick={() => {
+          app.setOrderViewTab(null);
+          app.setView("tables");
+        }}>
           <BackIcon size={22} />
         </button>
         <span style={S.headerTitle}>Table {tableId}</span>
-        <button style={S.ticketBtn} onClick={() => setUserViewPreference('bill')}>
+        <button style={S.ticketBtn} onClick={() => app.setOrderViewTab('bill')}>
           <BillIcon size={22} />
         </button>
       </header>

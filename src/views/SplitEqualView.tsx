@@ -16,6 +16,7 @@ export function SplitEqualView() {
   const { total: ticketTotal } = useTableOrder(tableId);
 
   const equalShare = state.equalGuests > 0 ? ticketTotal / state.equalGuests : 0;
+  const hasConfirmedPayments = state.equalPayments.some(p => p.confirmed);
 
   const closeSplitTable = () => {
     const bill = createEqualSplitTableBill({
@@ -31,6 +32,7 @@ export function SplitEqualView() {
     table.cleanupTable(tableId);
     dispatch({ type: "RESET" });
     app.showToast(`Table ${tableId} closed — ${bill.total.toFixed(2)}€`);
+    app.setOrderViewTab(null);
     app.setView("tables");
   };
 
@@ -42,7 +44,19 @@ export function SplitEqualView() {
     return (
       <div style={S.page}>
         <header style={headerStyle}>
-          <button style={S.back} onClick={() => { dispatch({ type: "RESET" }); app.setView("order"); }}>
+          <button
+            style={{
+              ...S.back,
+              ...(hasConfirmedPayments ? { opacity: 0.3, cursor: "not-allowed" } : {})
+            }}
+            onClick={() => {
+              if (!hasConfirmedPayments) {
+                dispatch({ type: "RESET" });
+                app.setView("order");
+              }
+            }}
+            disabled={hasConfirmedPayments}
+          >
             <BackIcon size={22} />
           </button>
           <span style={S.headerTitle}>Equal Split — Table {tableId}</span>
@@ -143,7 +157,19 @@ export function SplitEqualView() {
   return (
     <div style={S.page}>
       <header style={headerStyle}>
-        <button style={S.back} onClick={() => { dispatch({ type: "RESET" }); app.setView("order"); }}>
+        <button
+          style={{
+            ...S.back,
+            ...(hasConfirmedPayments ? { opacity: 0.3, cursor: "not-allowed" } : {})
+          }}
+          onClick={() => {
+            if (!hasConfirmedPayments) {
+              dispatch({ type: "RESET" });
+              app.setView("order");
+            }
+          }}
+          disabled={hasConfirmedPayments}
+        >
           <BackIcon size={22} />
         </button>
         <span style={S.headerTitle}>Equal Split — Table {tableId}</span>

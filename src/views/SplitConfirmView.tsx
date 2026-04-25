@@ -77,6 +77,7 @@ export function SplitConfirmView() {
     }
 
     // Return to tables view
+    app.setOrderViewTab(null);
     app.setView("tables");
   };
 

@@ -18,6 +18,8 @@ interface AppContextValue {
   setActiveTable: (id: TableId | null) => void;
   ticketTable: TableId | null;
   setTicketTable: (id: TableId | null) => void;
+  orderViewTab: 'order' | 'bill' | null;
+  setOrderViewTab: (tab: 'order' | 'bill' | null) => void;
 
   // Toast
   toast: string | null;
@@ -58,6 +60,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [view, setView] = useState<View>("tables");
   const [activeTable, setActiveTable] = useState<TableId | null>(null);
   const [ticketTable, setTicketTable] = useState<TableId | null>(null);
+  const [orderViewTab, setOrderViewTab] = useState<'order' | 'bill' | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [dailySalesTab, setDailySalesTab] = useState<DailySalesTab>("chronological");
   const [editingBillIndex, setEditingBillIndex] = useState<number | null>(null);
@@ -246,6 +249,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       view, setView,
       activeTable, setActiveTable,
       ticketTable, setTicketTable,
+      orderViewTab, setOrderViewTab,
       toast, showToast,
       paidBills,
       selectedDate, setSelectedDate,

@@ -21,6 +21,7 @@ export function SplitItemView() {
     app.setView("splitConfirm");
   };
 
+  const hasCompletedPayments = state.payments.length > 0;
   const headerStyle = isTablet || isTabletLandscape || isDesktop ? S.headerTablet : S.header;
   const isLargeScreen = isTablet || isTabletLandscape || isDesktop;
 
@@ -29,7 +30,19 @@ export function SplitItemView() {
     return (
       <div style={S.page}>
         <header style={headerStyle}>
-          <button style={S.back} onClick={() => { dispatch({ type: "RESET" }); app.setView("order"); }}>
+          <button
+            style={{
+              ...S.back,
+              ...(hasCompletedPayments ? { opacity: 0.3, cursor: "not-allowed" } : {})
+            }}
+            onClick={() => {
+              if (!hasCompletedPayments) {
+                dispatch({ type: "RESET" });
+                app.setView("order");
+              }
+            }}
+            disabled={hasCompletedPayments}
+          >
             <BackIcon size={22} />
           </button>
           <span style={S.headerTitle}>Guest {currentGuestNum}</span>
@@ -97,7 +110,19 @@ export function SplitItemView() {
   return (
     <div style={S.page}>
       <header style={headerStyle}>
-        <button style={S.back} onClick={() => { dispatch({ type: "RESET" }); app.setView("order"); }}>
+        <button
+          style={{
+            ...S.back,
+            ...(hasCompletedPayments ? { opacity: 0.3, cursor: "not-allowed" } : {})
+          }}
+          onClick={() => {
+            if (!hasCompletedPayments) {
+              dispatch({ type: "RESET" });
+              app.setView("order");
+            }
+          }}
+          disabled={hasCompletedPayments}
+        >
           <BackIcon size={22} />
         </button>
         <span style={S.headerTitle}>Guest {currentGuestNum}</span>

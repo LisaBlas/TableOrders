@@ -29,6 +29,7 @@ export function SplitDoneView() {
     table.cleanupTable(tableId);
     dispatch({ type: "RESET" });
     app.showToast(`Table ${tableId} closed — ${bill.total.toFixed(2)}€`);
+    app.setOrderViewTab(null);
     app.setView("tables");
   };
 

@@ -3,9 +3,10 @@ import { useApp } from "../contexts/AppContext";
 import { useTable } from "../contexts/TableContext";
 import { Modal } from "./Modal";
 import { S } from "../styles/appStyles";
+import type { TableId } from "../types";
 
 interface CustomItemModalProps {
-  tableId: string;
+  tableId: TableId;
   onClose: () => void;
 }
 
