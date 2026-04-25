@@ -119,39 +119,44 @@ export function TablesView() {
       </header>
 
       <div style={{ ...styles.grid, paddingBottom: swap.isActive ? 160 : styles.isBig ? 20 : 16 }}>
-        {(TABLES as TableConfig[]).map((t) => {
-          if (t.isDivider) {
+        {(() => {
+          let cardIndex = 0;
+          return (TABLES as TableConfig[]).map((t) => {
+            if (t.isDivider) {
+              return (
+                <div key={t.label} style={{ ...S.sentDivider, gridColumn: "1 / -1", margin: "8px 0 4px" }}>
+                  <div style={S.sentDividerLine} />
+                  <span style={S.sentDividerText}>{t.label}</span>
+                  <div style={S.sentDividerLine} />
+                </div>
+              );
+            }
+
+            const status = getTableStatus(t.id, orders, seatedTables, sentBatches, markedBatches);
+            const destinations = getTableDestinations(t.id, orders, sentBatches);
+            const staggerIndex = cardIndex++;
+
             return (
-              <div key={t.label} style={{ ...S.sentDivider, gridColumn: "1 / -1", margin: "8px 0 4px" }}>
-                <div style={S.sentDividerLine} />
-                <span style={S.sentDividerText}>{t.label}</span>
-                <div style={S.sentDividerLine} />
-              </div>
+              <TableCard
+                key={t.id}
+                tableId={t.id}
+                cfg={STATUS_CONFIG[status]}
+                isSource={swap.sourceTable === t.id}
+                isTarget={swap.targetTable === t.id}
+                inSwapMode={swap.isActive}
+                destinations={destinations}
+                isWide={styles.isWide}
+                baseStyle={styles.card}
+                staggerIndex={staggerIndex}
+                onPointerDown={!swap.isActive ? () => startLongPress(t.id) : undefined}
+                onPointerUp={cancelLongPress}
+                onPointerLeave={cancelLongPress}
+                onPointerCancel={cancelLongPress}
+                onClick={() => handleTableClick(t.id)}
+              />
             );
-          }
-
-          const status = getTableStatus(t.id, orders, seatedTables, sentBatches, markedBatches);
-          const destinations = getTableDestinations(t.id, orders, sentBatches);
-
-          return (
-            <TableCard
-              key={t.id}
-              tableId={t.id}
-              cfg={STATUS_CONFIG[status]}
-              isSource={swap.sourceTable === t.id}
-              isTarget={swap.targetTable === t.id}
-              inSwapMode={swap.isActive}
-              destinations={destinations}
-              isWide={styles.isWide}
-              baseStyle={styles.card}
-              onPointerDown={!swap.isActive ? () => startLongPress(t.id) : undefined}
-              onPointerUp={cancelLongPress}
-              onPointerLeave={cancelLongPress}
-              onPointerCancel={cancelLongPress}
-              onClick={() => handleTableClick(t.id)}
-            />
-          );
-        })}
+          });
+        })()}
       </div>
 
       {seatConfirmTable !== null && (

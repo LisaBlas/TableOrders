@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useMenu } from "../contexts/MenuContext";
 import { useTable } from "../contexts/TableContext";
 import { groupByDestination, DESTINATIONS, DEST_LABELS } from "../utils/batchGrouping";
@@ -18,6 +19,15 @@ export function OrderBar({ tableId, unsent, batches, expanded, onToggleExpand, o
   const table = useTable();
   const { menu } = useMenu();
   const sentMode = unsent.length === 0;
+  const [firing, setFiring] = useState(false);
+
+  const handleSend = () => {
+    if (firing) return;
+    setFiring(true);
+    table.sendOrder(tableId);
+    onSendOrder?.();
+    setTimeout(() => setFiring(false), 600);
+  };
 
   const allMarked = batches.length > 0 && batches.every((_, i) => table.markedBatches[tableId]?.has(i));
   const statusDotColor = allMarked ? "#52b87a" : "#e05252";
@@ -42,7 +52,7 @@ export function OrderBar({ tableId, unsent, batches, expanded, onToggleExpand, o
 
       {sentMode ? (
         expanded && (
-          <div>
+          <div style={{ animation: "slideUpFade 0.3s ease-out" }}>
             {[...batches].reverse().map((batch, batchIdx) => {
               const actualBatchIdx = batches.length - 1 - batchIdx;
               const isMarked = table.markedBatches[tableId]?.has(actualBatchIdx) || false;
@@ -98,7 +108,7 @@ export function OrderBar({ tableId, unsent, batches, expanded, onToggleExpand, o
       ) : (
         <>
           <div style={expanded ? S.orderBarList : S.orderBarListCollapsed}>
-            {(expanded ? unsent.slice().reverse() : unsent.slice(-1)).map((o) => (
+            {unsent.slice().reverse().map((o) => (
               <div key={o.id} style={S.orderBarItemWrapper}>
                 <div style={S.orderBarItem}>
                   <div style={S.orderBarItemInfo}>
@@ -130,10 +140,13 @@ export function OrderBar({ tableId, unsent, batches, expanded, onToggleExpand, o
               </div>
             ))}
           </div>
-          <button style={S.sendBtn} onClick={() => {
-            table.sendOrder(tableId);
-            onSendOrder?.();
-          }}>
+          <button
+            style={{
+              ...S.sendBtn,
+              ...(firing ? { animation: "confirmFlash 0.6s ease-out", transition: "none" } : {}),
+            }}
+            onClick={handleSend}
+          >
             Confirm
           </button>
         </>

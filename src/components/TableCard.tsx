@@ -13,6 +13,7 @@ interface TableCardProps {
   destinations: string[];
   isWide: boolean;
   baseStyle: CSSProperties;
+  staggerIndex?: number;
   onPointerDown?: () => void;
   onPointerUp: () => void;
   onPointerLeave: () => void;
@@ -29,6 +30,7 @@ export function TableCard({
   destinations,
   isWide,
   baseStyle,
+  staggerIndex = 0,
   onPointerDown,
   onPointerUp,
   onPointerLeave,
@@ -55,6 +57,9 @@ export function TableCard({
         transition: "opacity 0.2s ease, border 0.15s ease",
         userSelect: "none",
         WebkitUserSelect: "none",
+        animation: "slideUpFade 0.4s ease-out",
+        animationDelay: `${staggerIndex * 0.05}s`,
+        animationFillMode: "backwards",
       }}
       onPointerDown={onPointerDown}
       onPointerUp={onPointerUp}

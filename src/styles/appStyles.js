@@ -381,6 +381,7 @@ export const S = {
     zIndex: 100,
     maxHeight: "75vh",
     overflowY: "auto",
+    animation: "slideUpFromBottom 0.35s ease-out",
   },
   orderBarHandle: {
     display: "flex",
@@ -411,12 +412,16 @@ export const S = {
     maxHeight: "400px",
     overflowY: "auto",
     marginBottom: 4,
+    transition: "max-height 0.35s ease-out",
   },
   orderBarListCollapsed: {
     display: "flex",
     flexDirection: "column",
     gap: 8,
+    maxHeight: "100px",
+    overflow: "hidden",
     marginBottom: 4,
+    transition: "max-height 0.35s ease-out",
   },
   orderBarItemWrapper: {
     width: "100%",
