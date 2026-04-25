@@ -418,7 +418,7 @@ export const S = {
     display: "flex",
     flexDirection: "column",
     gap: 8,
-    maxHeight: "100px",
+    maxHeight: "56px",
     overflow: "hidden",
     marginBottom: 4,
     transition: "max-height 0.35s ease-out",
