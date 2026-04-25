@@ -47,6 +47,23 @@ export function DailySalesView() {
   const renderTotalTab = () => {
     const { addedToPOSBills, withPosId, missingPosId } = aggregateDailySales(paidBills);
 
+    // Calculate summary stats
+    const addedItemsCount = addedToPOSBills.reduce((sum, bill) => {
+      return sum + bill.items.reduce((itemSum, item) => {
+        if (bill.addedToPOS) {
+          // If entire bill is marked as added, count all items
+          return itemSum + item.qty;
+        } else {
+          // Otherwise only count crossed items
+          const crossedQty = item.crossedQty ?? (item.crossed ? item.qty : 0);
+          return itemSum + crossedQty;
+        }
+      }, 0);
+    }, 0);
+
+    const remainingItemsCount = withPosId.reduce((sum, entry) => sum + entry.qty, 0) +
+                                missingPosId.reduce((sum, entry) => sum + entry.qty, 0);
+
     const renderPosRow = (item: PosEntry, color: string, compact?: boolean) => (
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
         <span style={{ fontFamily: "monospace", fontSize: compact ? 14 : 20, fontWeight: 900, color, width: compact ? "6ch" : "8ch", flexShrink: 0 }}>
@@ -68,7 +85,7 @@ export function DailySalesView() {
       return (
         <div style={{ ...S.billCard, ...(isMissing ? { borderLeft: "4px solid #e07b5a" } : {}) }}>
           {items.map((item, idx) => (
-            <div key={`${item.posId ?? 'missing'}-${item.posName}-${idx}`}>
+            <div key={`${item.posId ?? 'missing'}-${item.posName}-${item.items.join(',')}`}>
               {idx > 0 && <div style={S.divider} />}
               {renderPosRow(item, color)}
             </div>
@@ -94,43 +111,40 @@ export function DailySalesView() {
 
     return (
       <>
-        {/* Already added to POS bills */}
-        {addedToPOSBills.length > 0 && (
-          <>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#3498db", marginTop: 16, marginBottom: 12 }}>
-              Already added to POS
-            </div>
-            <div style={billsListStyle}>
-              {addedToPOSBills.map((bill) => {
-                const billIndex = paidBills.indexOf(bill);
-                return (
-                  <BillCard
-                    key={bill.directusId || bill.tempId}
-                    bill={bill}
-                    isEditing={editingBillIndex === billIndex}
-                    onEdit={() => enterBillEditMode(billIndex)}
-                    onDone={exitBillEditMode}
-                    onCancel={cancelBillEditMode}
-                    onDelete={() => markBillAddedToPOS(billIndex)}
-                    onRestore={() => restoreBillFromPOS(billIndex)}
-                    onRemoveItem={(itemId) => removePaidBillItem(billIndex, itemId)}
-                    onRestoreItem={(itemId) => restorePaidBillItem(billIndex, itemId)}
-                  />
-                );
-              })}
-            </div>
-          </>
+        {/* Compact summary */}
+        {(addedItemsCount > 0 || remainingItemsCount > 0) && (
+          <div style={{
+            background: "#e8f4fc",
+            border: "1px solid #c2dcf5",
+            borderRadius: 8,
+            padding: "12px 16px",
+            marginTop: 16,
+            marginBottom: 16,
+            fontSize: 13,
+            lineHeight: 1.6
+          }}>
+            {addedItemsCount > 0 && (
+              <div style={{ color: "#3498db", fontWeight: 600 }}>
+                ✓ {addedItemsCount} item{addedItemsCount !== 1 ? 's' : ''} added during shift ({addedToPOSBills.length} bill{addedToPOSBills.length !== 1 ? 's' : ''})
+              </div>
+            )}
+            {remainingItemsCount > 0 && (
+              <div style={{ color: "#1a1a1a", fontWeight: 600 }}>
+                {remainingItemsCount} item{remainingItemsCount !== 1 ? 's' : ''} remaining to enter
+              </div>
+            )}
+          </div>
         )}
 
         {/* Sales section */}
         {withPosId.length > 0 && (
           <>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1a1a", marginTop: addedToPOSBills.length > 0 ? 24 : 16, marginBottom: 12 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1a1a", marginBottom: 12 }}>
               Sales
             </div>
             <div style={salesGridStyle}>
               {withPosId.map((item) => (
-                <div key={`${item.posId}-${item.posName}`} style={{ ...S.billCard, padding: "12px 16px" }}>
+                <div key={`${item.posId}-${item.posName}-${item.items.join(',')}`} style={{ ...S.billCard, padding: "12px 16px" }}>
                   {renderPosRow(item, "#1a1a1a")}
                 </div>
               ))}
@@ -225,7 +239,7 @@ export function DailySalesView() {
                   const billIndex = paidBills.length - 1 - reverseIdx;
                   return (
                     <BillCard
-                      key={bill.directusId || bill.tempId}
+                      key={bill.directusId || bill.tempId || `bill-${billIndex}`}
                       bill={bill}
                       isEditing={editingBillIndex === billIndex}
                       onEdit={() => enterBillEditMode(billIndex)}
