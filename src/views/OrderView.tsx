@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useMenu } from "../contexts/MenuContext";
 import { useApp } from "../contexts/AppContext";
 import { useTable } from "../contexts/TableContext";
@@ -74,6 +74,35 @@ export function OrderView() {
   // Get filtered menu items via hook
   const filteredItems = useMenuItems({ activeCategory, searchQuery });
 
+  // Per-category items for sliding panes (categories are fixed for this restaurant)
+  const foodItems = useMenuItems({ activeCategory: "Food", searchQuery: "" });
+  const drinksItems = useMenuItems({ activeCategory: "Drinks", searchQuery: "" });
+  const winesItems = useMenuItems({ activeCategory: "Wines", searchQuery: "" });
+  const shopItems = useMenuItems({ activeCategory: "Shop", searchQuery: "" });
+  const categoryItems: Record<string, ReturnType<typeof useMenuItems>> = {
+    Food: foodItems, Drinks: drinksItems, Wines: winesItems, Shop: shopItems,
+  };
+
+  const categories = Object.keys(MENU);
+  const catIndex = categories.indexOf(activeCategory);
+  const paneWidthPct = 100 / categories.length;
+
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    const dy = e.changedTouches[0].clientY - touchStartY.current;
+    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy)) return;
+    if (dx < 0 && catIndex < categories.length - 1) setActiveCategory(categories[catIndex + 1]);
+    else if (dx > 0 && catIndex > 0) setActiveCategory(categories[catIndex - 1]);
+  };
+
   // Show BillView if active
   if (showBillView) {
     return <BillView tableId={tableId} sent={sent} onClose={() => app.setOrderViewTab('order')} />;
@@ -126,16 +155,54 @@ export function OrderView() {
         )}
       </div>
 
-      <div style={{ ...S.orderContent, paddingBottom: (unsent.length > 0 || batches.length > 0) ? 180 : 36 }}>
-        <MenuGrid
-          filteredItems={filteredItems}
-          subcategoryConfig={subcategoryConfig}
-          searchQuery={searchQuery}
-          unsent={unsent}
-          onTap={handleCardTap}
-          onLongPress={handleCardLongPress}
-        />
-      </div>
+      {searchQuery ? (
+        <div style={{ ...S.orderContent, paddingBottom: (unsent.length > 0 || batches.length > 0) ? 180 : 36 }}>
+          <MenuGrid
+            filteredItems={filteredItems}
+            subcategoryConfig={subcategoryConfig}
+            searchQuery={searchQuery}
+            unsent={unsent}
+            onTap={handleCardTap}
+            onLongPress={handleCardLongPress}
+          />
+        </div>
+      ) : (
+        <div
+          style={{ flex: 1, overflow: "hidden", minHeight: 0, touchAction: "pan-y" }}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+        >
+          <div style={{
+            display: "flex",
+            width: `${categories.length * 100}%`,
+            height: "100%",
+            transform: `translateX(${-catIndex * paneWidthPct}%)`,
+            transition: "transform 0.3s ease-out",
+          }}>
+            {categories.map((cat) => (
+              <div
+                key={cat}
+                style={{
+                  ...S.orderContent,
+                  width: `${paneWidthPct}%`,
+                  height: "100%",
+                  flex: "none",
+                  paddingBottom: (unsent.length > 0 || batches.length > 0) ? 180 : 36,
+                }}
+              >
+                <MenuGrid
+                  filteredItems={categoryItems[cat] ?? []}
+                  subcategoryConfig={SUBCATEGORY_CONFIG[cat] ?? []}
+                  searchQuery=""
+                  unsent={unsent}
+                  onTap={handleCardTap}
+                  onLongPress={handleCardLongPress}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {(unsent.length > 0 || batches.length > 0) && (
         <OrderBar
