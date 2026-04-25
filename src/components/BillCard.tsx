@@ -21,7 +21,7 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
   });
 
   const cardStyle = (bill.addedToPOS || allItemsCrossed)
-    ? { ...S.billCard, background: "#fff5f5", borderColor: "#f5c2c2" }
+    ? { ...S.billCard, background: "#e8f4fc", borderColor: "#c2dcf5" }
     : S.billCard;
 
   return (
@@ -113,7 +113,7 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
                     fontSize: 10,
                     fontWeight: 700,
                     letterSpacing: 1,
-                    color: "#c0392b",
+                    color: "#3498db",
                     textTransform: "uppercase" as const,
                     marginTop: 8,
                     marginBottom: 2
@@ -128,7 +128,7 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
                       <span style={{
                         ...S.billItemName,
                         textDecoration: "line-through",
-                        color: "#c0392b"
+                        color: "#3498db"
                       }}>
                         <span style={S.billItemQty}>{item.displayQty}×</span>
                         {item.name}
@@ -136,7 +136,7 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
                       <span style={{
                         ...S.billItemPrice,
                         textDecoration: "line-through",
-                        color: "#c0392b"
+                        color: "#3498db"
                       }}>
                         {(item.price * item.displayQty).toFixed(2)}€
                       </span>

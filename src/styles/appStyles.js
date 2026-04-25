@@ -1468,8 +1468,8 @@ export const S = {
   addedToPOSLabel: {
     fontSize: 11,
     fontWeight: 700,
-    color: colors.danger,
-    background: colors.dangerBg,
+    color: colors.info,
+    background: colors.infoBg,
     borderRadius: 4,
     padding: "2px 6px",
     letterSpacing: 0.3,

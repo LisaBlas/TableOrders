@@ -78,7 +78,7 @@ export function DailySalesView() {
         {/* Already added to POS bills */}
         {addedToPOSBills.length > 0 && (
           <>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#c0392b", marginTop: 16, marginBottom: 12 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#3498db", marginTop: 16, marginBottom: 12 }}>
               Already added to POS
             </div>
             <div style={billsListStyle}>

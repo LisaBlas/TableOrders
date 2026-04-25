@@ -21,6 +21,7 @@ export const colors = {
   divider: "#d4d2ca",
   overlay: "rgba(0,0,0,0.5)",
   info: "#3498db",
+  infoBg: "#e8f4fc",
 };
 
 export const radii = {
