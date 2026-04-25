@@ -1,14 +1,22 @@
 """
 Seed Directus menu_items and menu_item_variants from constants.js data.
-Reads credentials from project root .env
+Reads credentials from ~/services/directus/.env
 """
 import os, json, requests
 from pathlib import Path
-from dotenv import dotenv_values
 
 DIRECTUS_URL = "https://cms.blasalviz.com"
 
-cfg = dotenv_values(Path(__file__).parent / ".env")
+def _load_env(path):
+    env = {}
+    for line in Path(path).read_text().splitlines():
+        line = line.strip()
+        if line and not line.startswith("#") and "=" in line:
+            k, _, v = line.partition("=")
+            env[k.strip()] = v.strip()
+    return env
+
+cfg = _load_env(Path.home() / "services/directus/.env")
 ADMIN_EMAIL = cfg["ADMIN_EMAIL"]
 ADMIN_PASSWORD = cfg["ADMIN_PASSWORD"]
 
@@ -134,7 +142,7 @@ MENU = {
         {"id_local": "wg12", "name": "Yellow Muskateller",   "short_name": "Y. Muskat",  "subcategory": "wine",   "variants": [{"type":"small","price":4.5, "label":"0,1","pos_id":"194-1","pos_name":"YellM 0,1"},    {"type":"large","price":9,   "label":"0,2","pos_id":"194-2","pos_name":"YellM 0,2"},    {"type":"here","price":30,  "label":"Fl.","pos_id":"194","pos_name":"YellM Fl.","bottle_subcategory":"natural"},    {"type":"togo","price":17,  "label":"Fl. To Go","pos_id":"194","pos_name":"YellM Fl. To Go","bottle_subcategory":"natural"}]},
         {"id_local": "wg13", "name": "Cuvée des Galets",     "short_name": "C. Galets",  "subcategory": "wine",   "variants": [{"type":"small","price":4.5, "label":"0,1","pos_id":"280-1","pos_name":"CuvGal 0,1"},   {"type":"large","price":9,   "label":"0,2","pos_id":"280-2","pos_name":"CuvGal 0,2"},   {"type":"here","price":27,  "label":"Fl.","pos_id":"280","pos_name":"CuvGal Fl.","bottle_subcategory":"natural"},    {"type":"togo","price":17,  "label":"Fl. To Go","pos_id":"280","pos_name":"CuvGal Fl. To Go","bottle_subcategory":"natural"}]},
         {"id_local": "wg15", "name": "Vino Verde",           "short_name": "VV",         "subcategory": "wine",   "variants": [{"type":"small","price":3.5, "label":"0,1","pos_id":"253-1","pos_name":"VV 0,1"},       {"type":"large","price":7,   "label":"0,2","pos_id":"253-2","pos_name":"VV 0,2"},       {"type":"here","price":24,  "label":"Fl.","pos_id":"253","pos_name":"VV Fl.","bottle_subcategory":"white"},         {"type":"togo","price":12.5,"label":"Fl. To Go","pos_id":"253","pos_name":"VV Fl. To Go","bottle_subcategory":"white"}]},
-        {"id_local": "wg14", "name": "Weißweinschorle",      "short_name": "WWS",        "subcategory": "wine",   "variants": [{"type":"small","price":3,   "label":"0,1","pos_id":"69-1", "pos_name":"WeinSch 0,1"},  {"type":"large","price":6,   "label":"0,2","pos_id":"69-2", "pos_name":"WeinSch 0,2"}]},
+        {"id_local": "wg14", "name": "Weißweinschorle",      "short_name": "WWS",        "subcategory": "soft",   "variants": [{"type":"small","price":3,   "label":"0,1","pos_id":"69-1", "pos_name":"WeinSch 0,1"},  {"type":"large","price":6,   "label":"0,2","pos_id":"69-2", "pos_name":"WeinSch 0,2"}]},
         {"id_local": "dr1",  "name": "Aperol",               "short_name": "Aperol",     "price": 8,   "subcategory": "cocktail", "pos_id": "73"},
         {"id_local": "dr2",  "name": "Cynar",                "short_name": "Cynar",      "price": 8,   "subcategory": "cocktail", "pos_id": "76"},
         {"id_local": "dr3",  "name": "Campari",              "short_name": "Campari",    "price": 8,   "subcategory": "cocktail", "pos_id": "74"},
