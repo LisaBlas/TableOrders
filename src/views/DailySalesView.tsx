@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { useApp } from "../contexts/AppContext";
 import { useBreakpoint } from "../hooks/useBreakpoint";
 import { S } from "../styles/appStyles";
@@ -23,6 +24,24 @@ export function DailySalesView() {
     cancelBillEditMode,
     dailySalesTab, setDailySalesTab,
   } = app;
+
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+  const tabOrder = ["chronological", "total"] as const;
+  const tabIndex = tabOrder.indexOf(dailySalesTab);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    const dy = e.changedTouches[0].clientY - touchStartY.current;
+    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy)) return;
+    if (dx < 0 && tabIndex < tabOrder.length - 1) setDailySalesTab(tabOrder[tabIndex + 1]);
+    else if (dx > 0 && tabIndex > 0) setDailySalesTab(tabOrder[tabIndex - 1]);
+  };
 
   // Total tab aggregation - by POS ID for easy POS entry
   const renderTotalTab = () => {
@@ -74,7 +93,7 @@ export function DailySalesView() {
     };
 
     return (
-      <div style={totalTabContainerStyle}>
+      <>
         {/* Already added to POS bills */}
         {addedToPOSBills.length > 0 && (
           <>
@@ -126,7 +145,7 @@ export function DailySalesView() {
             {renderGroup(missingPosId, true)}
           </>
         )}
-      </div>
+      </>
     );
   };
 
@@ -188,29 +207,44 @@ export function DailySalesView() {
 
           <SalesSummary paidBills={paidBills} />
 
-          {dailySalesTab === "chronological" && (
-            <div style={billsListStyle}>
-              {[...paidBills].reverse().map((bill, reverseIdx) => {
-                const billIndex = paidBills.length - 1 - reverseIdx;
-                return (
-                  <BillCard
-                    key={bill.directusId || bill.tempId}
-                    bill={bill}
-                    isEditing={editingBillIndex === billIndex}
-                    onEdit={() => enterBillEditMode(billIndex)}
-                    onDone={exitBillEditMode}
-                    onCancel={cancelBillEditMode}
-                    onDelete={() => markBillAddedToPOS(billIndex)}
-                    onRestore={() => restoreBillFromPOS(billIndex)}
-                    onRemoveItem={(itemId) => removePaidBillItem(billIndex, itemId)}
-                    onRestoreItem={(itemId) => restorePaidBillItem(billIndex, itemId)}
-                  />
-                );
-              })}
+          <div
+            style={{ flex: 1, overflow: "hidden", minHeight: 0, touchAction: "pan-y" }}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
+            <div style={{
+              display: "flex",
+              width: "200%",
+              height: "100%",
+              transform: `translateX(${-tabIndex * 50}%)`,
+              transition: "transform 0.3s ease-out",
+            }}>
+              {/* Tables (chronological) pane */}
+              <div style={{ ...billsListStyle, width: "50%", height: "100%", flex: "none" }}>
+                {[...paidBills].reverse().map((bill, reverseIdx) => {
+                  const billIndex = paidBills.length - 1 - reverseIdx;
+                  return (
+                    <BillCard
+                      key={bill.directusId || bill.tempId}
+                      bill={bill}
+                      isEditing={editingBillIndex === billIndex}
+                      onEdit={() => enterBillEditMode(billIndex)}
+                      onDone={exitBillEditMode}
+                      onCancel={cancelBillEditMode}
+                      onDelete={() => markBillAddedToPOS(billIndex)}
+                      onRestore={() => restoreBillFromPOS(billIndex)}
+                      onRemoveItem={(itemId) => removePaidBillItem(billIndex, itemId)}
+                      onRestoreItem={(itemId) => restorePaidBillItem(billIndex, itemId)}
+                    />
+                  );
+                })}
+              </div>
+              {/* Articles (total) pane */}
+              <div style={{ ...totalTabContainerStyle, width: "50%", height: "100%", flex: "none" }}>
+                {renderTotalTab()}
+              </div>
             </div>
-          )}
-
-          {dailySalesTab === "total" && renderTotalTab()}
+          </div>
         </>
       )}
     </div>
