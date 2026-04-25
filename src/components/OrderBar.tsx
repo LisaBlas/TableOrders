@@ -53,8 +53,14 @@ export function OrderBar({ tableId, unsent, batches, expanded, onToggleExpand, o
       </div>
 
       {sentMode ? (
-        expanded && (
-          <div style={{ animation: "slideUpFade 0.4s ease-out", animationFillMode: "both" }}>
+        <div style={{
+          display: "grid",
+          gridTemplateRows: expanded ? "1fr" : "0fr",
+          transition: "grid-template-rows 0.35s ease-out",
+          animation: "slideUpFade 0.4s ease-out",
+          animationFillMode: "both",
+        }}>
+          <div style={{ overflow: "hidden" }}>
             {[...batches].reverse().map((batch, batchIdx) => {
               const actualBatchIdx = batches.length - 1 - batchIdx;
               const isMarked = table.markedBatches[tableId]?.has(actualBatchIdx) || false;
@@ -106,7 +112,7 @@ export function OrderBar({ tableId, unsent, batches, expanded, onToggleExpand, o
               );
             })}
           </div>
-        )
+        </div>
       ) : (
         <>
           <div style={expanded ? S.orderBarList : S.orderBarListCollapsed}>
