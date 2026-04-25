@@ -1,6 +1,23 @@
 import type { Bill, OrderItem } from "../types";
 
-const DIRECTUS_URL = (import.meta as any).env?.VITE_DIRECTUS_URL ?? "https://cms.blasalviz.com";
+const DIRECTUS_URL = import.meta.env.VITE_DIRECTUS_URL ?? "https://cms.blasalviz.com";
+const DIRECTUS_TOKEN = import.meta.env.VITE_DIRECTUS_TOKEN ?? "";
+
+// Debug: Log token status on module load
+if (!DIRECTUS_TOKEN) {
+  console.error("❌ DIRECTUS TOKEN MISSING! Check .env file");
+  alert("⚠️ Directus token not loaded! Check browser console.");
+} else {
+  console.log("✅ Token loaded:", DIRECTUS_TOKEN.slice(0, 15) + "...");
+}
+
+function getHeaders(): HeadersInit {
+  const headers: HeadersInit = { "Content-Type": "application/json" };
+  if (DIRECTUS_TOKEN) {
+    headers["Authorization"] = `Bearer ${DIRECTUS_TOKEN}`;
+  }
+  return headers;
+}
 
 export function todayBerlinDate(): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin" }).format(new Date());
@@ -50,14 +67,21 @@ function billFromDirectus(d: any): Bill {
 export async function fetchBillsByDate(berlinDate: string): Promise<Bill[]> {
   const { gte, lte } = berlinDayBoundsUTC(berlinDate);
 
+  const headers = getHeaders();
+  console.log("📤 Fetch bills headers:", headers);
+
   const res = await fetch(
     `${DIRECTUS_URL}/items/bills`
     + `?filter[timestamp][_gte]=${gte}`
     + `&filter[timestamp][_lte]=${lte}`
     + `&fields=*,items.*`
     + `&sort=timestamp`
-    + `&limit=-1`
+    + `&limit=-1`,
+    { headers }
   );
+
+  console.log("📥 Response status:", res.status, res.statusText);
+
   if (!res.ok) throw new Error(`Directus bills ${res.status}`);
   const { data: bills } = await res.json();
 
@@ -68,7 +92,7 @@ export async function fetchBillsByDate(berlinDate: string): Promise<Bill[]> {
 export async function createBillInDirectus(bill: Bill): Promise<Bill> {
   const billRes = await fetch(`${DIRECTUS_URL}/items/bills`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getHeaders(),
     body: JSON.stringify({
       table_id: bill.tableId,
       total: Math.round(bill.total * 100) / 100,
@@ -108,7 +132,7 @@ export async function createBillInDirectus(bill: Bill): Promise<Bill> {
 
   const itemsRes = await fetch(`${DIRECTUS_URL}/items/bill_items`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getHeaders(),
     body: JSON.stringify(itemsPayload),
   });
 
@@ -117,6 +141,7 @@ export async function createBillInDirectus(bill: Bill): Promise<Bill> {
     try {
       await fetch(`${DIRECTUS_URL}/items/bills/${billDirectusId}`, {
         method: "DELETE",
+        headers: getHeaders(),
       });
     } catch (rollbackErr) {
       console.error("Rollback failed:", rollbackErr);
@@ -140,7 +165,7 @@ export async function createBillInDirectus(bill: Bill): Promise<Bill> {
 export async function patchBill(directusId: string, data: object): Promise<void> {
   const res = await fetch(`${DIRECTUS_URL}/items/bills/${directusId}`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json" },
+    headers: getHeaders(),
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error(`PATCH bill failed: ${res.status}`);
@@ -149,7 +174,7 @@ export async function patchBill(directusId: string, data: object): Promise<void>
 export async function patchBillItem(directusId: string, data: object): Promise<void> {
   const res = await fetch(`${DIRECTUS_URL}/items/bill_items/${directusId}`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json" },
+    headers: getHeaders(),
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error(`PATCH bill item failed: ${res.status}`);

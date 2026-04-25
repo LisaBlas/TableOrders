@@ -1,6 +1,6 @@
 import type { TableId, OrderItem, Batch } from "../types";
 
-const DIRECTUS_URL = (import.meta as any).env?.VITE_DIRECTUS_URL ?? "https://cms.blasalviz.com";
+const DIRECTUS_URL = import.meta.env.VITE_DIRECTUS_URL ?? "https://cms.blasalviz.com";
 
 export interface TableSession {
   id: number;

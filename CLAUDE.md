@@ -26,6 +26,7 @@ Built for speed and simplicity — optimized for multi-device, front-of-house us
 - **Inline styles** — pure JS objects via `S` object in `appStyles.js`, no CSS-in-JS library
 - **State** — React Context (AuthContext + AppContext + TableContext + MenuContext + SplitContext), TanStack Query for server state
 - **Directus CMS** — headless CMS for menu data, paid bills, and table sessions (SQLite, REST API)
+  - **Authentication** — Static token in `.env` file (VITE_DIRECTUS_TOKEN)
 - **Real-time Sync** — 2-second polling for table sessions, 5-second polling for bills (today only)
 - **DM Sans** font (Google Fonts)
 
@@ -239,6 +240,20 @@ npm.cmd run build  # Windows PowerShell fallback when npm.ps1 is blocked
 npm.cmd exec tsc -- --noEmit  # Type-check without building
 npm run preview    # Preview production build
 ```
+
+## Environment Setup
+Create a `.env` file in the project root:
+```env
+VITE_DIRECTUS_URL=https://cms.blasalviz.com
+VITE_DIRECTUS_TOKEN=your-directus-static-token-here
+```
+
+To get a Directus token:
+1. Log into Directus admin panel
+2. Go to Settings → Access Tokens
+3. Create a new static token with read/write permissions for `bills`, `bill_items`, `menu_items`, `categories`, and `table_sessions` collections
+4. Copy the token to `.env`
+5. Restart the dev server
 
 ## Agent Rules
 - **Always `git pull origin main` before making any code changes**, regardless of whether the request comes from the terminal or Slack. Never skip this step.

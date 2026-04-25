@@ -63,8 +63,17 @@ export function aggregateDailySales(paidBills: Bill[]) {
 
   const activeAll = sortPosEntries(activeMap);
 
+  // Include bills that are fully marked as added OR have any crossed items
+  const billsWithCrossedItems = paidBills.filter((bill) => {
+    if (bill.addedToPOS) return true;
+    return bill.items.some((item) => {
+      const crossedQty = item.crossedQty ?? (item.crossed ? item.qty : 0);
+      return crossedQty > 0;
+    });
+  });
+
   return {
-    addedToPOSBills: paidBills.filter((bill) => bill.addedToPOS),
+    addedToPOSBills: billsWithCrossedItems,
     withPosId: activeAll.filter((item) => !isMissingPosId(item.posId)),
     missingPosId: activeAll.filter((item) => isMissingPosId(item.posId)),
   };

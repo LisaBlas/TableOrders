@@ -1,4 +1,4 @@
-const DIRECTUS_URL = (import.meta as any).env?.VITE_DIRECTUS_URL ?? "https://cms.blasalviz.com";
+const DIRECTUS_URL = import.meta.env.VITE_DIRECTUS_URL ?? "https://cms.blasalviz.com";
 
 function transformItem(item: any, categoryName: string) {
   const base = {

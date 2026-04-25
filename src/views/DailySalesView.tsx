@@ -49,7 +49,7 @@ export function DailySalesView() {
       return (
         <div style={{ ...S.billCard, ...(isMissing ? { borderLeft: "4px solid #e07b5a" } : {}) }}>
           {items.map((item, idx) => (
-            <div key={`${item.posId}-${item.posName}`}>
+            <div key={`${item.posId ?? 'missing'}-${item.posName}-${idx}`}>
               {idx > 0 && <div style={S.divider} />}
               {renderPosRow(item, color)}
             </div>

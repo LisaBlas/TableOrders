@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Environment variables
+.env
+.env.local
+
 DETAILED_REFACTOR_PLAN.md
 DIRECTUS_SETUP.md
 
