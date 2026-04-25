@@ -282,7 +282,7 @@ for category_name, items in MENU.items():
         if "variants" in item:
             for v in item["variants"]:
                 vp = {
-                    "menu_item_id": menu_item_id,
+                    "item": menu_item_id,
                     "type": v["type"],
                     "label": v["label"],
                     "price": v["price"],
