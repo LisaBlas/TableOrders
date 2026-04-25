@@ -1,4 +1,3 @@
-import { useRef } from "react";
 import { S } from "../styles/appStyles";
 import type { MenuItem } from "../types";
 
@@ -11,17 +10,6 @@ interface NoteBottomSheetProps {
 }
 
 export function NoteBottomSheet({ item, note, onNoteChange, onConfirm, onClose }: NoteBottomSheetProps) {
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-
-  // Callback ref: delay focus so slide-up animation doesn't fight keyboard
-  const inputRef = (el: HTMLInputElement | null) => {
-    if (el) {
-      timeoutRef.current = setTimeout(() => el.focus(), 150);
-    } else {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    }
-  };
-
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") onConfirm();
     if (e.key === "Escape") onClose();
@@ -33,7 +21,6 @@ export function NoteBottomSheet({ item, note, onNoteChange, onConfirm, onClose }
       <div style={S.variantSheet}>
         <div style={S.variantSheetHeader}>{item.shortName || item.name}</div>
         <input
-          ref={inputRef}
           type="text"
           placeholder="e.g. no walnuts, extra sauce…"
           value={note}
