@@ -51,7 +51,7 @@ export function OrderBar({ tableId, unsent, batches, expanded, onToggleExpand, o
               const batchByDest = groupByDestination(batch.items);
               const ts = typeof batch.timestamp === "string" ? new Date(batch.timestamp) : batch.timestamp;
               return (
-                <div key={batchIdx}>
+                <div key={actualBatchIdx}>
                   <div style={S.sentDivider}>
                     <div style={{ ...S.sentDividerLine, background: accentColor }} />
                     <span style={S.sentDividerText}>

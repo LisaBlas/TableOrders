@@ -49,7 +49,7 @@ export function DailySalesView() {
       return (
         <div style={{ ...S.billCard, ...(isMissing ? { borderLeft: "4px solid #e07b5a" } : {}) }}>
           {items.map((item, idx) => (
-            <div key={idx}>
+            <div key={`${item.posId}-${item.posName}`}>
               {idx > 0 && <div style={S.divider} />}
               {renderPosRow(item, color)}
             </div>
@@ -82,11 +82,11 @@ export function DailySalesView() {
               Already added to POS
             </div>
             <div style={billsListStyle}>
-              {addedToPOSBills.map((bill, idx) => {
+              {addedToPOSBills.map((bill) => {
                 const billIndex = paidBills.indexOf(bill);
                 return (
                   <BillCard
-                    key={idx}
+                    key={bill.directusId || bill.tempId}
                     bill={bill}
                     isEditing={editingBillIndex === billIndex}
                     onEdit={() => enterBillEditMode(billIndex)}
@@ -110,8 +110,8 @@ export function DailySalesView() {
               Sales
             </div>
             <div style={salesGridStyle}>
-              {withPosId.map((item, idx) => (
-                <div key={idx} style={{ ...S.billCard, padding: "12px 16px" }}>
+              {withPosId.map((item) => (
+                <div key={`${item.posId}-${item.posName}`} style={{ ...S.billCard, padding: "12px 16px" }}>
                   {renderPosRow(item, "#1a1a1a")}
                 </div>
               ))}
@@ -194,7 +194,7 @@ export function DailySalesView() {
                 const billIndex = paidBills.length - 1 - reverseIdx;
                 return (
                   <BillCard
-                    key={reverseIdx}
+                    key={bill.directusId || bill.tempId}
                     bill={bill}
                     isEditing={editingBillIndex === billIndex}
                     onEdit={() => enterBillEditMode(billIndex)}
