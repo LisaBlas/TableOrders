@@ -57,8 +57,8 @@ export function TableCard({
         transition: "opacity 0.2s ease, border 0.15s ease",
         userSelect: "none",
         WebkitUserSelect: "none",
-        animation: "slideUpFade 0.4s ease-out",
-        animationDelay: `${staggerIndex * 0.05}s`,
+        animation: "slideUpFade 0.2s ease-out",
+        animationDelay: `${staggerIndex * 0.035}s`,
         animationFillMode: "backwards",
       }}
       onPointerDown={onPointerDown}
