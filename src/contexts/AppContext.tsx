@@ -9,6 +9,7 @@ import {
   todayBerlinDate,
 } from "../services/directusBills";
 import type { View, Bill, DailySalesTab, TableId } from "../types";
+import RetryModal from "../components/RetryModal";
 
 interface AppContextValue {
   // Navigation
@@ -67,6 +68,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [billSnapshot, setBillSnapshot] = useState<Bill | null>(null);
   const [deletingBillIndex, setDeletingBillIndex] = useState<number | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>(todayBerlinDate);
+  const [failedBill, setFailedBill] = useState<{ bill: Bill; tempId: string; error: string } | null>(null);
 
   const BILLS_KEY = ["bills", selectedDate];
   const isToday = selectedDate === todayBerlinDate();
@@ -132,12 +134,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
       })
       .catch((err) => {
         console.warn("Failed to save bill to Directus:", err.message);
-        // Remove optimistic bill on failure
+        // Remove optimistic bill from cache
         const latest = queryClient.getQueryData<Bill[]>(todayKey) ?? [];
         queryClient.setQueryData<Bill[]>(todayKey, latest.filter((b) => b.tempId !== tempId));
-        showToast("Bill not saved - check connection");
+        // Show retry modal
+        setFailedBill({
+          bill: optimisticBill,
+          tempId,
+          error: err.message || "Failed to save bill to server",
+        });
       });
-  }, [queryClient, showToast]);
+  }, [queryClient, setFailedBill]);
 
   const markBillAddedToPOS = useCallback((billIndex: number) => {
     const updated = paidBills.map((b, i) =>
@@ -244,6 +251,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setBillSnapshot(null);
   }, [billSnapshot, editingBillIndex, paidBills, setCachedBills]);
 
+  // Retry modal handlers
+  const handleRetryBill = useCallback(() => {
+    if (!failedBill) return;
+    setFailedBill(null);
+    // Retry the original bill creation
+    addPaidBill(failedBill.bill);
+  }, [failedBill, addPaidBill]);
+
+  const handleCancelRetry = useCallback(() => {
+    if (failedBill) {
+      showToast("Bill not saved");
+    }
+    setFailedBill(null);
+  }, [failedBill, showToast]);
+
   return (
     <AppContext.Provider value={{
       view, setView,
@@ -267,6 +289,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       deletingBillIndex, setDeletingBillIndex,
     }}>
       {children}
+      {failedBill && (
+        <RetryModal
+          message={`Failed to save bill for Table ${failedBill.bill.tableId}. ${failedBill.error}. Would you like to retry?`}
+          onRetry={handleRetryBill}
+          onCancel={handleCancelRetry}
+        />
+      )}
     </AppContext.Provider>
   );
 }

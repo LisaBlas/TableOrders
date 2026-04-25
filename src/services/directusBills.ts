@@ -111,7 +111,19 @@ export async function createBillInDirectus(bill: Bill): Promise<Bill> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(itemsPayload),
   });
-  if (!itemsRes.ok) throw new Error(`Create bill items failed: ${itemsRes.status}`);
+
+  if (!itemsRes.ok) {
+    // Rollback: delete the orphaned bill before throwing
+    try {
+      await fetch(`${DIRECTUS_URL}/items/bills/${billDirectusId}`, {
+        method: "DELETE",
+      });
+    } catch (rollbackErr) {
+      console.error("Rollback failed:", rollbackErr);
+    }
+    throw new Error(`Create bill items failed: ${itemsRes.status}`);
+  }
+
   const { data: itemsData } = await itemsRes.json();
   const itemsArray: any[] = Array.isArray(itemsData) ? itemsData : [itemsData];
 
