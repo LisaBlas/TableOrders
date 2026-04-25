@@ -100,11 +100,14 @@ button:active {
   }
 }
 
-@keyframes confirmFlash {
-  0%   { background: #1a1a1a; transform: scale(1); }
-  20%  { background: #2d5a35; transform: scale(1.03); }
-  55%  { background: #52b87a; transform: scale(1.015); }
-  100% { background: #1a1a1a; transform: scale(1); }
+/* OrderBar exit on confirm — mirrors slideUpFromBottom */
+@keyframes slideDownOut {
+  from {
+    transform: translateX(-50%) translateY(0);
+  }
+  to {
+    transform: translateX(-50%) translateY(110%);
+  }
 }
 
 /* OrderBar entrance — preserves translateX(-50%) centering during slide */

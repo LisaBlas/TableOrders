@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useMenu } from "../contexts/MenuContext";
 import { useTable } from "../contexts/TableContext";
 import { groupByDestination, DESTINATIONS, DEST_LABELS } from "../utils/batchGrouping";
@@ -19,23 +19,32 @@ export function OrderBar({ tableId, unsent, batches, expanded, onToggleExpand, o
   const table = useTable();
   const { menu } = useMenu();
   const sentMode = unsent.length === 0;
-  const [firing, setFiring] = useState(false);
+  const [phase, setPhase] = useState<"idle" | "exit" | "enter">("idle");
+  const hasSentRef = useRef(false);
 
   const handleSend = () => {
-    if (firing) return;
-    setFiring(true);
+    if (phase !== "idle") return;
+    hasSentRef.current = true;
+    setPhase("exit");
     setTimeout(() => {
       table.sendOrder(tableId);
       onSendOrder?.();
-    }, 500);
-    setTimeout(() => setFiring(false), 600);
+    }, 300);
+    setTimeout(() => setPhase("enter"), 350);
+    setTimeout(() => setPhase("idle"), 780);
   };
+
+  const barAnimStyle =
+    phase === "exit" ? { animation: "slideDownOut 0.3s ease-in", animationFillMode: "forwards" as const } :
+    phase === "enter" ? { animation: "slideUpFromBottom 0.4s ease-out", animationFillMode: "both" as const } :
+    hasSentRef.current ? { animation: "none" } :
+    {};
 
   const allMarked = batches.length > 0 && batches.every((_, i) => table.markedBatches[tableId]?.has(i));
   const statusDotColor = allMarked ? "#52b87a" : "#e05252";
 
   return (
-    <div style={S.orderBar}>
+    <div style={{ ...S.orderBar, ...barAnimStyle }}>
       <div style={S.orderBarHandle} onClick={onToggleExpand}>
         <div style={S.orderBarHandleLine} />
         {sentMode ? (
@@ -148,13 +157,7 @@ export function OrderBar({ tableId, unsent, batches, expanded, onToggleExpand, o
               </div>
             ))}
           </div>
-          <button
-            style={{
-              ...S.sendBtn,
-              ...(firing ? { animation: "confirmFlash 0.6s ease-out", transition: "none" } : {}),
-            }}
-            onClick={handleSend}
-          >
+          <button style={S.sendBtn} onClick={handleSend}>
             Confirm
           </button>
         </>
