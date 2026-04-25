@@ -133,7 +133,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         ));
       })
       .catch((err) => {
-        console.warn("Failed to save bill to Directus:", err.message);
+        showToast("Failed to save bill to server");
         // Remove optimistic bill from cache
         const latest = queryClient.getQueryData<Bill[]>(todayKey) ?? [];
         queryClient.setQueryData<Bill[]>(todayKey, latest.filter((b) => b.tempId !== tempId));
@@ -144,7 +144,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           error: err.message || "Failed to save bill to server",
         });
       });
-  }, [queryClient, setFailedBill]);
+  }, [queryClient, setFailedBill, showToast]);
 
   const markBillAddedToPOS = useCallback((billIndex: number) => {
     const updated = paidBills.map((b, i) =>
@@ -156,10 +156,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const bill = paidBills[billIndex];
     if (bill?.directusId) {
       patchBill(bill.directusId, { added_to_pos: true }).catch((err) =>
-        console.warn("Failed to patch bill:", err.message)
+        showToast("Failed to sync bill status")
       );
     }
-  }, [paidBills, setCachedBills]);
+  }, [paidBills, setCachedBills, showToast]);
 
   const restoreBillFromPOS = useCallback((billIndex: number) => {
     const bill = paidBills[billIndex];
@@ -168,17 +168,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setCachedBills(paidBills.map((b, i) => i === billIndex ? restoredBill : b));
     if (bill?.directusId) {
       patchBill(bill.directusId, { added_to_pos: false }).catch((err) =>
-        console.warn("Failed to patch bill:", err.message)
+        showToast("Failed to restore bill from POS")
       );
       restoredItems.forEach((item) => {
         if (item.directusId) {
           patchBillItem(item.directusId, { crossed_qty: 0 }).catch((err) =>
-            console.warn("Failed to patch bill item:", err.message)
+            showToast("Failed to restore item from POS")
           );
         }
       });
     }
-  }, [paidBills, setCachedBills]);
+  }, [paidBills, setCachedBills, showToast]);
 
   const removePaidBillItem = useCallback((billIndex: number, itemId: string) => {
     const bill = paidBills[billIndex];
@@ -193,10 +193,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const item = updatedItems.find((o) => o.id === itemId);
     if (item?.directusId) {
       patchBillItem(item.directusId, { crossed_qty: item.crossedQty }).catch((err) =>
-        console.warn("Failed to patch bill item:", err.message)
+        showToast("Failed to sync item update")
       );
     }
-  }, [paidBills, setCachedBills]);
+  }, [paidBills, setCachedBills, showToast]);
 
   const restorePaidBillItem = useCallback((billIndex: number, itemId: string) => {
     const bill = paidBills[billIndex];
@@ -211,10 +211,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const item = updatedItems.find((o) => o.id === itemId);
     if (item?.directusId) {
       patchBillItem(item.directusId, { crossed_qty: item.crossedQty }).catch((err) =>
-        console.warn("Failed to patch bill item:", err.message)
+        showToast("Failed to sync item restore")
       );
     }
-  }, [paidBills, setCachedBills]);
+  }, [paidBills, setCachedBills, showToast]);
 
   // Edit mode: mutations during edit are local only; sync happens on exit
   const enterBillEditMode = useCallback((billIndex: number) => {
@@ -228,12 +228,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const bill = paidBills[editingBillIndex];
       if (bill?.directusId) {
         patchBill(bill.directusId, { added_to_pos: bill.addedToPOS ?? false }).catch((err) =>
-          console.warn("Failed to sync bill on exit:", err.message)
+          showToast("Failed to sync bill")
         );
         bill.items.forEach((item) => {
           if (item.directusId) {
             patchBillItem(item.directusId, { crossed_qty: item.crossedQty ?? 0 }).catch((err) =>
-              console.warn("Failed to sync bill item on exit:", err.message)
+              showToast("Failed to sync item")
             );
           }
         });
@@ -241,7 +241,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
     setEditingBillIndex(null);
     setBillSnapshot(null);
-  }, [editingBillIndex, paidBills]);
+  }, [editingBillIndex, paidBills, showToast]);
 
   const cancelBillEditMode = useCallback(() => {
     if (billSnapshot !== null && editingBillIndex !== null) {
