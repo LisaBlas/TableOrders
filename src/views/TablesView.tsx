@@ -11,6 +11,7 @@ import { TableCard } from "../components/TableCard";
 import { SwapSheet } from "../components/SwapSheet";
 import { Modal } from "../components/Modal";
 import { S } from "../styles/appStyles";
+import { LogoutIcon, ReopenIcon, SalesIcon } from "../components/icons";
 import type { TableId, TableConfig } from "../types";
 
 const DESTINATION_ORDER = ["bar", "counter", "kitchen"] as const;
@@ -102,13 +103,17 @@ export function TablesView() {
                 fontSize: 14,
                 fontWeight: 600,
                 cursor: "pointer",
-                padding: "8px 12px",
+                padding: "7px 10px",
                 lineHeight: 1,
                 color: "#92400e",
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
               }}
               onClick={reopenLastClosed}
             >
-              Reopen T.{lastClosedSession.tableId}
+              T.{lastClosedSession.tableId}
+              <ReopenIcon size={15} color="#92400e" />
             </button>
           )}
           <button
@@ -119,19 +124,33 @@ export function TablesView() {
               fontSize: 14,
               fontWeight: 600,
               cursor: "pointer",
-              padding: "8px 12px",
+              padding: "7px 10px",
               lineHeight: 1,
               display: "flex",
               alignItems: "center",
-              justifyContent: "center",
-              gap: 6,
+              gap: 5,
+              color: "#555",
             }}
             onClick={() => setView("dailySales")}
           >
-            Daily Sales
+            <SalesIcon size={15} color="#555" />
+            Sales
           </button>
-          <button style={S.logoutButton} onClick={() => setShowLogoutModal(true)}>
-            Logout
+          <button
+            style={{
+              background: "none",
+              border: "1.5px solid #ccc",
+              borderRadius: 8,
+              padding: "7px",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#555",
+            }}
+            onClick={() => setShowLogoutModal(true)}
+          >
+            <LogoutIcon size={16} color="#555" />
           </button>
         </div>
       </header>
