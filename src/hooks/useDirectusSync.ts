@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, type Dispatch, type SetStateAction } fr
 import { useQuery } from "@tanstack/react-query";
 import { fetchAllSessions, upsertSession, deleteSession, parseTableId } from "../services/directusSessions";
 import type { Orders, SentBatches, GutscheinAmounts, TableId } from "../types";
+import { DEBOUNCE_DELAY_MS, POLL_INTERVAL_MS, OWNERSHIP_GRACE_MS, MAX_RETRIES } from "../config/appConfig";
 
 interface SyncState {
   orders: Orders;
@@ -51,7 +52,7 @@ export function useDirectusSync(
   const { data: remoteSessions } = useQuery({
     queryKey: ["table_sessions"],
     queryFn: fetchAllSessions,
-    refetchInterval: 2000,
+    refetchInterval: POLL_INTERVAL_MS,
     refetchOnWindowFocus: true,
     staleTime: 1000,
   });
@@ -66,7 +67,7 @@ export function useDirectusSync(
     remoteSessions.forEach((s) => { sessionIdMap.current[s.table_id] = s.id; });
 
     const isLocallyOwned = (key: string) =>
-      pendingWrites.current.has(key) || now - (lastWriteTime.current[key] ?? 0) < 3000;
+      pendingWrites.current.has(key) || now - (lastWriteTime.current[key] ?? 0) < OWNERSHIP_GRACE_MS;
 
     const allKeys = new Set([
       ...remoteMap.keys(),
@@ -133,9 +134,9 @@ export function useDirectusSync(
       } catch (e) {
         const attempts = (retryCounts.current[key] ?? 0) + 1;
         retryCounts.current[key] = attempts;
-        console.error(`Session write failed (attempt ${attempts}/3):`, e);
+        console.error(`Session write failed (attempt ${attempts}/${MAX_RETRIES}):`, e);
 
-        if (attempts < 3) {
+        if (attempts < MAX_RETRIES) {
           if (attempts === 1) showToast("Table state not saved - retrying");
           lastWriteTime.current[key] = Date.now();
           scheduleWrite(tableId);
@@ -145,7 +146,7 @@ export function useDirectusSync(
           pendingWrites.current.delete(key);
         }
       }
-    }, 500);
+    }, DEBOUNCE_DELAY_MS);
   }, [showToast]);
 
   // ── Cancel pending write and delete session from Directus ─────────────────

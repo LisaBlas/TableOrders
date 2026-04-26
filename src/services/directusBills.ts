@@ -3,12 +3,8 @@ import type { Bill, OrderItem } from "../types";
 const DIRECTUS_URL = import.meta.env.VITE_DIRECTUS_URL ?? "https://cms.blasalviz.com";
 const DIRECTUS_TOKEN = import.meta.env.VITE_DIRECTUS_TOKEN ?? "";
 
-// Debug: Log token status on module load
 if (!DIRECTUS_TOKEN) {
   console.error("❌ DIRECTUS TOKEN MISSING! Check .env file");
-  alert("⚠️ Directus token not loaded! Check browser console.");
-} else {
-  console.log("✅ Token loaded:", DIRECTUS_TOKEN.slice(0, 15) + "...");
 }
 
 function getHeaders(): HeadersInit {
@@ -68,8 +64,6 @@ export async function fetchBillsByDate(berlinDate: string): Promise<Bill[]> {
   const { gte, lte } = berlinDayBoundsUTC(berlinDate);
 
   const headers = getHeaders();
-  console.log("📤 Fetch bills headers:", headers);
-
   const res = await fetch(
     `${DIRECTUS_URL}/items/bills`
     + `?filter[timestamp][_gte]=${gte}`
@@ -79,8 +73,6 @@ export async function fetchBillsByDate(berlinDate: string): Promise<Bill[]> {
     + `&limit=-1`,
     { headers }
   );
-
-  console.log("📥 Response status:", res.status, res.statusText);
 
   if (!res.ok) throw new Error(`Directus bills ${res.status}`);
   const { data: bills } = await res.json();
