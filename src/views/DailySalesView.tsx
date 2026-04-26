@@ -61,8 +61,7 @@ export function DailySalesView() {
       }, 0);
     }, 0);
 
-    const remainingItemsCount = withPosId.reduce((sum, entry) => sum + entry.qty, 0) +
-                                missingPosId.reduce((sum, entry) => sum + entry.qty, 0);
+    const remainingItemsCount = withPosId.reduce((sum, entry) => sum + entry.qty, 0);
 
     const renderPosRow = (item: PosEntry, color: string, compact?: boolean) => (
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
