@@ -31,28 +31,8 @@ export function VariantBottomSheet({ item, unsent, onSelectVariant, onClose, var
       <div style={S.variantSheet}>
         <div style={S.variantSheetHeader}>{item.name}</div>
 
-        {/* Note input */}
-        <input
-          type="text"
-          placeholder="e.g. no walnuts, extra sauce…"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          style={{
-            width: "100%",
-            padding: "14px 16px",
-            fontSize: 15,
-            border: "1.5px solid #ebe9e3",
-            borderRadius: 10,
-            background: "#f5f4f0",
-            boxSizing: "border-box",
-            outline: "none",
-            fontFamily: "inherit",
-            marginBottom: 14,
-          }}
-        />
-
         {/* Variant buttons */}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 14 }}>
           {variants.map((variant) => {
             const unsentQty = getVariantUnsentQty(variant);
 
@@ -77,6 +57,25 @@ export function VariantBottomSheet({ item, unsent, onSelectVariant, onClose, var
             );
           })}
         </div>
+
+        {/* Note input */}
+        <input
+          type="text"
+          placeholder="e.g. no walnuts, extra sauce…"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          style={{
+            width: "100%",
+            padding: "14px 16px",
+            fontSize: 15,
+            border: "1.5px solid #ebe9e3",
+            borderRadius: 10,
+            background: "#f5f4f0",
+            boxSizing: "border-box",
+            outline: "none",
+            fontFamily: "inherit",
+          }}
+        />
       </div>
     </>
   );
