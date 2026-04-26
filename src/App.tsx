@@ -16,6 +16,7 @@ import { DailySalesView } from "./views/DailySalesView";
 import LoginView from "./views/LoginView";
 import { Toast } from "./components/Toast";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { useTable } from "./contexts/TableContext";
 import { S } from "./styles/appStyles";
 
 function LoadingScreen() {
@@ -59,6 +60,7 @@ function Router() {
   const { view, toast } = useApp();
   const { menuLoading } = useMenu();
   const { isAuthenticated } = useAuth();
+  const { syncError } = useTable();
   const { isTabletLandscape, isTablet, isDesktop } = useBreakpoint();
 
   if (menuLoading) return <LoadingScreen />;
@@ -70,6 +72,20 @@ function Router() {
 
   return (
     <div style={rootStyle}>
+      {syncError && (
+        <div
+          style={{
+            background: "#b45309",
+            color: "#fff",
+            padding: "6px 12px",
+            fontSize: 13,
+            textAlign: "center",
+            fontWeight: 500,
+          }}
+        >
+          Sync offline — table changes may not save
+        </div>
+      )}
       {toast && <Toast message={toast} />}
 
       {view === "tables" && <TablesView />}
@@ -78,7 +94,11 @@ function Router() {
       {view === "split" && <SplitRouter />}
       {view === "splitConfirm" && <SplitConfirmView />}
       {view === "splitDone" && <SplitDoneView />}
-      {view === "dailySales" && <DailySalesView />}
+      {view === "dailySales" && (
+        <ErrorBoundary inline>
+          <DailySalesView />
+        </ErrorBoundary>
+      )}
     </div>
   );
 }

@@ -49,7 +49,7 @@ export function useDirectusSync(
   const retryCounts = useRef<Record<string, number>>({});
 
   // ── Poll remote sessions every 2s ─────────────────────────────────────────
-  const { data: remoteSessions } = useQuery({
+  const { data: remoteSessions, isError: syncError } = useQuery({
     queryKey: ["table_sessions"],
     queryFn: fetchAllSessions,
     refetchInterval: POLL_INTERVAL_MS,
@@ -162,5 +162,5 @@ export function useDirectusSync(
     }
   }, []);
 
-  return { scheduleWrite, cancelAndDelete };
+  return { scheduleWrite, cancelAndDelete, syncError };
 }

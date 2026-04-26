@@ -17,6 +17,7 @@ interface TableContextValue {
   sentBatches: SentBatches;
   gutscheinAmounts: GutscheinAmounts;
   markedBatches: Record<string, Set<number>>;
+  syncError: boolean;
 
   // Actions
   addItem: (tableId: TableId, item: MenuItem, variant: MenuItemVariant | null, category: MenuCategory, note?: string) => void;
@@ -55,7 +56,7 @@ export function TableProvider({ children }: { children: ReactNode }) {
   useEffect(() => { ordersRef.current = orders; }, [orders]);
 
   // ── Directus sync (polling, debounced writes, conflict resolution) ─────────
-  const { scheduleWrite, cancelAndDelete } = useDirectusSync(
+  const { scheduleWrite, cancelAndDelete, syncError } = useDirectusSync(
     { orders, seatedTablesArr, sentBatches, gutscheinAmounts, markedBatches },
     { setOrders, setSeatedTablesArr, setSentBatches, setGutscheinAmounts, setMarkedBatches },
     showToast
@@ -325,7 +326,7 @@ export function TableProvider({ children }: { children: ReactNode }) {
 
   return (
     <TableContext.Provider value={{
-      orders, seatedTables, sentBatches, gutscheinAmounts, markedBatches,
+      orders, seatedTables, sentBatches, gutscheinAmounts, markedBatches, syncError,
       addItem, addCustomItem, removeItem, removeItemFromBill, addItemToBill,
       sendOrder, addBillEditBatch, seatTable,
       applyGutschein, removeGutschein,

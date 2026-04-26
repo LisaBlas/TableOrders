@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 import { MENU, MIN_QTY_2_IDS } from "../data/constants";
 import { fetchMenu } from "../services/directusMenu";
+import { withRetry } from "../utils/fetchWithRetry";
 
 interface MenuContextValue {
   menu: Record<string, any[]>;
@@ -16,13 +17,13 @@ export function MenuProvider({ children }: { children: ReactNode }) {
   const [menuLoading, setMenuLoading] = useState(true);
 
   useEffect(() => {
-    fetchMenu()
+    withRetry(() => fetchMenu(), 3, 800)
       .then(({ menu, minQty2Ids }) => {
         setMenu(menu);
         setMinQty2Ids(minQty2Ids);
       })
       .catch((err) => {
-        console.warn("Directus unavailable, using static menu:", err.message);
+        console.warn("Directus unavailable after retries, using static menu:", err.message);
       })
       .finally(() => setMenuLoading(false));
   }, []);

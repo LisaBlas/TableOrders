@@ -3,6 +3,7 @@ import { S } from "../styles/appStyles";
 
 interface Props {
   children: ReactNode;
+  inline?: boolean;
 }
 
 interface State {
@@ -26,6 +27,39 @@ export class ErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
+      if (this.props.inline) {
+        return (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "40px 20px",
+              gap: "12px",
+              textAlign: "center",
+            }}
+          >
+            <div style={{ fontSize: "14px", color: "#666" }}>Something went wrong in this view.</div>
+            <button
+              onClick={() => this.setState({ hasError: false, error: null })}
+              style={{
+                padding: "8px 16px",
+                fontSize: "14px",
+                fontWeight: 600,
+                backgroundColor: "#000",
+                color: "#fff",
+                border: "none",
+                borderRadius: "8px",
+                cursor: "pointer",
+              }}
+            >
+              Try again
+            </button>
+          </div>
+        );
+      }
+
       return (
         <div style={S.root}>
           <div
