@@ -6,11 +6,11 @@ Exposed Directus token — VITE_ prefix makes your static token visible in clien
 A thin backend proxy (Cloudflare Worker, Vercel serverless) that holds the real token
 Or switch to Directus user auth with session tokens
 ⚠️ Reliability (High Priority)
-No offline fallback — If Directus is down, the entire app breaks. Add:
+No offline fallback — If Directus is down, the entire app breaks. Partially addressed:
 
-Error boundaries around Directus queries
-LocalStorage fallback for table sessions (already have the data structure)
-Retry logic with exponential backoff
+✅ Error boundaries around Directus queries — global crash boundary + inline boundary on DailySalesView; offline banner when sessions sync fails
+✅ Retry logic with exponential backoff — fetchMenu retries 3x on startup; session writes retry up to MAX_RETRIES with toast feedback
+LocalStorage fallback for table sessions (already have the data structure) — not yet done
 No backup strategy — SQLite file corruption or accidental deletion = total data loss. Set up:
 
 Daily automated backups (Directus has built-in snapshot tools)
@@ -30,6 +30,4 @@ No analytics on revenue — You're building an income-generating system but can'
 Simple daily revenue graph (already have the data in bills)
 Alert if revenue drops >30% vs. previous week (early warning)
 🎯 Revenue Protection
-Accidental table close — No undo means lost revenue if staff fat-finger it. Add:
-Archive table sessions for 24h before deletion (cheap insurance)
-Or "Reopen Last Closed Table" action
+✅ Accidental table close — Full session archived to localStorage (lastClosedSession key, 24h TTL) on every close. Amber "Reopen T.X" button appears on the floor view; restores all state and re-syncs to Directus. Device-local only (not cross-device).

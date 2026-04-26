@@ -46,7 +46,13 @@ src/
 │   ├── useTableOrder.ts          # Derived order state for a specific table
 │   ├── useLocalStorage.ts        # Persistent state hook
 │   ├── useMenuItems.ts           # Filtered/grouped menu items for OrderView
-│   └── useBreakpoint.ts          # Responsive breakpoint detection (mobile/tablet/desktop)
+│   ├── useBreakpoint.ts          # Responsive breakpoint detection (mobile/tablet/desktop)
+│   ├── useDirectusSync.ts        # Polling + debounced writes + conflict resolution for table sessions; exposes syncError
+│   ├── useTableClose.ts          # Close flow logic (payment, tip, cleanupTable)
+│   ├── useTableSwap.ts           # Long-press swap state machine
+│   ├── useLongPress.ts           # Generic long-press hook (500ms threshold)
+│   ├── useBillEdit.ts            # Bill edit mode helpers
+│   └── useSubcategoryState.ts    # Subcategory expand/collapse state for menu
 ├── services/
 │   ├── directusMenu.ts           # fetchMenu() — GET menu_items from Directus
 │   ├── directusBills.ts          # fetchBillsByDate, createBillInDirectus, patchBill/Item, clearToday
@@ -69,7 +75,7 @@ src/
 │   ├── BillTab.tsx               # Bill tab controls
 │   ├── Modal.tsx                 # Generic confirm modal
 │   ├── Toast.tsx                 # Auto-dismiss notification
-│   ├── ErrorBoundary.tsx         # Top-level error boundary
+│   ├── ErrorBoundary.tsx         # Error boundary — full-page (default) or inline card (inline prop)
 │   ├── MenuItemCard.tsx          # Menu grid item
 │   ├── MenuItemRow.tsx           # Menu list item
 │   ├── MenuGrid.tsx              # Responsive menu grid component (subcategory grouping)
@@ -84,7 +90,9 @@ src/
 │   ├── helpers.js                # getTableStatus, getItemDestination, formatting
 │   ├── migration.ts              # Legacy bill migration (adds posId to pre-Directus bills)
 │   ├── billFactory.ts            # Bill creation factories (createFullTableBill, createEqualSplitTableBill, etc.)
-│   └── salesAggregation.ts       # POS entry aggregation for Daily Sales view
+│   ├── salesAggregation.ts       # POS entry aggregation for Daily Sales view
+│   ├── fetchWithRetry.ts         # Exponential backoff retry helper (used by MenuContext)
+│   └── closedSessionArchive.ts   # localStorage archive for last closed table session (24h TTL)
 ├── styles/
 │   └── appStyles.js              # All inline style definitions (S object) + responsive variants
 └── types/
@@ -197,8 +205,11 @@ src/
 - **Clipboard integration** for order/ticket export (no kitchen backend)
 - **Toast notifications** (2s auto-dismiss) for user feedback
 - **Paid bills saved** to Directus automatically when table closes — cross-device, persistent
-- **Menu loaded from Directus** on app start; static constants.js used as fallback if offline
+- **Menu loaded from Directus** on app start; retried up to 3x (800ms exponential backoff) before falling back to static constants.js
 - **Table sessions persisted to Directus** — orders, sentBatches, markedBatches, gutschein, seated status all survive refresh and sync across devices
+- **Offline indicator** — amber banner shown at the top of all views when the sessions polling query fails after TanStack Query's default retries (~7s of persistent failure)
+- **Closed session archive** — on every table close, full session state is written to localStorage (`lastClosedSession` key) with a 24h TTL
+- **Reopen last closed** — amber "Reopen T.X" button on the floor view; restores archived orders/batches/gutschein/seated/markedBatches and reschedules Directus write; device-local only
 - **Bill edit mode** — mutations are local-only until "Done"; Directus sync fires on exit; Cancel restores snapshot
 - **Item-level POS crossing** — increment/decrement `crossed_qty` for individual items; syncs to Directus via `patchBillItem`
 - **Clear Daily Sales** — soft-deletes today's bills (sets cleared_at); data preserved for analytics
@@ -308,6 +319,9 @@ Table sessions are deleted when table closes (no historical tracking).
 - Table swap uses long-press (500ms threshold, `LONG_PRESS_MS` constant) — `longFiredRef` guards normal taps but is bypassed in swap mode to allow target selection
 - `AppContext` exposes named bill action functions (`addPaidBill`, `clearTodayBills`, `markBillAddedToPOS`, `removePaidBillItem`, `restorePaidBillItem`, etc.) — do not manipulate `paidBills` directly
 - Auth credentials stored in localStorage key `authToken` (JWT-like format but no server-side validation)
+- localStorage keys in use: `authToken` (auth), `paidBills` (offline bill fallback), `lastClosedSession` (24h table archive)
+- `syncError` boolean exposed from `TableContext` — sourced from `useDirectusSync` → `useQuery` `isError` on the sessions poll
+- `ErrorBoundary` accepts `inline` prop: when true renders a compact "Something went wrong / Try again" card that resets boundary state instead of a full-page reload screen
 - Berlin timezone handling: `todayBerlinDate()` uses Intl.DateTimeFormat; `berlinDayBoundsUTC()` calculates UTC bounds accounting for DST
 - Responsive breakpoints defined in `useBreakpoint()`: mobile < 768px, tablet 768-1023px, tabletLandscape 1024-1439px, desktop >= 1440px
 - POS crossing tracked via `crossed_qty` field (incremented when item entered into POS, decremented if restored)
