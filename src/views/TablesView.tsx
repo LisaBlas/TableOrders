@@ -46,7 +46,7 @@ const todayLabel = new Date().toLocaleDateString("en-GB", {
 export function TablesView() {
   const { setView, setActiveTable, showToast } = useApp();
   const { logout } = useAuth();
-  const { orders, seatedTables, seatTable, sentBatches, markedBatches, swapTables } = useTable();
+  const { orders, seatedTables, seatTable, sentBatches, markedBatches, swapTables, lastClosedSession, reopenLastClosed } = useTable();
   const bp = useBreakpoint();
   const styles = resolveGridStyles(bp);
 
@@ -93,6 +93,24 @@ export function TablesView() {
           {todayLabel}
         </span>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          {lastClosedSession && (
+            <button
+              style={{
+                background: "#fef3c7",
+                border: "1.5px solid #f59e0b",
+                borderRadius: 8,
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: "pointer",
+                padding: "8px 12px",
+                lineHeight: 1,
+                color: "#92400e",
+              }}
+              onClick={reopenLastClosed}
+            >
+              Reopen T.{lastClosedSession.tableId}
+            </button>
+          )}
           <button
             style={{
               background: "none",

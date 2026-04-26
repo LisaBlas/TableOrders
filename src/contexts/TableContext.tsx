@@ -5,6 +5,11 @@ import {
 import { useApp } from "./AppContext";
 import { useMenu } from "./MenuContext";
 import { useDirectusSync } from "../hooks/useDirectusSync";
+import { parseTableId } from "../services/directusSessions";
+import {
+  saveClosedSession, loadClosedSession, clearClosedSession,
+  type ArchivedSession,
+} from "../utils/closedSessionArchive";
 import type {
   Orders, OrderItem, SentBatches, Batch, GutscheinAmounts,
   TableId, MenuItem, MenuItemVariant, MenuCategory, ExpandedItem,
@@ -18,6 +23,10 @@ interface TableContextValue {
   gutscheinAmounts: GutscheinAmounts;
   markedBatches: Record<string, Set<number>>;
   syncError: boolean;
+
+  // Closed session recovery
+  lastClosedSession: ArchivedSession | null;
+  reopenLastClosed: () => void;
 
   // Actions
   addItem: (tableId: TableId, item: MenuItem, variant: MenuItemVariant | null, category: MenuCategory, note?: string) => void;
@@ -50,6 +59,14 @@ export function TableProvider({ children }: { children: ReactNode }) {
   const [markedBatches, setMarkedBatches] = useState<Record<string, Set<number>>>({});
 
   const seatedTables = useMemo(() => new Set<TableId>(seatedTablesArr), [seatedTablesArr]);
+
+  const [lastClosedSession, setLastClosedSession] = useState<ArchivedSession | null>(() => loadClosedSession());
+
+  // Snapshot ref used by cleanupTable to archive state before clearing
+  const archiveRef = useRef({ orders, seatedTablesArr, sentBatches, gutscheinAmounts, markedBatches });
+  useEffect(() => {
+    archiveRef.current = { orders, seatedTablesArr, sentBatches, gutscheinAmounts, markedBatches };
+  }, [orders, seatedTablesArr, sentBatches, gutscheinAmounts, markedBatches]);
 
   // sendOrder reads orders synchronously before any setState fires
   const ordersRef = useRef(orders);
@@ -249,6 +266,19 @@ export function TableProvider({ children }: { children: ReactNode }) {
 
   const cleanupTable = useCallback((tableId: TableId) => {
     const key = String(tableId);
+    const snap = archiveRef.current;
+    const session: ArchivedSession = {
+      tableId: key,
+      closedAt: new Date().toISOString(),
+      orders: snap.orders[key] ?? [],
+      sentBatches: snap.sentBatches[key] ?? [],
+      gutschein: snap.gutscheinAmounts[key] ?? null,
+      seated: snap.seatedTablesArr.some((id) => String(id) === key),
+      markedBatches: Array.from(snap.markedBatches[key] ?? new Set<number>()),
+    };
+    saveClosedSession(session);
+    setLastClosedSession(session);
+
     setOrders((prev) => { const n = { ...prev }; delete n[key]; return n; });
     setSeatedTablesArr((prev) => prev.filter((id) => String(id) !== key));
     setSentBatches((prev) => { const n = { ...prev }; delete n[key]; return n; });
@@ -256,6 +286,29 @@ export function TableProvider({ children }: { children: ReactNode }) {
     setMarkedBatches((prev) => { const n = { ...prev }; delete n[key]; return n; });
     cancelAndDelete(tableId);
   }, [cancelAndDelete]);
+
+  const reopenLastClosed = useCallback(() => {
+    const session = lastClosedSession;
+    if (!session) return;
+    const key = session.tableId;
+    const tableId = parseTableId(key);
+
+    if (session.orders.length) setOrders((prev) => ({ ...prev, [key]: session.orders }));
+    setSeatedTablesArr((prev) => {
+      const without = prev.filter((id) => String(id) !== key);
+      return session.seated ? [...without, tableId] : without;
+    });
+    if (session.sentBatches.length) setSentBatches((prev) => ({ ...prev, [key]: session.sentBatches }));
+    if (session.gutschein != null) setGutscheinAmounts((prev) => ({ ...prev, [key]: session.gutschein! }));
+    if (session.markedBatches.length) {
+      setMarkedBatches((prev) => ({ ...prev, [key]: new Set(session.markedBatches) }));
+    }
+
+    clearClosedSession();
+    setLastClosedSession(null);
+    scheduleWrite(tableId);
+    showToast(`Table ${key} reopened`);
+  }, [lastClosedSession, scheduleWrite, showToast]);
 
   const removePaidItems = useCallback((tableId: TableId, paidItems: ExpandedItem[]) => {
     setOrders((prev) => {
@@ -327,6 +380,7 @@ export function TableProvider({ children }: { children: ReactNode }) {
   return (
     <TableContext.Provider value={{
       orders, seatedTables, sentBatches, gutscheinAmounts, markedBatches, syncError,
+      lastClosedSession, reopenLastClosed,
       addItem, addCustomItem, removeItem, removeItemFromBill, addItemToBill,
       sendOrder, addBillEditBatch, seatTable,
       applyGutschein, removeGutschein,
