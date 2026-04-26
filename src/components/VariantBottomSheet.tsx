@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { S } from "../styles/appStyles";
 import type { MenuItem, MenuItemVariant, OrderItem } from "../types";
 
@@ -13,24 +13,13 @@ interface VariantBottomSheetProps {
 export function VariantBottomSheet({ item, unsent, onSelectVariant, onClose, variants: variantsProp }: VariantBottomSheetProps) {
   const variants = variantsProp ?? item.variants;
   const [note, setNote] = useState("");
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   if (!variants || variants.length === 0) return null;
 
-  // Get unsent qty for a specific variant
   const getVariantUnsentQty = (variant: MenuItemVariant) => {
     const variantId = `${item.id}-${variant.type}`;
     const unsentItem = unsent.find((u) => u.id === variantId);
     return unsentItem?.qty || 0;
-  };
-
-  // Callback ref: delay focus so slide-up animation doesn't fight keyboard
-  const inputRef = (el: HTMLInputElement | null) => {
-    if (el) {
-      timeoutRef.current = setTimeout(() => el.focus(), 150);
-    } else {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    }
   };
 
   return (
@@ -44,7 +33,6 @@ export function VariantBottomSheet({ item, unsent, onSelectVariant, onClose, var
 
         {/* Note input */}
         <input
-          ref={inputRef}
           type="text"
           placeholder="e.g. no walnuts, extra sauce…"
           value={note}
