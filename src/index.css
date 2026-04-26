@@ -39,15 +39,15 @@ button:active {
   0% {
     opacity: 0;
     transform: translateY(10px);
-    background: transparent;
+    background: #a5d6a7;
   }
-  20% {
+  15% {
     opacity: 1;
     transform: translateY(0);
-    background: transparent;
-  }
-  30% {
     background: #a5d6a7;
+  }
+  50% {
+    background: transparent;
   }
   100% {
     opacity: 1;
