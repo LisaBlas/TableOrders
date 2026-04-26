@@ -77,7 +77,7 @@ export function SplitConfirmView() {
 
     // Close table if no items will remain
     if (!willHaveRemainingItems) {
-      table.cleanupTable(tableId);
+      table.cleanupTable(tableId, bill.tempId);
       app.showToast(`Table ${tableId} closed`);
     } else {
       app.showToast(`${paidItems.length} item${paidItems.length > 1 ? 's' : ''} paid — Table ${tableId} still open`);

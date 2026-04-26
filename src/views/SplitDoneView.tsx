@@ -26,7 +26,7 @@ export function SplitDoneView() {
     });
 
     app.addPaidBill(bill);
-    table.cleanupTable(tableId);
+    table.cleanupTable(tableId, bill.tempId);
     dispatch({ type: "RESET" });
     app.showToast(`Table ${tableId} closed — ${bill.total.toFixed(2)}€`);
     app.setOrderViewTab(null);
