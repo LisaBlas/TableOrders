@@ -1,9 +1,10 @@
-import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useMemo, useRef, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { migratePaidBills } from "../utils/migration";
 import {
   fetchBillsByDate,
   createBillInDirectus,
+  deleteBill,
   patchBill,
   patchBillItem,
   todayBerlinDate,
@@ -35,6 +36,7 @@ interface AppContextValue {
 
   // Bill actions (write — each syncs to Directus)
   addPaidBill: (bill: Bill) => void;
+  cancelBillByTempId: (tempId: string) => void;
   markBillAddedToPOS: (billIndex: number) => void;
   restoreBillFromPOS: (billIndex: number) => void;
   removePaidBillItem: (billIndex: number, itemId: string) => void;
@@ -69,6 +71,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [deletingBillIndex, setDeletingBillIndex] = useState<number | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>(todayBerlinDate);
   const [failedBill, setFailedBill] = useState<{ bill: Bill; tempId: string; error: string } | null>(null);
+
+  // tempId → directusId mapping for bills still resolving; pendingCancellations for in-flight deletes
+  const tempIdToDirectusId = useRef<Record<string, string>>({});
+  const pendingCancellations = useRef<Set<string>>(new Set());
 
   const BILLS_KEY = ["bills", selectedDate];
   const isToday = selectedDate === todayBerlinDate();
@@ -125,10 +131,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     createBillInDirectus(optimisticBill)
       .then((savedBill) => {
+        if (savedBill.directusId) {
+          tempIdToDirectusId.current[tempId] = savedBill.directusId;
+        }
+        if (pendingCancellations.current.has(tempId)) {
+          pendingCancellations.current.delete(tempId);
+          if (savedBill.directusId) {
+            const itemIds = savedBill.items.map((i) => i.directusId).filter(Boolean) as string[];
+            deleteBill(savedBill.directusId, itemIds).catch(console.error);
+          }
+          return;
+        }
         const latest = queryClient.getQueryData<Bill[]>(todayKey) ?? [];
         queryClient.setQueryData<Bill[]>(todayKey, latest.map((b) =>
-          b.tempId === tempId  // Match by captured tempId (closure)
-            ? { ...savedBill, tempId: undefined }  // Strip tempId after sync
+          b.tempId === tempId
+            ? { ...savedBill, tempId: undefined }
             : b
         ));
       })
@@ -145,6 +162,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
         });
       });
   }, [queryClient, setFailedBill, showToast]);
+
+  const cancelBillByTempId = useCallback((billTempId: string) => {
+    const todayKey = ["bills", todayBerlinDate()];
+
+    // Case 1: write already resolved — directusId known
+    const directusId = tempIdToDirectusId.current[billTempId];
+    if (directusId) {
+      const bills = queryClient.getQueryData<Bill[]>(todayKey) ?? [];
+      const bill = bills.find((b) => b.directusId === directusId);
+      queryClient.setQueryData<Bill[]>(todayKey, bills.filter((b) => b.directusId !== directusId));
+      if (bill) {
+        const itemIds = bill.items.map((i) => i.directusId).filter(Boolean) as string[];
+        deleteBill(directusId, itemIds).catch(console.error);
+      }
+      delete tempIdToDirectusId.current[billTempId];
+      return;
+    }
+
+    // Case 2: write still in-flight — remove optimistic entry, defer deletion
+    const bills = queryClient.getQueryData<Bill[]>(todayKey) ?? [];
+    queryClient.setQueryData<Bill[]>(todayKey, bills.filter((b) => b.tempId !== billTempId));
+    pendingCancellations.current.add(billTempId);
+  }, [queryClient]);
 
   const markBillAddedToPOS = useCallback((billIndex: number) => {
     const updated = paidBills.map((b, i) =>
@@ -276,6 +316,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       paidBills,
       selectedDate, setSelectedDate,
       addPaidBill,
+      cancelBillByTempId,
       markBillAddedToPOS,
       restoreBillFromPOS,
       removePaidBillItem,

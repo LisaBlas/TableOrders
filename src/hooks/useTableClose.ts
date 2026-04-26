@@ -23,11 +23,12 @@ export function useTableClose(tableId: TableId, sent: OrderItem[], isLargeScreen
   };
 
   const submitClose = () => {
+    const tempId = crypto.randomUUID();
     const paid = paymentAmount ? parseFloat(paymentAmount) : total;
     const tip = paid - total;
 
     app.addPaidBill({
-      tempId: crypto.randomUUID(),
+      tempId,
       tableId,
       items: sent.map((o: OrderItem) => ({ ...o })),
       total,
@@ -38,7 +39,7 @@ export function useTableClose(tableId: TableId, sent: OrderItem[], isLargeScreen
       tip: paymentConfirmed ? tip : undefined,
     });
 
-    table.cleanupTable(tableId);
+    table.cleanupTable(tableId, tempId);
     app.showToast(`Table ${tableId} closed — ${total.toFixed(2)}€`);
     app.setOrderViewTab(null);
     app.setView("tables");

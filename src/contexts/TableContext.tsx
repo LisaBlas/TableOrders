@@ -39,7 +39,7 @@ interface TableContextValue {
   seatTable: (tableId: TableId) => void;
   applyGutschein: (tableId: TableId, amount: number) => void;
   removeGutschein: (tableId: TableId) => void;
-  cleanupTable: (tableId: TableId) => void;
+  cleanupTable: (tableId: TableId, billTempId?: string) => void;
   removePaidItems: (tableId: TableId, paidItems: ExpandedItem[]) => void;
   toggleMarkBatch: (tableId: TableId, batchIndex: number) => void;
   swapTables: (fromTableId: TableId, toTableId: TableId) => void;
@@ -48,7 +48,7 @@ interface TableContextValue {
 const TableContext = createContext<TableContextValue | null>(null);
 
 export function TableProvider({ children }: { children: ReactNode }) {
-  const { showToast } = useApp();
+  const { showToast, cancelBillByTempId } = useApp();
   const { minQty2Ids } = useMenu();
 
   // ── State ─────────────────────────────────────────────────────────────────
@@ -264,7 +264,7 @@ export function TableProvider({ children }: { children: ReactNode }) {
     scheduleWrite(tableId);
   }, [scheduleWrite]);
 
-  const cleanupTable = useCallback((tableId: TableId) => {
+  const cleanupTable = useCallback((tableId: TableId, billTempId?: string) => {
     const key = String(tableId);
     const snap = archiveRef.current;
     const session: ArchivedSession = {
@@ -275,6 +275,7 @@ export function TableProvider({ children }: { children: ReactNode }) {
       gutschein: snap.gutscheinAmounts[key] ?? null,
       seated: snap.seatedTablesArr.some((id) => String(id) === key),
       markedBatches: Array.from(snap.markedBatches[key] ?? new Set<number>()),
+      billTempId,
     };
     saveClosedSession(session);
     setLastClosedSession(session);
@@ -304,11 +305,14 @@ export function TableProvider({ children }: { children: ReactNode }) {
       setMarkedBatches((prev) => ({ ...prev, [key]: new Set(session.markedBatches) }));
     }
 
+    if (session.billTempId) {
+      cancelBillByTempId(session.billTempId);
+    }
     clearClosedSession();
     setLastClosedSession(null);
     scheduleWrite(tableId);
     showToast(`Table ${key} reopened`);
-  }, [lastClosedSession, scheduleWrite, showToast]);
+  }, [lastClosedSession, cancelBillByTempId, scheduleWrite, showToast]);
 
   const removePaidItems = useCallback((tableId: TableId, paidItems: ExpandedItem[]) => {
     setOrders((prev) => {

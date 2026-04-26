@@ -11,6 +11,7 @@ export interface ArchivedSession {
   gutschein: number | null;
   seated: boolean;
   markedBatches: number[];
+  billTempId?: string;
 }
 
 export function saveClosedSession(session: ArchivedSession): void {
