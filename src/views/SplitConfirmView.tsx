@@ -33,9 +33,11 @@ export function SplitConfirmView() {
       return sum + (paid - p.total);
     }, 0);
 
-    // Get paid items from split payments
-    const paidItems = state.payments.flatMap(p => p.items) as ExpandedItem[];
+    // Get paid items from split payments (exclude gutschein fake item)
+    const allPaidItems = state.payments.flatMap(p => p.items) as ExpandedItem[];
+    const paidItems = allPaidItems.filter(i => !i.isGutschein);
     const paidTotal = state.payments.reduce((s, p) => s + p.total, 0);
+    const gutschein = table.gutscheinAmounts[tableId] || 0;
 
     // Create bill record
     const bill = {
@@ -43,6 +45,8 @@ export function SplitConfirmView() {
       tableId,
       items: paidItems.map(i => ({ ...i })),
       total: paidTotal,
+      subtotal: gutschein > 0 ? paidTotal + gutschein : undefined,
+      gutschein: gutschein > 0 ? gutschein : undefined,
       timestamp: new Date().toISOString(),
       paymentMode: "item" as const,
       splitData: { payments: state.payments },
