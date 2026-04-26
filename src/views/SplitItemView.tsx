@@ -65,23 +65,26 @@ export function SplitItemView() {
         <div style={S.splitItemList}>
           {state.remaining.map((item) => {
             const selected = state.selected.has(item._uid);
+            const isGutschein = item.isGutschein;
             return (
               <button
                 key={item._uid}
                 style={{
                   ...S.splitItem,
-                  background: selected ? "#f0f7f1" : "#fff",
-                  border: selected ? "1.5px solid #a3c4a8" : "1.5px solid #ebe9e3",
+                  background: selected ? (isGutschein ? "#f0faf4" : "#f0f7f1") : (isGutschein ? "#f6fef8" : "#fff"),
+                  border: selected ? `1.5px solid ${isGutschein ? "#4ade80" : "#a3c4a8"}` : `1.5px solid ${isGutschein ? "#86efac" : "#ebe9e3"}`,
                 }}
                 onClick={() => dispatch({ type: "TOGGLE_ITEM", uid: item._uid })}
               >
                 <span style={{
                   ...S.splitItemCheck,
-                  background: selected ? "#2d5a35" : "#e8e8e6",
+                  background: selected ? (isGutschein ? "#16a34a" : "#2d5a35") : "#e8e8e6",
                   color: selected ? "#fff" : "transparent",
                 }}>✓</span>
-                <span style={S.splitItemName}>{item.name}</span>
-                <span style={S.splitItemPrice}>{item.price.toFixed(2)}€</span>
+                <span style={{ ...S.splitItemName, ...(isGutschein ? { color: "#16a34a", fontWeight: 600 } : {}) }}>{item.name}</span>
+                <span style={{ ...S.splitItemPrice, ...(isGutschein ? { color: "#16a34a" } : {}) }}>
+                  {isGutschein ? `−${Math.abs(item.price).toFixed(2)}€` : `${item.price.toFixed(2)}€`}
+                </span>
               </button>
             );
           })}
@@ -155,23 +158,26 @@ export function SplitItemView() {
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {state.remaining.map((item) => {
                 const selected = state.selected.has(item._uid);
+                const isGutschein = item.isGutschein;
                 return (
                   <button
                     key={item._uid}
                     style={{
                       ...S.splitItem,
-                      background: selected ? "#f0f7f1" : "#fff",
-                      border: selected ? "1.5px solid #a3c4a8" : "1.5px solid #ebe9e3",
+                      background: selected ? (isGutschein ? "#f0faf4" : "#f0f7f1") : (isGutschein ? "#f6fef8" : "#fff"),
+                      border: selected ? `1.5px solid ${isGutschein ? "#4ade80" : "#a3c4a8"}` : `1.5px solid ${isGutschein ? "#86efac" : "#ebe9e3"}`,
                     }}
                     onClick={() => dispatch({ type: "TOGGLE_ITEM", uid: item._uid })}
                   >
                     <span style={{
                       ...S.splitItemCheck,
-                      background: selected ? "#2d5a35" : "#e8e8e6",
+                      background: selected ? (isGutschein ? "#16a34a" : "#2d5a35") : "#e8e8e6",
                       color: selected ? "#fff" : "transparent",
                     }}>✓</span>
-                    <span style={S.splitItemName}>{item.name}</span>
-                    <span style={S.splitItemPrice}>{item.price.toFixed(2)}€</span>
+                    <span style={{ ...S.splitItemName, ...(isGutschein ? { color: "#16a34a", fontWeight: 600 } : {}) }}>{item.name}</span>
+                    <span style={{ ...S.splitItemPrice, ...(isGutschein ? { color: "#16a34a" } : {}) }}>
+                      {isGutschein ? `−${Math.abs(item.price).toFixed(2)}€` : `${item.price.toFixed(2)}€`}
+                    </span>
                   </button>
                 );
               })}

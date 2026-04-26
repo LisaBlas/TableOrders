@@ -40,11 +40,12 @@ export function TicketView() {
     const sentItems = ticketItems
       .filter((o: OrderItem) => (o.sentQty || 0) > 0)
       .map((o: OrderItem) => ({ ...o, qty: o.sentQty || 0 }));
+    const gutschein = table.gutscheinAmounts[tableId] || 0;
 
     if (mode === "equal") {
       dispatch({ type: "INITIATE_EQUAL", items: sentItems });
     } else {
-      dispatch({ type: "INITIATE_ITEM", items: sentItems });
+      dispatch({ type: "INITIATE_ITEM", items: sentItems, gutschein });
     }
     app.setView("split");
   };

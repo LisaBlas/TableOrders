@@ -130,6 +130,7 @@ export type SplitMode = "equal" | "item" | null;
 export interface ExpandedItem extends OrderItem {
   _uid: string;
   qty: 1;
+  isGutschein?: boolean;
 }
 
 export interface SplitPayment {

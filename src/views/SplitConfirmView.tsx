@@ -16,6 +16,9 @@ export function SplitConfirmView() {
   if (!lastPayment) return null;
 
   const guestPayment = state.itemPayments[lastPayment.guestNum];
+  const guestHasGutschein = lastPayment.items.some((i) => (i as any).isGutschein);
+  const receiptItems = lastPayment.items.filter((i) => !(i as any).isGutschein);
+  const receiptGutschein = guestHasGutschein ? (table.gutscheinAmounts[tableId] || 0) : 0;
 
   const nextSplitGuest = () => {
     dispatch({ type: "NEXT_GUEST" });
@@ -98,8 +101,9 @@ export function SplitConfirmView() {
         <div style={ticketStyle}>
           <Receipt
             tableId={tableId}
-            items={lastPayment.items}
+            items={receiptItems}
             guestNum={lastPayment.guestNum}
+            gutschein={receiptGutschein}
           />
         </div>
 
@@ -208,8 +212,9 @@ export function SplitConfirmView() {
           <div style={isDesktop ? S.billActionsCardLandscape : S.billActionsCard}>
             <Receipt
               tableId={tableId}
-              items={lastPayment.items}
+              items={receiptItems}
               guestNum={lastPayment.guestNum}
+              gutschein={receiptGutschein}
             />
           </div>
         </div>

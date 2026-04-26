@@ -14,8 +14,10 @@ export function SplitEqualView() {
   const { isTablet, isTabletLandscape, isDesktop } = useBreakpoint();
   const tableId = app.ticketTable!;
   const { total: ticketTotal } = useTableOrder(tableId);
+  const gutschein = table.gutscheinAmounts[tableId] || 0;
+  const billableTotal = Math.max(0, ticketTotal - gutschein);
 
-  const equalShare = state.equalGuests > 0 ? ticketTotal / state.equalGuests : 0;
+  const equalShare = state.equalGuests > 0 ? billableTotal / state.equalGuests : 0;
   const hasConfirmedPayments = state.equalPayments.some(p => p.confirmed);
 
   const closeSplitTable = () => {
@@ -67,6 +69,12 @@ export function SplitEqualView() {
           <span style={S.equalTotalLabel}>Bill total</span>
           <span style={S.equalTotalAmt}>{ticketTotal.toFixed(2)}€</span>
         </div>
+        {gutschein > 0 && (
+          <div style={S.equalTotalLine}>
+            <span style={S.equalTotalLabel}>Gutschein</span>
+            <span style={{ ...S.equalTotalAmt, color: "#22c55e" }}>−{gutschein.toFixed(2)}€</span>
+          </div>
+        )}
         <div style={S.divider} />
         <div style={S.guestCountRow}>
           <span style={S.guestCountLabel}>Number of guests</span>
@@ -184,6 +192,12 @@ export function SplitEqualView() {
               <span style={S.equalTotalLabel}>Bill total</span>
               <span style={S.equalTotalAmt}>{ticketTotal.toFixed(2)}€</span>
             </div>
+            {gutschein > 0 && (
+              <div style={S.equalTotalLine}>
+                <span style={S.equalTotalLabel}>Gutschein</span>
+                <span style={{ ...S.equalTotalAmt, color: "#22c55e" }}>−{gutschein.toFixed(2)}€</span>
+              </div>
+            )}
             <div style={S.divider} />
             <div style={S.guestCountRow}>
               <span style={S.guestCountLabel}>Number of guests</span>

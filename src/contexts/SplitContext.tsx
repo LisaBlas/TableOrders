@@ -28,7 +28,7 @@ const initialState: SplitState = {
 
 type SplitAction =
   | { type: "INITIATE_EQUAL"; items: OrderItem[] }
-  | { type: "INITIATE_ITEM"; items: OrderItem[] }
+  | { type: "INITIATE_ITEM"; items: OrderItem[]; gutschein?: number }
   | { type: "TOGGLE_ITEM"; uid: string }
   | { type: "SELECT_ALL" }
   | { type: "SET_EQUAL_GUESTS"; count: number }
@@ -49,12 +49,21 @@ function splitReducer(state: SplitState, action: SplitAction): SplitState {
         equalPayments: [{ amount: "", confirmed: false }],
       };
 
-    case "INITIATE_ITEM":
-      return {
-        ...initialState,
-        mode: "item",
-        remaining: expandItems(action.items) as ExpandedItem[],
-      };
+    case "INITIATE_ITEM": {
+      const remaining = expandItems(action.items) as ExpandedItem[];
+      if (action.gutschein && action.gutschein > 0) {
+        remaining.push({
+          id: "__gutschein__",
+          name: "Gutschein",
+          price: -action.gutschein,
+          qty: 1,
+          sentQty: 0,
+          _uid: "__gutschein__",
+          isGutschein: true,
+        });
+      }
+      return { ...initialState, mode: "item", remaining };
+    }
 
     case "TOGGLE_ITEM": {
       const next = new Set(state.selected);

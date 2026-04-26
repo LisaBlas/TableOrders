@@ -49,7 +49,7 @@ export function BillTab({ tableId, sent }: BillTabProps) {
 
   const handleSplitItem = () => {
     app.setTicketTable(tableId);
-    splitDispatch({ type: "INITIATE_ITEM", items: sent.map((o) => ({ ...o })) });
+    splitDispatch({ type: "INITIATE_ITEM", items: sent.map((o) => ({ ...o })), gutschein });
     app.setView("split");
   };
 
