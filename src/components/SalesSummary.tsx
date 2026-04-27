@@ -32,7 +32,7 @@ export function SalesSummary({ paidBills }: SalesSummaryProps) {
       )}
       {totalGutschein > 0 && (
         <div style={S.salesSummaryRow}>
-          <span style={S.salesLabel}>Gutscheins ({billsWithGutschein.length})</span>
+          <span style={S.salesLabel}>Vouchers ({billsWithGutschein.length})</span>
           <span style={{ ...S.salesValue, color: "#c0392b" }}>-{totalGutschein.toFixed(2)}€</span>
         </div>
       )}

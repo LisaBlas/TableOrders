@@ -40,14 +40,14 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
           <div style={{ ...S.billMeta, marginTop: 2 }}>
             {bill.paymentMode === "full"
               ? bill.gutschein
-                ? <span style={{ color: "#2d7a3a", fontWeight: 600 }}>Full payment (Gutschein: {bill.gutschein.toFixed(2)}€)</span>
+                ? <span style={{ color: "#2d7a3a", fontWeight: 600 }}>Full payment (Voucher: {bill.gutschein.toFixed(2)}€)</span>
                 : "Full payment"
               : bill.paymentMode === "equal"
               ? `Split ${(bill.splitData as any)?.guests} ways`
               : `Split by item (${(bill.splitData as any)?.payments?.length} guest${(bill.splitData as any)?.payments?.length > 1 ? 's' : ''})`}
             {bill.paymentMode !== "full" && bill.gutschein && bill.gutschein > 0 && (
               <div style={{ color: "#2d7a3a", fontWeight: 600 }}>
-                Gutschein: -{bill.gutschein.toFixed(2)}€
+                Voucher: -{bill.gutschein.toFixed(2)}€
               </div>
             )}
             {(bill as any).tip !== undefined && (

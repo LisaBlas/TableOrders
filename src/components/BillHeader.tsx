@@ -32,7 +32,7 @@ export function BillHeader({ tableId, editingBill, onEditToggle, onGutscheinOpen
         >
           {editingBill ? "✓" : "✏️"}
         </button>
-        <button style={S.billIconBtn} onClick={onGutscheinOpen} title="Apply Gutschein">
+        <button style={S.billIconBtn} onClick={onGutscheinOpen} title="Apply Voucher">
           🎫
         </button>
       </div>

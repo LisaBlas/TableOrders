@@ -79,14 +79,14 @@ export function Receipt({
             <span>{subtotal.toFixed(2)}€</span>
           </div>
           <div style={S.closeGutscheinRow}>
-            <span>Gutschein</span>
+            <span>Voucher</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span>-{gutschein.toFixed(2)}€</span>
               {editMode && onRemoveGutschein && (
                 <button
                   style={S.removeGutscheinBtn}
                   onClick={onRemoveGutschein}
-                  title="Remove gutschein"
+                  title="Remove voucher"
                 >
                   ✕
                 </button>

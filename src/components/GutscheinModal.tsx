@@ -27,7 +27,7 @@ export function GutscheinModal({ tableId, onClose }: GutscheinModalProps) {
 
   return (
     <Modal
-      title="Apply Gutschein"
+      title="Apply Voucher"
       onClose={onClose}
       onConfirm={handleApply}
       confirmText="Apply"
