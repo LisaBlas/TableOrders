@@ -4,7 +4,7 @@ import { useBreakpoint } from "../hooks/useBreakpoint";
 import { S } from "../styles/appStyles";
 import { BillCard } from "../components/BillCard";
 import { SalesSummary } from "../components/SalesSummary";
-import { BackIcon } from "../components/icons";
+import { BackIcon, CalendarIcon } from "../components/icons";
 import { todayBerlinDate } from "../services/directusBills";
 import { aggregateDailySales, type PosEntry } from "../utils/salesAggregation";
 
@@ -25,8 +25,17 @@ export function DailySalesView() {
     dailySalesTab, setDailySalesTab,
   } = app;
 
+  const dateInputRef = useRef<HTMLInputElement>(null);
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
+
+  const today = todayBerlinDate();
+  const dateLabel = selectedDate === today
+    ? "Today"
+    : (() => {
+        const [, month, day] = selectedDate.split("-");
+        return `${day}/${month}`;
+      })();
   const tabOrder = ["chronological", "total"] as const;
   const tabIndex = tabOrder.indexOf(dailySalesTab);
 
@@ -178,23 +187,36 @@ export function DailySalesView() {
           <BackIcon size={22} />
         </button>
         <span style={S.headerTitle}>Daily Sales</span>
-        <input
-          type="date"
-          value={selectedDate}
-          max={todayBerlinDate()}
-          onChange={(e) => e.target.value && setSelectedDate(e.target.value)}
-          style={{
-            fontSize: 13,
-            fontWeight: 600,
-            border: "1.5px solid #e0e0e0",
-            borderRadius: 8,
-            padding: "4px 8px",
-            background: "#f8f8f8",
-            color: "#1a1a1a",
-            outline: "none",
-            fontFamily: "inherit",
-          }}
-        />
+        <div style={{ position: "relative" }}>
+          <button
+            onClick={() => dateInputRef.current?.showPicker()}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              fontSize: 13,
+              fontWeight: 600,
+              border: "1.5px solid #e0e0e0",
+              borderRadius: 8,
+              padding: "4px 10px",
+              background: "#f8f8f8",
+              color: "#1a1a1a",
+              cursor: "pointer",
+              fontFamily: "inherit",
+            }}
+          >
+            <CalendarIcon size={15} />
+            {dateLabel}
+          </button>
+          <input
+            ref={dateInputRef}
+            type="date"
+            value={selectedDate}
+            max={today}
+            onChange={(e) => e.target.value && setSelectedDate(e.target.value)}
+            style={{ position: "absolute", opacity: 0, pointerEvents: "none", width: 0, height: 0 }}
+          />
+        </div>
       </header>
 
       {paidBills.length === 0 ? (
