@@ -1,4 +1,5 @@
 import { S } from "../styles/appStyles";
+import { EditIcon, ReopenIcon, TrashIcon } from "./icons";
 import type { Bill } from "../types";
 
 interface BillCardProps {
@@ -58,14 +59,14 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
           </div>
         </div>
         {bill.addedToPOS ? (
-          <button style={S.editBillBtn} onClick={onRestore} title="Restore bill">↩️</button>
+          <button style={S.editBillBtn} onClick={onRestore} title="Restore bill"><ReopenIcon size={15} /></button>
         ) : !isEditing ? (
-          <button style={S.editBillBtn} onClick={onEdit}>✏️</button>
+          <button style={S.editBillBtn} onClick={onEdit}><EditIcon size={15} /></button>
         ) : (
           <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
             <button style={S.doneEditBtn} onClick={onDone}>Done</button>
             <button style={S.cancelEditBtn} onClick={onCancel}>Cancel</button>
-            <button style={S.deleteBillBtnIcon} onClick={onDelete} title="Mark as Added To POS">🗑️</button>
+            <button style={S.deleteBillBtnIcon} onClick={onDelete} title="Mark as Added To POS"><TrashIcon size={15} /></button>
           </div>
         )}
       </div>

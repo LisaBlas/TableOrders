@@ -1,4 +1,5 @@
 import { S } from "../styles/appStyles";
+import { EditIcon, CheckIcon, VoucherIcon } from "./icons";
 import type { TableId } from "../types";
 
 interface BillHeaderProps {
@@ -30,10 +31,10 @@ export function BillHeader({ tableId, editingBill, onEditToggle, onGutscheinOpen
           onClick={onEditToggle}
           title={editingBill ? "Done" : "Edit"}
         >
-          {editingBill ? "✓" : "✏️"}
+          {editingBill ? <CheckIcon size={16} /> : <EditIcon size={16} />}
         </button>
         <button style={S.billIconBtn} onClick={onGutscheinOpen} title="Apply Voucher">
-          🎫
+          <VoucherIcon size={16} />
         </button>
       </div>
     </div>
