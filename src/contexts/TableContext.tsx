@@ -36,6 +36,7 @@ interface TableContextValue {
   addItemToBill: (tableId: TableId, itemId: string) => void;
   sendOrder: (tableId: TableId) => void;
   addBillEditBatch: (tableId: TableId, batchItems: OrderItem[]) => void;
+  removeBillEditItems: (tableId: TableId, decrements: { id: string; qty: number }[]) => void;
   seatTable: (tableId: TableId) => void;
   applyGutschein: (tableId: TableId, amount: number) => void;
   removeGutschein: (tableId: TableId) => void;
@@ -238,6 +239,32 @@ export function TableProvider({ children }: { children: ReactNode }) {
     scheduleWrite(tableId);
   }, [scheduleWrite]);
 
+  const removeBillEditItems = useCallback((tableId: TableId, decrements: { id: string; qty: number }[]) => {
+    const key = String(tableId);
+    setSentBatches((prev) => {
+      const batches = (prev[key] || []).map((b) => ({ ...b, items: [...b.items] }));
+
+      for (const { id, qty } of decrements) {
+        let remaining = qty;
+        for (let i = batches.length - 1; i >= 0 && remaining > 0; i--) {
+          const itemIdx = batches[i].items.findIndex((o) => o.id === id);
+          if (itemIdx === -1) continue;
+          const item = batches[i].items[itemIdx];
+          const toRemove = Math.min(item.qty, remaining);
+          remaining -= toRemove;
+          if (item.qty - toRemove <= 0) {
+            batches[i].items.splice(itemIdx, 1);
+          } else {
+            batches[i].items[itemIdx] = { ...item, qty: item.qty - toRemove };
+          }
+        }
+      }
+
+      return { ...prev, [key]: batches.filter((b) => b.items.length > 0) };
+    });
+    scheduleWrite(tableId);
+  }, [scheduleWrite]);
+
   const applyGutschein = useCallback((tableId: TableId, amount: number) => {
     setGutscheinAmounts((prev) => ({ ...prev, [String(tableId)]: amount }));
     showToast(`Gutschein ${amount.toFixed(2)}€ applied`);
@@ -386,7 +413,7 @@ export function TableProvider({ children }: { children: ReactNode }) {
       orders, seatedTables, sentBatches, gutscheinAmounts, markedBatches, syncError,
       lastClosedSession, reopenLastClosed,
       addItem, addCustomItem, removeItem, removeItemFromBill, addItemToBill,
-      sendOrder, addBillEditBatch, seatTable,
+      sendOrder, addBillEditBatch, removeBillEditItems, seatTable,
       applyGutschein, removeGutschein,
       cleanupTable, removePaidItems, toggleMarkBatch, swapTables,
     }}>
