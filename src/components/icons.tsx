@@ -131,7 +131,8 @@ export const SalesIcon: React.FC<IconProps> = ({
     strokeLinejoin="round"
     style={style}
   >
-    <line x1="12" y1="1" x2="12" y2="23"/>
-    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+    <path d="M20,8 C18,4 15,3 12,3 C7,3 4,7 4,12 C4,17 7,21 12,21 C15,21 18,20 20,16"/>
+    <line x1="2" y1="10" x2="16" y2="10"/>
+    <line x1="2" y1="14" x2="16" y2="14"/>
   </svg>
 );
