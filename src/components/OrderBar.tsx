@@ -109,7 +109,7 @@ export function OrderBar({ tableId, unsent, batches, expanded, onToggleExpand, o
                       {batchByDest[dest].map((o) => (
                         <div key={o.id} style={S.sentItem}>
                           <span>
-                            {o.qty}× {(o as any).shortName || o.name}
+                            {o.qty}× {o.name}
                             {o.note && <span style={{ fontSize: 11, color: "#888", fontStyle: "italic", marginLeft: 4 }}>({o.note})</span>}
                           </span>
                           <span style={S.sentPrice}>{(o.price * o.qty).toFixed(2)}€</span>
