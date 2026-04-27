@@ -148,7 +148,10 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
           );
         })()}
       </div>
-      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+      <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "baseline", marginTop: 8, gap: "8px" }}>
+        {bill.gutschein && bill.gutschein > 0 && (
+          <span style={{ fontSize: 13, color: "#c0392b", fontWeight: 600 }}>(-{bill.gutschein.toFixed(2)}€)</span>
+        )}
         <span style={S.billTotal}>{bill.total.toFixed(2)}€</span>
       </div>
     </div>
