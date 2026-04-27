@@ -170,7 +170,7 @@ export function TablesView() {
             }
 
             const status = getTableStatus(t.id, orders, seatedTables, sentBatches, markedBatches);
-            const destinations = getTableDestinations(t.id, orders, sentBatches);
+            const destinations = status === "unconfirmed" ? getTableDestinations(t.id, orders, sentBatches) : [];
             const staggerIndex = cardIndex++;
 
             return (
