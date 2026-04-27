@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { MenuProvider, useMenu } from "./contexts/MenuContext";
@@ -62,6 +63,8 @@ function Router() {
   const { isAuthenticated } = useAuth();
   const { syncError } = useTable();
   const { isTabletLandscape, isTablet, isDesktop } = useBreakpoint();
+
+  useEffect(() => { window.scrollTo(0, 0); }, [view]);
 
   if (menuLoading) return <LoadingScreen />;
 
