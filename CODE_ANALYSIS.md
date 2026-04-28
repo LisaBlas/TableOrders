@@ -484,6 +484,23 @@ const useSetState = <T,>(initial: T[] = []) => {
 };
 ```
 
+#### `marked_batches` Uses Positional Indices — Breaks on Cross-Device Merge
+**Location**: [conflictDetection.ts](src/utils/conflictDetection.ts) · `mergeSessions`; [types/index.ts](src/types/index.ts) · `Batch`; Directus `table_sessions.marked_batches`
+
+**Problem**: `marked_batches` stores integer indices into the `sent_batches` array. When two devices merge sessions and one device has a batch whose timestamp falls *between* two existing batches on the other device, the merged array is re-sorted by timestamp and all subsequent indices shift. The stored marks now point to the wrong batches (or are out of bounds).
+
+**Example**:
+- Device A: `sent_batches = [b0(t=1), b1(t=3)]`, `marked_batches = [1]` → b1 marked
+- Device B: `sent_batches = [b0(t=1), b2(t=2)]`, `marked_batches = [0]` → b0 marked
+- After merge + sort: `sent_batches = [b0(t=1), b2(t=2), b1(t=3)]`
+- `marked_batches = Set([0, 1])` → marks b0 and b2, but b1 is silently unmarked
+
+**Fix**: Replace integer indices with batch timestamps as identifiers. Change `marked_batches: number[]` to `marked_batches: string[]` (ISO timestamps). All reads/writes touch: `table_sessions` Directus schema, `types/index.ts`, `TableContext.tsx` (markBatch/unmarkBatch actions), `SentBatchCard.tsx` (rendering), and `conflictDetection.ts` (merge + hasConflict). Requires a one-time migration of existing Directus session records.
+
+**Severity**: Low in practice (merges are rare, and the session is short-lived per table service); correctness issue in the edge case where two devices both send batches while out of sync.
+
+---
+
 #### Conflict Resolution Has 3-Second Grace Period Ambiguity
 **Location**: [TableContext.tsx:92-93](src/contexts/TableContext.tsx#L92-L93)
 ```tsx
@@ -783,6 +800,7 @@ const BillCard = ({ bill, isEditing }) => {
 - [ ] Use custom useSetState hook for seatedTables
 - [ ] Split constants.js into modular files
 - [ ] Implement proper optimistic updates with TanStack Query
+- [ ] Migrate `marked_batches` from positional indices to timestamps (see `marked_batches` arch note above)
 - [ ] Add comprehensive test suite (unit + integration)
 
 **Estimated Time**: 16-20 hours

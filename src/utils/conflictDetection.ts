@@ -56,24 +56,32 @@ export function detectConflicts(
   return conflicts;
 }
 
-/**
- * Check if two sessions have conflicting data
- */
-function hasConflict(local: CachedSession, remote: CachedSession): boolean {
-  // Check seated status
-  if (local.seated !== remote.seated) return true;
+function sortedOrders(orders: OrderItem[]) {
+  return [...orders].sort((a, b) => a.id.localeCompare(b.id));
+}
 
-  // Check gutschein
+function sortedBatches(batches: Batch[]) {
+  return [...batches]
+    .sort((a, b) => a.timestamp.localeCompare(b.timestamp))
+    .map((b) => ({ ...b, items: sortedOrders(b.items) }));
+}
+
+function sortedNums(nums: number[]) {
+  return [...nums].sort((a, b) => a - b);
+}
+
+function hasConflict(local: CachedSession, remote: CachedSession): boolean {
+  if (local.seated !== remote.seated) return true;
   if (local.gutschein !== remote.gutschein) return true;
 
-  // Check orders (compare by stringifying to detect differences)
-  if (JSON.stringify(local.orders) !== JSON.stringify(remote.orders)) return true;
+  if (JSON.stringify(sortedOrders(local.orders)) !== JSON.stringify(sortedOrders(remote.orders)))
+    return true;
 
-  // Check sent batches
-  if (JSON.stringify(local.sent_batches) !== JSON.stringify(remote.sent_batches)) return true;
+  if (JSON.stringify(sortedBatches(local.sent_batches)) !== JSON.stringify(sortedBatches(remote.sent_batches)))
+    return true;
 
-  // Check marked batches
-  if (JSON.stringify(local.marked_batches) !== JSON.stringify(remote.marked_batches)) return true;
+  if (JSON.stringify(sortedNums(local.marked_batches)) !== JSON.stringify(sortedNums(remote.marked_batches)))
+    return true;
 
   return false;
 }
@@ -81,10 +89,10 @@ function hasConflict(local: CachedSession, remote: CachedSession): boolean {
 /**
  * Merge two sessions by combining their data
  * - Merge orders by item ID (keep both if different IDs, sum qty if same ID)
- * - Concat batches chronologically
- * - Sum gutschein
+ * - Concat batches chronologically, deduplicated by timestamp
+ * - Gutschein: Math.max (preserve whichever device has it set)
  * - Seated = true if either is seated
- * - Merge marked batches
+ * - Merge marked batches (union)
  */
 export function mergeSessions(local: CachedSession, remote: CachedSession): CachedSession {
   // Merge orders: combine by item ID
@@ -101,8 +109,12 @@ export function mergeSessions(local: CachedSession, remote: CachedSession): Cach
     }
   });
 
-  // Merge batches: concat and sort by timestamp
-  const mergedBatches = [...local.sent_batches, ...remote.sent_batches].sort(
+  // Merge batches: deduplicate by timestamp, then sort chronologically
+  const batchMap = new Map<string, Batch>();
+  [...local.sent_batches, ...remote.sent_batches].forEach((b) => {
+    if (!batchMap.has(b.timestamp)) batchMap.set(b.timestamp, b);
+  });
+  const mergedBatches = Array.from(batchMap.values()).sort(
     (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
   );
 
@@ -114,7 +126,10 @@ export function mergeSessions(local: CachedSession, remote: CachedSession): Cach
   return {
     table_id: local.table_id,
     seated: local.seated || remote.seated,
-    gutschein: (local.gutschein ?? 0) + (remote.gutschein ?? 0),
+    gutschein:
+      local.gutschein !== null || remote.gutschein !== null
+        ? Math.max(local.gutschein ?? 0, remote.gutschein ?? 0)
+        : null,
     orders: Array.from(orderMap.values()),
     sent_batches: mergedBatches,
     marked_batches: mergedMarkedBatches,
