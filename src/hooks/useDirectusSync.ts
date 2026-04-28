@@ -51,6 +51,10 @@ export function useDirectusSync(
   const retryCounts = useRef<Record<string, number>>({});
   const wasOffline = useRef(false);                          // Track offline→online transition
 
+  useEffect(() => {
+    return () => { Object.values(writeTimers.current).forEach(clearTimeout); };
+  }, []);
+
   // ── Conflict management ───────────────────────────────────────────────────
   const [conflicts, setConflicts] = useState<SessionConflict[]>([]);
   const syncPaused = useRef(false);                          // Pause auto-sync during conflict resolution
@@ -70,52 +74,33 @@ export function useDirectusSync(
   useEffect(() => {
     const now = Date.now();
 
-    // If Directus failed, use localStorage fallback
+    // If Directus failed, load from localStorage once on the transition to offline
     if (!remoteSessions) {
-      wasOffline.current = true;
+      if (!wasOffline.current) {
+        wasOffline.current = true;
 
-      const cachedSessions = readSessionCache();
-      const cacheMap = new Map<string, CachedSession>(Object.entries(cachedSessions));
+        const newOrders: Orders = {};
+        const newSeated = new Set<TableId>();
+        const newSentBatches: SentBatches = {};
+        const newGutschein: GutscheinAmounts = {};
+        const newMarkedBatches: Record<string, Set<number>> = {};
 
-      const newOrders: Orders = {};
-      const newSeated = new Set<TableId>();
-      const newSentBatches: SentBatches = {};
-      const newGutschein: GutscheinAmounts = {};
-      const newMarkedBatches: Record<string, Set<number>> = {};
+        Object.entries(readSessionCache()).forEach(([key, session]) => {
+          const tableId = parseTableId(key);
+          if (session.orders?.length) newOrders[key] = session.orders;
+          if (session.seated) newSeated.add(tableId);
+          if (session.sent_batches?.length) newSentBatches[key] = session.sent_batches;
+          if (session.gutschein != null) newGutschein[key] = session.gutschein;
+          if (session.marked_batches?.length) newMarkedBatches[key] = new Set(session.marked_batches);
+        });
 
-      cacheMap.forEach((session, key) => {
-        const tableId = parseTableId(key);
-        if (session.orders?.length) newOrders[key] = session.orders;
-        if (session.seated) newSeated.add(tableId);
-        if (session.sent_batches?.length) newSentBatches[key] = session.sent_batches;
-        if (session.gutschein != null) newGutschein[key] = session.gutschein;
-        if (session.marked_batches?.length) newMarkedBatches[key] = new Set(session.marked_batches);
-      });
-
-      setOrders(newOrders);
-      setSeatedTablesArr(Array.from(newSeated));
-      setSentBatches(newSentBatches);
-      setGutscheinAmounts(newGutschein);
-      setMarkedBatches(newMarkedBatches);
-      return;
-    }
-
-    // ── Detect conflicts on offline→online transition OR when conflicts exist ──
-    if (wasOffline.current && remoteSessions.length > 0) {
-      wasOffline.current = false;
-    }
-
-    // Always check for conflicts (not just on transition) to catch race conditions
-    if (!syncPaused.current) {
-      const localCache = readSessionCache();
-      const detectedConflicts = detectConflicts(localCache, remoteSessions);
-
-      if (detectedConflicts.length > 0) {
-        console.log(`Detected ${detectedConflicts.length} sync conflict(s)`);
-        setConflicts(detectedConflicts);
-        syncPaused.current = true;
-        return; // Pause sync until conflicts resolved
+        setOrders(newOrders);
+        setSeatedTablesArr(Array.from(newSeated));
+        setSentBatches(newSentBatches);
+        setGutscheinAmounts(newGutschein);
+        setMarkedBatches(newMarkedBatches);
       }
+      return;
     }
 
     // If sync is paused (conflict resolution in progress), skip merge
@@ -129,11 +114,31 @@ export function useDirectusSync(
     const isLocallyOwned = (key: string) =>
       pendingWrites.current.has(key) || now - (lastWriteTime.current[key] ?? 0) < OWNERSHIP_GRACE_MS;
 
+    // Detect conflicts only for tables we don't locally own — avoids false positives
+    // from the 500ms debounce window where localStorage is ahead of Directus.
+    // Only relevant after an offline→online transition when another device may have diverged.
+    if (wasOffline.current) {
+      wasOffline.current = false;
+      const localCache = readSessionCache();
+      const unownedCache = Object.fromEntries(
+        Object.entries(localCache).filter(([key]) => !isLocallyOwned(key))
+      );
+      const detectedConflicts = detectConflicts(unownedCache, remoteSessions);
+      if (detectedConflicts.length > 0) {
+        console.log(`Detected ${detectedConflicts.length} sync conflict(s)`);
+        setConflicts(detectedConflicts);
+        syncPaused.current = true;
+        return;
+      }
+    }
+
     const allKeys = new Set([
       ...remoteMap.keys(),
       ...Object.keys(ordersRef.current),
       ...seatedTablesArrRef.current.map(String),
       ...Object.keys(sentBatchesRef.current),
+      ...Object.keys(gutscheinRef.current),
+      ...Object.keys(markedBatchesRef.current),
     ]);
 
     const newOrders: Orders = {};
@@ -220,6 +225,7 @@ export function useDirectusSync(
     clearTimeout(writeTimers.current[key]);
     pendingWrites.current.delete(key);
     delete lastWriteTime.current[key];
+    delete retryCounts.current[key];
 
     // Remove from localStorage
     removeSessionFromCache(key);
@@ -240,51 +246,41 @@ export function useDirectusSync(
     const { tableId } = conflict;
     const key = String(tableId);
 
-    let resolvedSession: CachedSession;
+    const resolvedSession: CachedSession =
+      resolution === "local" ? conflict.local
+      : resolution === "remote" ? conflict.remote
+      : mergeSessions(conflict.local, conflict.remote);
 
-    switch (resolution) {
-      case "local":
-        resolvedSession = conflict.local;
-        break;
-      case "remote":
-        resolvedSession = conflict.remote;
-        break;
-      case "merge":
-        resolvedSession = mergeSessions(conflict.local, conflict.remote);
-        break;
-    }
+    const tableIdParsed = parseTableId(key);
+
+    // Sync refs immediately — scheduleWrite reads refs to build its snapshot, but
+    // ref-syncing useEffects run after render, so refs would be stale at call time.
+    ordersRef.current = { ...ordersRef.current, [key]: resolvedSession.orders };
+    seatedTablesArrRef.current = resolvedSession.seated
+      ? seatedTablesArrRef.current.some((id) => String(id) === key)
+        ? seatedTablesArrRef.current
+        : [...seatedTablesArrRef.current, tableIdParsed]
+      : seatedTablesArrRef.current.filter((id) => String(id) !== key);
+    sentBatchesRef.current = { ...sentBatchesRef.current, [key]: resolvedSession.sent_batches };
+    gutscheinRef.current = { ...gutscheinRef.current, [key]: resolvedSession.gutschein };
+    markedBatchesRef.current = { ...markedBatchesRef.current, [key]: new Set(resolvedSession.marked_batches) };
 
     // Apply resolved session to state
-    setOrders((prev) => ({
-      ...prev,
-      [key]: resolvedSession.orders,
-    }));
+    setOrders((prev) => ({ ...prev, [key]: resolvedSession.orders }));
 
     setSeatedTablesArr((prev) => {
       const s = new Set(prev);
-      if (resolvedSession.seated) s.add(parseTableId(key));
-      else s.delete(parseTableId(key));
+      if (resolvedSession.seated) s.add(tableIdParsed);
+      else s.delete(tableIdParsed);
       return Array.from(s);
     });
 
-    setSentBatches((prev) => ({
-      ...prev,
-      [key]: resolvedSession.sent_batches,
-    }));
+    setSentBatches((prev) => ({ ...prev, [key]: resolvedSession.sent_batches }));
+    setGutscheinAmounts((prev) => ({ ...prev, [key]: resolvedSession.gutschein ?? 0 }));
+    setMarkedBatches((prev) => ({ ...prev, [key]: new Set(resolvedSession.marked_batches) }));
 
-    setGutscheinAmounts((prev) => ({
-      ...prev,
-      [key]: resolvedSession.gutschein ?? 0,
-    }));
-
-    setMarkedBatches((prev) => ({
-      ...prev,
-      [key]: new Set(resolvedSession.marked_batches),
-    }));
-
-    // Write resolved session to both localStorage and Directus
-    writeSessionToCache(key, resolvedSession);
-    scheduleWrite(parseTableId(key));
+    // Persist: refs are now current so scheduleWrite writes the correct snapshot
+    scheduleWrite(tableIdParsed);
 
     // Remove from conflicts queue
     setConflicts((prev) => prev.filter((c) => c.tableId !== tableId));

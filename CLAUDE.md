@@ -221,7 +221,7 @@ src/
 - **Berlin timezone hardcoded** — `todayBerlinDate()` and `berlinDayBoundsUTC()` assume Europe/Berlin; not configurable
 - **2-second polling overhead** — Table sessions refetch every 2s; could be optimized with WebSockets for lower latency
 - **500ms debounce on writes** — Balance between responsiveness and API load; may feel sluggish on slow connections
-- **No conflict merge strategy** — Remote state overwrites local; last-write-wins model (no operational transform)
+- **Manual conflict resolution only** — Conflicts (detected on offline→online transition) prompt the user to choose local, remote, or merge. No OT/CRDT; normal operation is last-write-wins with a 3s local-ownership grace period
 
 ## Future Improvements (if productionizing)
 1. ~~**Persistence**~~ — ✅ Done via Directus (bills + menu + table sessions)
