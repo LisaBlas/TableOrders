@@ -6,7 +6,7 @@ interface SalesSummaryProps {
 }
 
 export function SalesSummary({ paidBills }: SalesSummaryProps) {
-  const totalTips = paidBills.reduce((sum, bill) => sum + ((bill as any).tip !== undefined ? (bill as any).tip : 0), 0);
+  const totalTips = paidBills.reduce((sum, bill) => sum + (bill.tip ?? 0), 0);
   const billsWithGutschein = paidBills.filter((bill) => bill.gutschein && bill.gutschein > 0);
   const totalGutschein = billsWithGutschein.reduce((sum, bill) => sum + (bill.gutschein || 0), 0);
 

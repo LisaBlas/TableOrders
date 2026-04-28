@@ -107,7 +107,7 @@ export function useDirectusSync(
     setSentBatches(newSentBatches);
     setGutscheinAmounts(newGutschein);
     setMarkedBatches(newMarkedBatches);
-  }, [remoteSessions]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [remoteSessions, setOrders, setSeatedTablesArr, setSentBatches, setGutscheinAmounts, setMarkedBatches]);
 
   // ── Debounced write: batches rapid state changes into one Directus call ───
   const scheduleWrite = useCallback((tableId: TableId) => {

@@ -102,7 +102,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const paidBills = useMemo(() => {
     if (rawPaidBills.length === 0) return rawPaidBills;
     const needsMigration = rawPaidBills.some((bill) =>
-      bill.items.some((item) => !(item as any).posId)
+      bill.items.some((item) => !item.posId)
     );
     return needsMigration ? migratePaidBills(rawPaidBills) : rawPaidBills;
   }, [rawPaidBills]);

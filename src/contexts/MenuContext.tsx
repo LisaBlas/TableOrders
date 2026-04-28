@@ -2,9 +2,10 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from "
 import { MENU, MIN_QTY_2_IDS } from "../data/constants";
 import { fetchMenu } from "../services/directusMenu";
 import { withRetry } from "../utils/fetchWithRetry";
+import type { MenuItem } from "../types";
 
 interface MenuContextValue {
-  menu: Record<string, any[]>;
+  menu: Record<string, MenuItem[]>;
   minQty2Ids: Set<string>;
   menuLoading: boolean;
 }
@@ -12,7 +13,7 @@ interface MenuContextValue {
 const MenuContext = createContext<MenuContextValue | null>(null);
 
 export function MenuProvider({ children }: { children: ReactNode }) {
-  const [menu, setMenu] = useState<Record<string, any[]>>(MENU as any);
+  const [menu, setMenu] = useState<Record<string, MenuItem[]>>(MENU);
   const [minQty2Ids, setMinQty2Ids] = useState<Set<string>>(MIN_QTY_2_IDS as Set<string>);
   const [menuLoading, setMenuLoading] = useState(true);
 

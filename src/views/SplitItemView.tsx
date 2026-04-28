@@ -4,6 +4,35 @@ import { useBreakpoint } from "../hooks/useBreakpoint";
 import { BackIcon } from "../components/icons";
 import { S } from "../styles/appStyles";
 
+function getSplitItemStyles(selected: boolean, isGutschein?: boolean) {
+  if (selected && isGutschein) {
+    return {
+      background: "#f0faf4",
+      border: "1.5px solid #4ade80",
+      checkBg: "#16a34a",
+    };
+  }
+  if (selected && !isGutschein) {
+    return {
+      background: "#f0f7f1",
+      border: "1.5px solid #a3c4a8",
+      checkBg: "#2d5a35",
+    };
+  }
+  if (!selected && isGutschein) {
+    return {
+      background: "#f6fef8",
+      border: "1.5px solid #86efac",
+      checkBg: "#e8e8e6",
+    };
+  }
+  return {
+    background: "#fff",
+    border: "1.5px solid #ebe9e3",
+    checkBg: "#e8e8e6",
+  };
+}
+
 export function SplitItemView() {
   const app = useApp();
   const { state, dispatch, selectedItems, selectedTotal, remainingTotal, currentGuestNum } = useSplit();
@@ -66,19 +95,20 @@ export function SplitItemView() {
           {state.remaining.map((item) => {
             const selected = state.selected.has(item._uid);
             const isGutschein = item.isGutschein;
+            const styles = getSplitItemStyles(selected, isGutschein);
             return (
               <button
                 key={item._uid}
                 style={{
                   ...S.splitItem,
-                  background: selected ? (isGutschein ? "#f0faf4" : "#f0f7f1") : (isGutschein ? "#f6fef8" : "#fff"),
-                  border: selected ? `1.5px solid ${isGutschein ? "#4ade80" : "#a3c4a8"}` : `1.5px solid ${isGutschein ? "#86efac" : "#ebe9e3"}`,
+                  background: styles.background,
+                  border: styles.border,
                 }}
                 onClick={() => dispatch({ type: "TOGGLE_ITEM", uid: item._uid })}
               >
                 <span style={{
                   ...S.splitItemCheck,
-                  background: selected ? (isGutschein ? "#16a34a" : "#2d5a35") : "#e8e8e6",
+                  background: styles.checkBg,
                   color: selected ? "#fff" : "transparent",
                 }}>✓</span>
                 <span style={{ ...S.splitItemName, ...(isGutschein ? { color: "#16a34a", fontWeight: 600 } : {}) }}>{item.name}</span>
@@ -159,19 +189,20 @@ export function SplitItemView() {
               {state.remaining.map((item) => {
                 const selected = state.selected.has(item._uid);
                 const isGutschein = item.isGutschein;
+                const styles = getSplitItemStyles(selected, isGutschein);
                 return (
                   <button
                     key={item._uid}
                     style={{
                       ...S.splitItem,
-                      background: selected ? (isGutschein ? "#f0faf4" : "#f0f7f1") : (isGutschein ? "#f6fef8" : "#fff"),
-                      border: selected ? `1.5px solid ${isGutschein ? "#4ade80" : "#a3c4a8"}` : `1.5px solid ${isGutschein ? "#86efac" : "#ebe9e3"}`,
+                      background: styles.background,
+                      border: styles.border,
                     }}
                     onClick={() => dispatch({ type: "TOGGLE_ITEM", uid: item._uid })}
                   >
                     <span style={{
                       ...S.splitItemCheck,
-                      background: selected ? (isGutschein ? "#16a34a" : "#2d5a35") : "#e8e8e6",
+                      background: styles.checkBg,
                       color: selected ? "#fff" : "transparent",
                     }}>✓</span>
                     <span style={{ ...S.splitItemName, ...(isGutschein ? { color: "#16a34a", fontWeight: 600 } : {}) }}>{item.name}</span>

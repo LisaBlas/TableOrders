@@ -51,6 +51,8 @@ export interface MenuItem {
   posId?: string;
   posName?: string;
   variants?: MenuItemVariant[];
+  category?: string;      // Added dynamically in useMenuItems
+  wineType?: string;      // Added dynamically for wines in useMenuItems
 }
 
 export type MenuData = Record<MenuCategory, MenuItem[]>;

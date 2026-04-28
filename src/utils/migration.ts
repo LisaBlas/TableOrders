@@ -10,7 +10,7 @@ export function migratePaidBills(bills: Bill[]): Bill[] {
     ...bill,
     items: bill.items.map((item) => {
       // Skip if already has posId
-      if ((item as any).posId) return item;
+      if (item.posId) return item;
 
       // Look up item in menu
       const menuItem = findMenuItem(item.id, item.name);
@@ -37,7 +37,8 @@ function findMenuItem(itemId: string, itemName: string): { posId: string; posNam
     for (const item of category) {
       // Simple items (no variants)
       if ("posId" in item && item.posId && item.id === itemId) {
-        return { posId: item.posId, posName: (item as any).posName || item.shortName || item.name };
+        const posName = ("posName" in item && item.posName) || item.shortName || item.name;
+        return { posId: item.posId, posName };
       }
 
       // Items with variants (check both full itemId and baseId)
@@ -46,17 +47,23 @@ function findMenuItem(itemId: string, itemName: string): { posId: string; posNam
         const variantMatch = itemName.match(/\(([^)]+)\)/);
         if (variantMatch) {
           const labelPart = variantMatch[1]; // e.g., "0,2", "Here", "To Go"
-          const variant = item.variants.find((v: any) => v.label === labelPart);
+          const variant = item.variants.find((v) => v.label === labelPart);
           if (variant && variant.posId) {
-            return { posId: variant.posId, posName: variant.posName || (variant as any).shortName };
+            let posName: string = variant.label;
+            if ("shortName" in variant && typeof variant.shortName === "string") posName = variant.shortName;
+            if (variant.posName) posName = variant.posName;
+            return { posId: variant.posId, posName };
           }
         }
 
         // Fallback: try matching the full name with variant.label
         for (const variant of item.variants) {
           const expectedName = `${item.name} (${variant.label})`;
-          if (itemName === expectedName && (variant as any).posId) {
-            return { posId: (variant as any).posId, posName: (variant as any).posName || (variant as any).shortName };
+          if (itemName === expectedName && variant.posId) {
+            let posName: string = variant.label;
+            if ("shortName" in variant && typeof variant.shortName === "string") posName = variant.shortName;
+            if (variant.posName) posName = variant.posName;
+            return { posId: variant.posId, posName };
           }
         }
       }

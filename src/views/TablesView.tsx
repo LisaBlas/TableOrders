@@ -29,10 +29,23 @@ function getTableDestinations(tableId: TableId, orders: any, sentBatches: any): 
 function resolveGridStyles(bp: { isTablet: boolean; isTabletLandscape: boolean; isDesktop: boolean }) {
   const isWide = bp.isDesktop || bp.isTabletLandscape;
   const isBig = isWide || bp.isTablet;
+
+  let grid, card;
+  if (isWide) {
+    grid = S.gridTabletLandscape;
+    card = S.tableCardTabletLandscape;
+  } else if (bp.isTablet) {
+    grid = S.gridTablet;
+    card = S.tableCardTablet;
+  } else {
+    grid = S.grid;
+    card = S.tableCard;
+  }
+
   return {
     header: isBig ? S.headerTablet : S.header,
-    grid: isWide ? S.gridTabletLandscape : bp.isTablet ? S.gridTablet : S.grid,
-    card: isWide ? S.tableCardTabletLandscape : bp.isTablet ? S.tableCardTablet : S.tableCard,
+    grid,
+    card,
     isWide,
     isBig,
   };
@@ -173,23 +186,29 @@ export function TablesView() {
             const destinations = status === "unconfirmed" ? getTableDestinations(t.id, orders, sentBatches) : [];
             const staggerIndex = cardIndex++;
 
+            const isSource = swap.sourceTable === t.id;
+            const isTarget = swap.targetTable === t.id;
+            const swapStatus = isSource ? "source" : isTarget ? "target" : swap.isActive ? "dimmed" : "none";
+
             return (
               <TableCard
                 key={t.id}
                 tableId={t.id}
                 cfg={STATUS_CONFIG[status]}
-                isSource={swap.sourceTable === t.id}
-                isTarget={swap.targetTable === t.id}
-                inSwapMode={swap.isActive}
+                swapStatus={swapStatus}
                 destinations={destinations}
-                isWide={styles.isWide}
-                baseStyle={styles.card}
-                staggerIndex={staggerIndex}
-                onPointerDown={!swap.isActive ? () => startLongPress(t.id) : undefined}
-                onPointerUp={cancelLongPress}
-                onPointerLeave={cancelLongPress}
-                onPointerCancel={cancelLongPress}
-                onClick={() => handleTableClick(t.id)}
+                style={{
+                  base: styles.card,
+                  isWide: styles.isWide,
+                  staggerIndex,
+                }}
+                handlers={{
+                  onPointerDown: !swap.isActive ? () => startLongPress(t.id) : undefined,
+                  onPointerUp: cancelLongPress,
+                  onPointerLeave: cancelLongPress,
+                  onPointerCancel: cancelLongPress,
+                  onClick: () => handleTableClick(t.id),
+                }}
               />
             );
           });

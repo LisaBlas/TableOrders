@@ -44,16 +44,16 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
                 ? <span style={{ color: "#2d7a3a", fontWeight: 600 }}>Full payment (Voucher: {bill.gutschein.toFixed(2)}€)</span>
                 : "Full payment"
               : bill.paymentMode === "equal"
-              ? `Split ${(bill.splitData as any)?.guests} ways`
-              : `Split by item (${(bill.splitData as any)?.payments?.length} guest${(bill.splitData as any)?.payments?.length > 1 ? 's' : ''})`}
+              ? `Split ${bill.splitData && "guests" in bill.splitData ? bill.splitData.guests : 0} ways`
+              : `Split by item (${bill.splitData && "payments" in bill.splitData ? bill.splitData.payments.length : 0} guest${bill.splitData && "payments" in bill.splitData && bill.splitData.payments.length > 1 ? 's' : ''})`}
             {bill.paymentMode !== "full" && bill.gutschein && bill.gutschein > 0 && (
               <div style={{ color: "#2d7a3a", fontWeight: 600 }}>
                 Voucher: -{bill.gutschein.toFixed(2)}€
               </div>
             )}
-            {(bill as any).tip !== undefined && (
-              <div style={{ color: (bill as any).tip >= 0 ? "#2d5a35" : "#c0392b" }}>
-                Tip: {(bill as any).tip >= 0 ? `+${(bill as any).tip.toFixed(2)}€` : `${(bill as any).tip.toFixed(2)}€`}
+            {bill.tip !== undefined && (
+              <div style={{ color: bill.tip >= 0 ? "#2d5a35" : "#c0392b" }}>
+                Tip: {bill.tip >= 0 ? `+${bill.tip.toFixed(2)}€` : `${bill.tip.toFixed(2)}€`}
               </div>
             )}
           </div>

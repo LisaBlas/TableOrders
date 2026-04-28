@@ -3,7 +3,7 @@ import { useMenu } from "../contexts/MenuContext";
 import { useTable } from "../contexts/TableContext";
 import { groupByDestination, DESTINATIONS, DEST_LABELS } from "../utils/batchGrouping";
 import { S } from "../styles/appStyles";
-import type { OrderItem, Batch, TableId } from "../types";
+import type { OrderItem, Batch, TableId, MenuItem, MenuItemVariant } from "../types";
 
 interface OrderBarProps {
   tableId: TableId;
@@ -11,7 +11,7 @@ interface OrderBarProps {
   batches: Batch[];
   expanded: boolean;
   onToggleExpand: () => void;
-  onAddItem: (item: any, variant: any) => void;
+  onAddItem: (item: MenuItem, variant: MenuItemVariant | null) => void;
   onSendOrder?: () => void;
 }
 
@@ -26,12 +26,16 @@ export function OrderBar({ tableId, unsent, batches, expanded, onToggleExpand, o
     if (phase !== "idle") return;
     hasSentRef.current = true;
     setPhase("exit");
-    setTimeout(() => {
+  };
+
+  const handleAnimationEnd = (e: React.AnimationEvent) => {
+    if (e.animationName === "slideDownOut") {
       table.sendOrder(tableId);
       onSendOrder?.();
-    }, 300);
-    setTimeout(() => setPhase("enter"), 350);
-    setTimeout(() => setPhase("idle"), 780);
+      setPhase("enter");
+    } else if (e.animationName === "slideUpFromBottom") {
+      setPhase("idle");
+    }
   };
 
   const barAnimStyle =
@@ -44,7 +48,7 @@ export function OrderBar({ tableId, unsent, batches, expanded, onToggleExpand, o
   const statusDotColor = allMarked ? "#52b87a" : "#e05252";
 
   return (
-    <div style={{ ...S.orderBar, ...barAnimStyle }}>
+    <div style={{ ...S.orderBar, ...barAnimStyle }} onAnimationEnd={handleAnimationEnd}>
       <div style={S.orderBarHandle} onClick={onToggleExpand}>
         <div style={S.orderBarHandleLine} />
         {sentMode ? (
@@ -143,11 +147,11 @@ export function OrderBar({ tableId, unsent, batches, expanded, onToggleExpand, o
                     <button
                       style={S.orderBarQtyBtn}
                       onClick={() => {
-                        const baseItem = (o as any).baseId && o.category
-                          ? (menu as any)[o.category]?.find((i: any) => i.id === (o as any).baseId) || o
-                          : o;
-                        const variant = (o as any).variantType
-                          ? baseItem.variants?.find((v: any) => v.type === (o as any).variantType)
+                        const baseItem = o.baseId && o.category
+                          ? menu[o.category]?.find((i) => i.id === o.baseId) || o as MenuItem
+                          : o as MenuItem;
+                        const variant = o.variantType
+                          ? baseItem.variants?.find((v) => v.type === o.variantType) || null
                           : null;
                         onAddItem(baseItem, variant);
                       }}

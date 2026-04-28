@@ -89,7 +89,7 @@ export async function createBillInDirectus(bill: Bill): Promise<Bill> {
       table_id: bill.tableId,
       total: Math.round(bill.total * 100) / 100,
       gutschein: bill.gutschein ?? null,
-      tip: (bill as any).tip ?? null,
+      tip: bill.tip ?? null,
       payment_mode: bill.paymentMode,
       timestamp: bill.timestamp,
       added_to_pos: false,
@@ -117,7 +117,7 @@ export async function createBillInDirectus(bill: Bill): Promise<Bill> {
     pos_name: item.posName ?? null,
     price: item.price,
     qty: item.qty,
-    category: (item as any).category ?? null,
+    category: item.category ?? null,
     subcategory: item.subcategory ?? null,
     crossed_qty: 0,
   }));

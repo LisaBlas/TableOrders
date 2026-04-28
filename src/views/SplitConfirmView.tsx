@@ -16,8 +16,9 @@ export function SplitConfirmView() {
   if (!lastPayment) return null;
 
   const guestPayment = state.itemPayments[lastPayment.guestNum];
-  const guestHasGutschein = lastPayment.items.some((i) => (i as any).isGutschein);
-  const receiptItems = lastPayment.items.filter((i) => !(i as any).isGutschein);
+  const expandedItems = lastPayment.items as ExpandedItem[];
+  const guestHasGutschein = expandedItems.some((i) => i.isGutschein);
+  const receiptItems = expandedItems.filter((i) => !i.isGutschein);
   const receiptGutschein = guestHasGutschein ? (table.gutscheinAmounts[tableId] || 0) : 0;
 
   const nextSplitGuest = () => {

@@ -40,7 +40,7 @@ export function MenuItemCard({ item, unsent, showCategory, onTap, onLongPress }:
     natural: "#7c3aed",
     rosé: "#e88ea0",
   };
-  const wineColor = WINE_COLORS[(item as any).wineType];
+  const wineColor = item.wineType ? WINE_COLORS[item.wineType] : undefined;
 
   const handleClick = () => {
     if (didFireRef.current) return;
@@ -50,7 +50,7 @@ export function MenuItemCard({ item, unsent, showCategory, onTap, onLongPress }:
 
   return (
     <button
-      style={S.menuCard as any}
+      style={S.menuCard}
       onPointerDown={() => { if (onLongPress) start(item); else didFireRef.current = false; }}
       onPointerUp={cancel}
       onPointerLeave={cancel}
@@ -59,7 +59,7 @@ export function MenuItemCard({ item, unsent, showCategory, onTap, onLongPress }:
       onContextMenu={(e) => e.preventDefault()}
     >
       {unsentQty > 0 && (
-        <span style={S.menuCardBadge as any}>({unsentQty})</span>
+        <span style={S.menuCardBadge}>({unsentQty})</span>
       )}
       {wineColor && (
         <span style={{
@@ -71,9 +71,9 @@ export function MenuItemCard({ item, unsent, showCategory, onTap, onLongPress }:
           marginBottom: 4,
         }} />
       )}
-      <div style={S.menuCardName as any}>{displayName}</div>
-      {showCategory && (item as any).category && (
-        <div style={{ fontSize: 9, color: "#999", marginTop: 2 }}>{(item as any).category}</div>
+      <div style={S.menuCardName}>{displayName}</div>
+      {showCategory && item.category && (
+        <div style={{ fontSize: 9, color: "#999", marginTop: 2 }}>{item.category}</div>
       )}
     </button>
   );

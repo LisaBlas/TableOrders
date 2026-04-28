@@ -4,16 +4,40 @@ import { S } from "../styles/appStyles";
 
 const DESTINATION_EMOJI: Record<string, string> = { bar: "🍷", counter: "🧀", kitchen: "🍽️" };
 
-interface TableCardProps {
-  tableId: TableId;
-  cfg: StatusConfig;
-  isSource: boolean;
-  isTarget: boolean;
-  inSwapMode: boolean;
-  destinations: string[];
+type SwapStatus = "none" | "source" | "target" | "dimmed";
+
+function getSwapStyles(swapStatus: SwapStatus, cfg: StatusConfig) {
+  if (swapStatus === "source") {
+    return {
+      bg: "#fffbeb",
+      border: "2px solid #f59e0b",
+      statusColor: "#f59e0b",
+      statusLabel: "moving",
+    };
+  }
+  if (swapStatus === "target") {
+    return {
+      bg: "#eff6ff",
+      border: "2px solid #3b82f6",
+      statusColor: "#3b82f6",
+      statusLabel: "selected",
+    };
+  }
+  return {
+    bg: cfg.bg,
+    border: `1.5px solid ${cfg.border}`,
+    statusColor: cfg.text,
+    statusLabel: cfg.label,
+  };
+}
+
+interface TableCardStyle {
+  base: CSSProperties;
   isWide: boolean;
-  baseStyle: CSSProperties;
-  staggerIndex?: number;
+  staggerIndex: number;
+}
+
+interface TableCardHandlers {
   onPointerDown?: () => void;
   onPointerUp: () => void;
   onPointerLeave: () => void;
@@ -21,64 +45,58 @@ interface TableCardProps {
   onClick: () => void;
 }
 
+interface TableCardProps {
+  tableId: TableId;
+  cfg: StatusConfig;
+  swapStatus: SwapStatus;
+  destinations: string[];
+  style: TableCardStyle;
+  handlers: TableCardHandlers;
+}
+
 export function TableCard({
   tableId,
   cfg,
-  isSource,
-  isTarget,
-  inSwapMode,
+  swapStatus,
   destinations,
-  isWide,
-  baseStyle,
-  staggerIndex = 0,
-  onPointerDown,
-  onPointerUp,
-  onPointerLeave,
-  onPointerCancel,
-  onClick,
+  style,
+  handlers,
 }: TableCardProps) {
-  const cardBg = isSource ? "#fffbeb" : isTarget ? "#eff6ff" : cfg.bg;
-  const cardBorder = isSource
-    ? "2px solid #f59e0b"
-    : isTarget
-    ? "2px solid #3b82f6"
-    : `1.5px solid ${cfg.border}`;
-  const cardOpacity = inSwapMode && !isSource && !isTarget ? 0.5 : 1;
-  const statusColor = isSource ? "#f59e0b" : isTarget ? "#3b82f6" : cfg.text;
-  const statusLabel = isSource ? "moving" : isTarget ? "selected" : cfg.label;
+  const { bg, border, statusColor, statusLabel } = getSwapStyles(swapStatus, cfg);
+  const cardOpacity = swapStatus === "dimmed" ? 0.5 : 1;
 
   return (
     <button
       style={{
-        ...baseStyle,
-        background: cardBg,
-        border: cardBorder,
+        ...style.base,
+        background: bg,
+        border: border,
         opacity: cardOpacity,
         transition: "opacity 0.2s ease, border 0.15s ease",
         userSelect: "none",
         WebkitUserSelect: "none",
         animation: "slideUpFade 0.2s ease-out",
-        animationDelay: `${staggerIndex * 0.035}s`,
+        animationDelay: `${style.staggerIndex * 0.035}s`,
         animationFillMode: "backwards",
       }}
-      onPointerDown={onPointerDown}
-      onPointerUp={onPointerUp}
-      onPointerLeave={onPointerLeave}
-      onPointerCancel={onPointerCancel}
+      onPointerDown={handlers.onPointerDown}
+      onPointerUp={handlers.onPointerUp}
+      onPointerLeave={handlers.onPointerLeave}
+      onPointerCancel={handlers.onPointerCancel}
       onContextMenu={(e) => e.preventDefault()}
-      onClick={onClick}
+      onClick={handlers.onClick}
     >
-      {isSource && (
+      {swapStatus === "source" && (
         <span style={{ fontSize: 10, fontWeight: 700, color: "#f59e0b", letterSpacing: "0.3px", marginBottom: 2 }}>
           MOVING
         </span>
       )}
-      {isTarget && (
+      {swapStatus === "target" && (
         <span style={{ fontSize: 10, fontWeight: 700, color: "#3b82f6", letterSpacing: "0.3px", marginBottom: 2 }}>
           DESTINATION
         </span>
       )}
-      {!isSource && !isTarget && <span style={{ ...S.tableDot, background: cfg.dot }} />}
+      {swapStatus === "none" && <span style={{ ...S.tableDot, background: cfg.dot }} />}
       <span style={S.tableNum}>{tableId}</span>
       <span style={{ ...S.tableStatus, color: statusColor }}>{statusLabel}</span>
       {destinations.length > 0 && (
@@ -87,7 +105,7 @@ export function TableCard({
             position: "absolute",
             top: 5,
             right: 6,
-            fontSize: isWide ? 11 : 9,
+            fontSize: style.isWide ? 11 : 9,
             letterSpacing: 1,
             lineHeight: 1,
           }}
