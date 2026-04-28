@@ -55,7 +55,7 @@ src/
 │   └── useSubcategoryState.ts    # Subcategory expand/collapse state for menu
 ├── services/
 │   ├── directusMenu.ts           # fetchMenu() — GET menu_items from Directus
-│   ├── directusBills.ts          # fetchBillsByDate, createBillInDirectus, patchBill/Item, clearToday
+│   ├── directusBills.ts          # fetchBillsByDate, createBillInDirectus, patchBill/Item
 │   └── directusSessions.ts       # fetchTableSessions, upsertSession, deleteSession (real-time table state)
 ├── views/
 │   ├── LoginView.tsx             # Authentication form
@@ -161,7 +161,6 @@ src/
   paymentMode: "full" | "equal" | "item",
   splitData?: { guests: number },
   addedToPOS?: boolean,    // Bill marked as added to POS system
-  cleared_at?: ISO string, // Soft delete timestamp (set by "Clear Daily Sales")
   items: [...]             // Populated via O2M from bill_items
 }
 
@@ -190,7 +189,7 @@ src/
 - `splitConfirm` — Guest payment confirmation (item split only)
 - `splitDone` — Final split summary
 - `close` — Destructive table close confirmation
-- `dailySales` — Revenue summary, list of all paid bills, aggregated POS view, date picker, clear day action
+- `dailySales` — Revenue summary, list of all paid bills, aggregated POS view, date picker
 
 ## Key Behaviors
 - **Authentication required** — App blocked until login with valid credentials
@@ -212,7 +211,6 @@ src/
 - **Reopen last closed** — amber "Reopen T.X" button on the floor view; restores archived orders/batches/gutschein/seated/markedBatches and reschedules Directus write; device-local only
 - **Bill edit mode** — mutations are local-only until "Done"; Directus sync fires on exit; Cancel restores snapshot
 - **Item-level POS crossing** — increment/decrement `crossed_qty` for individual items; syncs to Directus via `patchBillItem`
-- **Clear Daily Sales** — soft-deletes today's bills (sets cleared_at); data preserved for analytics
 - **Date picker** — view historical bills by Berlin timezone calendar day
 - **Responsive layouts** — `useBreakpoint()` hook provides mobile/tablet/tabletLandscape/desktop breakpoints; adaptive grid/list views
 
@@ -220,7 +218,6 @@ src/
 - **Hardcoded credentials** — Auth uses static username/password; no per-user roles or multi-tenant support
 - **No backend** — orders copied to clipboard instead of sent to kitchen system
 - **No print integration** — clipboard export only
-- **Manual day reset** — "Clear Daily Sales" must be used manually at end of shift
 - **Berlin timezone hardcoded** — `todayBerlinDate()` and `berlinDayBoundsUTC()` assume Europe/Berlin; not configurable
 - **2-second polling overhead** — Table sessions refetch every 2s; could be optimized with WebSockets for lower latency
 - **500ms debounce on writes** — Balance between responsiveness and API load; may feel sluggish on slow connections
@@ -291,7 +288,7 @@ npm run deploy
 - **Responsive-first** — Mobile (0-767px), tablet portrait (768-1023px), tablet landscape (1024-1439px), desktop (1440px+)
 - **Speed over flexibility** — Inline styles, hardcoded config for fast iteration
 - **Clarity over cleverness** — Direct state updates, explicit view switching
-- **Reversible actions** — Confirm destructive operations (close table, clear day)
+- **Reversible actions** — Confirm destructive operations (close table)
 - **Copy > integrate** — Clipboard export for rapid prototyping
 - **Real-time sync** — Multi-device coordination via polling (eventual consistency model)
 
@@ -305,9 +302,7 @@ npm run deploy
 | `bill_items` | One record per line item (FK → bills) |
 | `table_sessions` | Real-time table state (orders, batches, gutschein, seated) — one record per active table |
 
-Bills are never hard-deleted. `cleared_at` is set by "Clear Daily Sales".
-Analytics queries filter by `timestamp` range and ignore `cleared_at`.
-
+Bills are never deleted — persistent record for accounting and analytics.
 Table sessions are deleted when table closes (no historical tracking).
 
 ## Notes
@@ -317,7 +312,7 @@ Table sessions are deleted when table closes (no historical tracking).
 - Menu categories: Food, Drinks, Wines, Shop (driven by Directus `categories` collection)
 - Status colors defined in `STATUS_CONFIG` (constants.js): open=blue, seated=yellow, unconfirmed=red, confirmed=green — reused in batch colouring and swap mode highlights
 - Table swap uses long-press (500ms threshold, `LONG_PRESS_MS` constant) — `longFiredRef` guards normal taps but is bypassed in swap mode to allow target selection
-- `AppContext` exposes named bill action functions (`addPaidBill`, `clearTodayBills`, `markBillAddedToPOS`, `removePaidBillItem`, `restorePaidBillItem`, etc.) — do not manipulate `paidBills` directly
+- `AppContext` exposes named bill action functions (`addPaidBill`, `markBillAddedToPOS`, `removePaidBillItem`, `restorePaidBillItem`, etc.) — do not manipulate `paidBills` directly
 - Auth credentials stored in localStorage key `authToken` (JWT-like format but no server-side validation)
 - localStorage keys in use: `authToken` (auth), `paidBills` (offline bill fallback), `lastClosedSession` (24h table archive)
 - `syncError` boolean exposed from `TableContext` — sourced from `useDirectusSync` → `useQuery` `isError` on the sessions poll

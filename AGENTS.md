@@ -91,8 +91,7 @@ src/
 - Paid bills should be modified through named `AppContext` actions, not by
   mutating `paidBills` directly.
 - Bill edit mode is local until "Done"; "Cancel" restores the snapshot.
-- `Clear Daily Sales` soft-deletes by setting `cleared_at`; do not hard-delete
-  bill history.
+- Bills are never deleted — persistent record for accounting and analytics.
 - Table sessions are deleted when a table closes.
 - Berlin timezone is intentionally hardcoded for day boundaries.
 

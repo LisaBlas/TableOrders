@@ -16,10 +16,6 @@ No backup strategy — SQLite file corruption or accidental deletion = total dat
 
 Daily automated backups (Directus has built-in snapshot tools)
 Or replicate bills to a second store (even localStorage for emergency recovery)
-Manual day reset — Forgetting "Clear Daily Sales" means bills pile up and slow down queries. Consider:
-
-Auto-clear at 5 AM Berlin time (cron job or scheduled function)
-Or at minimum, add a notification reminder
 📊 Observability
 No monitoring — You won't know if it's down until someone complains. Add:
 

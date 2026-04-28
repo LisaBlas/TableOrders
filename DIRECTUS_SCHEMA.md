@@ -11,7 +11,7 @@
 | `categories` | Menu categories (Food, Drinks, Wines, Shop) | Static structure |
 | `menu_items` | Menu items with pricing and POS mapping | Editable via CMS |
 | `menu_item_variants` | Size/type variants (0.1L, 0.2L, bottle here/to-go) | Editable via CMS |
-| `bills` | Paid bills (one per payment) | Soft-deleted via `cleared_at` |
+| `bills` | Paid bills (one per payment) | Never deleted (persistent) |
 | `bill_items` | Line items per bill (FK → bills) | Immutable after creation |
 | `table_sessions` | Real-time table state (orders, batches, gutschein) | Deleted on table close |
 
@@ -133,7 +133,6 @@ const menu = await directus.request(
   payment_mode: string,   // "full", "equal", "item"
   split_data: json,       // { guests: number } for equal splits
   added_to_pos: boolean,  // Bill marked as entered into POS
-  cleared_at: datetime,   // Soft delete timestamp (set by "Clear Daily Sales")
   date_created: datetime,
   date_updated: datetime
 }
@@ -142,21 +141,6 @@ const menu = await directus.request(
 **Relationships:**
 - O2M → `bill_items.bill_id`
 
-**Soft Delete Pattern:**
-```javascript
-// Clear today's bills (soft delete)
-await directus.request(
-  updateItems('bills', ids, { cleared_at: new Date().toISOString() })
-);
-
-// Query active bills only
-const activeBills = await directus.request(
-  readItems('bills', {
-    filter: { cleared_at: { _null: true } }
-  })
-);
-```
-
 **Berlin Timezone Filtering:**
 ```javascript
 // Get today's bills (Berlin timezone)
@@ -164,8 +148,7 @@ const { start, end } = berlinDayBoundsUTC('2026-04-24');
 const bills = await directus.request(
   readItems('bills', {
     filter: {
-      timestamp: { _between: [start, end] },
-      cleared_at: { _null: true }
+      timestamp: { _between: [start, end] }
     },
     fields: ['*', 'items.*']
   })
@@ -393,8 +376,7 @@ const { start, end } = berlinDayBoundsUTC('2026-04-24');
 const bills = await directus.request(
   readItems('bills', {
     filter: {
-      timestamp: { _between: [start, end] },
-      cleared_at: { _null: true }
+      timestamp: { _between: [start, end] }
     },
     aggregate: { sum: ['total'] }
   })
@@ -433,8 +415,7 @@ const { start, end } = berlinDayBoundsUTC('2026-04-24');
 const bills = await directus.request(
   readItems('bills', {
     filter: {
-      timestamp: { _between: [start, end] },
-      cleared_at: { _null: true }
+      timestamp: { _between: [start, end] }
     },
     fields: ['items.*']
   })
@@ -458,7 +439,7 @@ const posEntries = bills.flatMap(b => b.items).reduce((acc, item) => {
 
 ## Data Integrity Rules
 
-1. **Never hard-delete bills** — Use `cleared_at` for soft deletes
+1. **Never delete bills** — Persistent record for accounting and analytics
 2. **Never mutate `bill_items` after creation** — Except `crossed_qty` (POS tracking)
 3. **Delete `table_sessions` only on table close** — Not on app restart
 4. **Use optimistic updates** — Add `tempId` prefix, replace with `directusId` on success

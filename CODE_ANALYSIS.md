@@ -116,7 +116,7 @@ const UIContext = createContext({
 // BillContext
 const BillContext = createContext({
   addPaidBill, removePaidBillItem, restorePaidBillItem,
-  markBillAddedToPOS, clearTodayBills
+  markBillAddedToPOS
 });
 
 // DailySalesContext
