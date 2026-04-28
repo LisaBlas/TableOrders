@@ -10,6 +10,7 @@ import {
   saveClosedSession, loadClosedSession, clearClosedSession,
   type ArchivedSession,
 } from "../utils/closedSessionArchive";
+import type { SessionConflict } from "../utils/conflictDetection";
 import type {
   Orders, OrderItem, SentBatches, Batch, GutscheinAmounts,
   TableId, MenuItem, MenuItemVariant, MenuCategory, ExpandedItem,
@@ -23,6 +24,10 @@ interface TableContextValue {
   gutscheinAmounts: GutscheinAmounts;
   markedBatches: Record<string, Set<number>>;
   syncError: boolean;
+
+  // Conflicts
+  conflicts: SessionConflict[];
+  resolveConflict: (conflict: SessionConflict, resolution: "local" | "remote" | "merge") => void;
 
   // Closed session recovery
   lastClosedSession: ArchivedSession | null;
@@ -74,7 +79,7 @@ export function TableProvider({ children }: { children: ReactNode }) {
   useEffect(() => { ordersRef.current = orders; }, [orders]);
 
   // ── Directus sync (polling, debounced writes, conflict resolution) ─────────
-  const { scheduleWrite, cancelAndDelete, syncError } = useDirectusSync(
+  const { scheduleWrite, cancelAndDelete, syncError, conflicts, resolveConflict } = useDirectusSync(
     { orders, seatedTablesArr, sentBatches, gutscheinAmounts, markedBatches },
     { setOrders, setSeatedTablesArr, setSentBatches, setGutscheinAmounts, setMarkedBatches },
     showToast
@@ -411,6 +416,7 @@ export function TableProvider({ children }: { children: ReactNode }) {
   return (
     <TableContext.Provider value={{
       orders, seatedTables, sentBatches, gutscheinAmounts, markedBatches, syncError,
+      conflicts, resolveConflict,
       lastClosedSession, reopenLastClosed,
       addItem, addCustomItem, removeItem, removeItemFromBill, addItemToBill,
       sendOrder, addBillEditBatch, removeBillEditItems, seatTable,

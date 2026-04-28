@@ -6,11 +6,12 @@ Exposed Directus token — VITE_ prefix makes your static token visible in clien
 A thin backend proxy (Cloudflare Worker, Vercel serverless) that holds the real token
 Or switch to Directus user auth with session tokens
 ⚠️ Reliability (High Priority)
-No offline fallback — If Directus is down, the entire app breaks. Partially addressed:
+No offline fallback — If Directus is down, the entire app breaks. Fully addressed:
 
 ✅ Error boundaries around Directus queries — global crash boundary + inline boundary on DailySalesView; offline banner when sessions sync fails
 ✅ Retry logic with exponential backoff — fetchMenu retries 3x on startup; session writes retry up to MAX_RETRIES with toast feedback
-LocalStorage fallback for table sessions (already have the data structure) — not yet done
+✅ LocalStorage fallback for table sessions — All table state (orders, sentBatches, markedBatches, gutschein, seated) written to localStorage immediately; app reads from cache when Directus unavailable; syncs queued writes when connection restored
+✅ Multi-device conflict resolution — When multiple devices work offline and reconnect, conflicts detected automatically; manual resolution UI (Keep Local / Keep Remote / Merge Both) handles conflicts one at a time; sync paused until all conflicts resolved
 No backup strategy — SQLite file corruption or accidental deletion = total data loss. Set up:
 
 Daily automated backups (Directus has built-in snapshot tools)

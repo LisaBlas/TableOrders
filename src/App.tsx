@@ -17,6 +17,7 @@ import { DailySalesView } from "./views/DailySalesView";
 import LoginView from "./views/LoginView";
 import { Toast } from "./components/Toast";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { ConflictResolutionModal } from "./components/ConflictResolutionModal";
 import { useTable } from "./contexts/TableContext";
 import { S } from "./styles/appStyles";
 
@@ -61,7 +62,7 @@ function Router() {
   const { view, toast } = useApp();
   const { menuLoading } = useMenu();
   const { isAuthenticated } = useAuth();
-  const { syncError } = useTable();
+  const { syncError, conflicts, resolveConflict } = useTable();
   const { isTabletLandscape, isTablet, isDesktop } = useBreakpoint();
 
   useEffect(() => { window.scrollTo(0, 0); }, [view]);
@@ -90,6 +91,16 @@ function Router() {
         </div>
       )}
       {toast && <Toast message={toast} />}
+
+      {/* Conflict resolution modal (only show on tables view to avoid interrupting workflows) */}
+      {conflicts.length > 0 && view === "tables" && (
+        <ConflictResolutionModal
+          conflict={conflicts[0]}
+          conflictIndex={1}
+          totalConflicts={conflicts.length}
+          onResolve={(resolution) => resolveConflict(conflicts[0], resolution)}
+        />
+      )}
 
       {view === "tables" && <TablesView />}
       {view === "order" && <OrderView />}
