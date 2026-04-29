@@ -16,6 +16,16 @@ import type {
   TableId, MenuItem, MenuItemVariant, MenuCategory, ExpandedItem,
 } from "../types";
 
+// ── Helper: Swap state between two tables ──
+const swapTableState = <T,>(prev: Record<string, T>, fk: string, tk: string): Record<string, T> => {
+  const n = { ...prev };
+  const f = prev[fk];
+  const t = prev[tk];
+  if (t !== undefined) n[fk] = t; else delete n[fk];
+  if (f !== undefined) n[tk] = f; else delete n[tk];
+  return n;
+};
+
 interface TableContextValue {
   // State
   orders: Orders;
@@ -79,7 +89,7 @@ export function TableProvider({ children }: { children: ReactNode }) {
   useEffect(() => { ordersRef.current = orders; }, [orders]);
 
   // ── Directus sync (polling, debounced writes, conflict resolution) ─────────
-  const { scheduleWrite, cancelAndDelete, syncError, conflicts, resolveConflict } = useDirectusSync(
+  const { scheduleWrite, cancelAndDelete, syncError, conflicts, resolveConflict, markAsLocallyOwned } = useDirectusSync(
     { orders, seatedTablesArr, sentBatches, gutscheinAmounts, markedBatches },
     { setOrders, setSeatedTablesArr, setSentBatches, setGutscheinAmounts, setMarkedBatches },
     showToast
@@ -309,8 +319,16 @@ export function TableProvider({ children }: { children: ReactNode }) {
       markedBatches: Array.from(snap.markedBatches[key] ?? new Set<number>()),
       billTempId,
     };
-    saveClosedSession(session);
-    setLastClosedSession(session);
+
+    // Archive session before clearing — abort if archiving fails
+    try {
+      saveClosedSession(session);
+      setLastClosedSession(session);
+    } catch (e) {
+      console.error("Failed to archive session:", e);
+      showToast("Failed to close table - try again");
+      return;
+    }
 
     setOrders((prev) => { const n = { ...prev }; delete n[key]; return n; });
     setSeatedTablesArr((prev) => prev.filter((id) => String(id) !== key));
@@ -318,7 +336,7 @@ export function TableProvider({ children }: { children: ReactNode }) {
     setGutscheinAmounts((prev) => { const n = { ...prev }; delete n[key]; return n; });
     setMarkedBatches((prev) => { const n = { ...prev }; delete n[key]; return n; });
     cancelAndDelete(tableId);
-  }, [cancelAndDelete]);
+  }, [cancelAndDelete, showToast]);
 
   const reopenLastClosed = useCallback(() => {
     const session = lastClosedSession;
@@ -372,34 +390,13 @@ export function TableProvider({ children }: { children: ReactNode }) {
     const fk = String(fromId);
     const tk = String(toId);
 
-    setOrders((prev) => {
-      const n = { ...prev };
-      const f = prev[fk]; const t = prev[tk];
-      if (t !== undefined) n[fk] = t; else delete n[fk];
-      if (f !== undefined) n[tk] = f; else delete n[tk];
-      return n;
-    });
-    setSentBatches((prev) => {
-      const n = { ...prev };
-      const f = prev[fk]; const t = prev[tk];
-      if (t !== undefined) n[fk] = t; else delete n[fk];
-      if (f !== undefined) n[tk] = f; else delete n[tk];
-      return n;
-    });
-    setMarkedBatches((prev) => {
-      const n = { ...prev };
-      const f = prev[fk]; const t = prev[tk];
-      if (t !== undefined) n[fk] = t; else delete n[fk];
-      if (f !== undefined) n[tk] = f; else delete n[tk];
-      return n;
-    });
-    setGutscheinAmounts((prev) => {
-      const n = { ...prev };
-      const f = prev[fk]; const t = prev[tk];
-      if (t !== undefined) n[fk] = t; else delete n[fk];
-      if (f !== undefined) n[tk] = f; else delete n[tk];
-      return n;
-    });
+    // Mark both tables as locally owned to protect from remote poll overwrites during swap
+    markAsLocallyOwned(fromId, toId);
+
+    setOrders((prev) => swapTableState(prev, fk, tk));
+    setSentBatches((prev) => swapTableState(prev, fk, tk));
+    setMarkedBatches((prev) => swapTableState(prev, fk, tk));
+    setGutscheinAmounts((prev) => swapTableState(prev, fk, tk));
     setSeatedTablesArr((prev) => {
       const s = new Set<TableId>(prev);
       const fromSeated = s.has(fromId); const toSeated = s.has(toId);
@@ -411,7 +408,7 @@ export function TableProvider({ children }: { children: ReactNode }) {
     showToast(`Table ${fromId} ⇄ Table ${toId}`);
     scheduleWrite(fromId);
     scheduleWrite(toId);
-  }, [showToast, scheduleWrite]);
+  }, [showToast, scheduleWrite, markAsLocallyOwned]);
 
   return (
     <TableContext.Provider value={{

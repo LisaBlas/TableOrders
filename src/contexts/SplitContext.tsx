@@ -1,4 +1,4 @@
-import { createContext, useContext, useReducer, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useReducer, useMemo, type ReactNode } from "react";
 import { expandItems } from "../utils/helpers";
 import type { OrderItem, SplitPayment, PaymentInput, ExpandedItem } from "../types";
 
@@ -146,21 +146,47 @@ const SplitContext = createContext<SplitContextValue | null>(null);
 export function SplitProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(splitReducer, initialState);
 
-  const selectedItems = state.remaining.filter((i) => state.selected.has(i._uid));
-  const selectedTotal = selectedItems.reduce((s, i) => s + i.price, 0);
-  const remainingTotal = state.remaining.reduce((s, i) => s + i.price, 0);
-  const currentGuestNum = state.payments.length + 1;
-  const lastPayment = state.payments.length > 0 ? state.payments[state.payments.length - 1] : null;
-
-  return (
-    <SplitContext.Provider value={{
-      state, dispatch,
-      selectedItems, selectedTotal, remainingTotal,
-      currentGuestNum, lastPayment,
-    }}>
-      {children}
-    </SplitContext.Provider>
+  // Memoize derived values to prevent unnecessary recomputation
+  const selectedItems = useMemo(
+    () => state.remaining.filter((i) => state.selected.has(i._uid)),
+    [state.remaining, state.selected]
   );
+
+  const selectedTotal = useMemo(
+    () => selectedItems.reduce((s, i) => s + i.price, 0),
+    [selectedItems]
+  );
+
+  const remainingTotal = useMemo(
+    () => state.remaining.reduce((s, i) => s + i.price, 0),
+    [state.remaining]
+  );
+
+  const currentGuestNum = useMemo(
+    () => state.payments.length + 1,
+    [state.payments.length]
+  );
+
+  const lastPayment = useMemo(
+    () => state.payments[state.payments.length - 1] ?? null,
+    [state.payments]
+  );
+
+  // Memoize context value to prevent unnecessary consumer re-renders
+  const contextValue = useMemo(
+    () => ({
+      state,
+      dispatch,
+      selectedItems,
+      selectedTotal,
+      remainingTotal,
+      currentGuestNum,
+      lastPayment,
+    }),
+    [state, dispatch, selectedItems, selectedTotal, remainingTotal, currentGuestNum, lastPayment]
+  );
+
+  return <SplitContext.Provider value={contextValue}>{children}</SplitContext.Provider>;
 }
 
 export function useSplit() {

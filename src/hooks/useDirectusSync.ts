@@ -50,9 +50,13 @@ export function useDirectusSync(
   const writeTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const retryCounts = useRef<Record<string, number>>({});
   const wasOffline = useRef(false);                          // Track offline→online transition
+  const isMounted = useRef(true);                            // Track component mount state
 
   useEffect(() => {
-    return () => { Object.values(writeTimers.current).forEach(clearTimeout); };
+    return () => {
+      isMounted.current = false;
+      Object.values(writeTimers.current).forEach(clearTimeout);
+    };
   }, []);
 
   // ── Conflict management ───────────────────────────────────────────────────
@@ -181,7 +185,8 @@ export function useDirectusSync(
     pendingWrites.current.add(key);
     clearTimeout(writeTimers.current[key]);
 
-    const session = {
+    // Capture state snapshot for immediate localStorage write (offline resilience)
+    const cacheSession = {
       table_id: key,
       seated: seatedTablesArrRef.current.some((id) => String(id) === key),
       gutschein: gutscheinRef.current[key] ?? null,
@@ -191,10 +196,20 @@ export function useDirectusSync(
     };
 
     // Write to localStorage immediately (no debounce)
-    writeSessionToCache(key, session);
+    writeSessionToCache(key, cacheSession);
 
-    // Debounced Directus write
+    // Debounced Directus write — capture FRESH state inside timeout
     writeTimers.current[key] = setTimeout(async () => {
+      // Re-capture refs to get current state (not stale snapshot from T0)
+      const session = {
+        table_id: key,
+        seated: seatedTablesArrRef.current.some((id) => String(id) === key),
+        gutschein: gutscheinRef.current[key] ?? null,
+        orders: ordersRef.current[key] ?? [],
+        sent_batches: sentBatchesRef.current[key] ?? [],
+        marked_batches: Array.from(markedBatchesRef.current[key] ?? new Set<number>()),
+      };
+
       try {
         const newId = await upsertSession(sessionIdMap.current[key] ?? null, session);
         sessionIdMap.current[key] = newId;
@@ -202,13 +217,15 @@ export function useDirectusSync(
         pendingWrites.current.delete(key);
         lastWriteTime.current[key] = Date.now();
       } catch (e) {
+        if (!isMounted.current) return;
+
         const attempts = (retryCounts.current[key] ?? 0) + 1;
         retryCounts.current[key] = attempts;
         console.error(`Session write failed (attempt ${attempts}/${MAX_RETRIES}):`, e);
 
         if (attempts < MAX_RETRIES) {
           if (attempts === 1) showToast("Table state not saved - retrying");
-          lastWriteTime.current[key] = Date.now();
+          // Don't update lastWriteTime on retry — keeps original grace period
           scheduleWrite(tableId);
         } else {
           showToast("Table state not saved - check network");
@@ -234,7 +251,11 @@ export function useDirectusSync(
     const directusId = sessionIdMap.current[key];
     if (directusId) {
       delete sessionIdMap.current[key];
-      deleteSession(directusId).catch(console.error);
+      deleteSession(directusId).then((result) => {
+        if (!result.success) {
+          console.error(`Failed to delete session: ${result.error}`);
+        }
+      });
     }
   }, []);
 
@@ -253,19 +274,7 @@ export function useDirectusSync(
 
     const tableIdParsed = parseTableId(key);
 
-    // Sync refs immediately — scheduleWrite reads refs to build its snapshot, but
-    // ref-syncing useEffects run after render, so refs would be stale at call time.
-    ordersRef.current = { ...ordersRef.current, [key]: resolvedSession.orders };
-    seatedTablesArrRef.current = resolvedSession.seated
-      ? seatedTablesArrRef.current.some((id) => String(id) === key)
-        ? seatedTablesArrRef.current
-        : [...seatedTablesArrRef.current, tableIdParsed]
-      : seatedTablesArrRef.current.filter((id) => String(id) !== key);
-    sentBatchesRef.current = { ...sentBatchesRef.current, [key]: resolvedSession.sent_batches };
-    gutscheinRef.current = { ...gutscheinRef.current, [key]: resolvedSession.gutschein };
-    markedBatchesRef.current = { ...markedBatchesRef.current, [key]: new Set(resolvedSession.marked_batches) };
-
-    // Apply resolved session to state
+    // Apply resolved session to state — refs will be synced by useEffects (lines 40-44)
     setOrders((prev) => ({ ...prev, [key]: resolvedSession.orders }));
 
     setSeatedTablesArr((prev) => {
@@ -279,11 +288,13 @@ export function useDirectusSync(
     setGutscheinAmounts((prev) => ({ ...prev, [key]: resolvedSession.gutschein ?? 0 }));
     setMarkedBatches((prev) => ({ ...prev, [key]: new Set(resolvedSession.marked_batches) }));
 
-    // Persist: refs are now current so scheduleWrite writes the correct snapshot
-    scheduleWrite(tableIdParsed);
-
     // Remove from conflicts queue
     setConflicts((prev) => prev.filter((c) => c.tableId !== tableId));
+
+    // Persist after refs are synced (defer until next tick to ensure useEffects have run)
+    setTimeout(() => {
+      scheduleWrite(tableIdParsed);
+    }, 0);
   }, [scheduleWrite, setOrders, setSeatedTablesArr, setSentBatches, setGutscheinAmounts, setMarkedBatches]);
 
   // Resume sync when all conflicts resolved
@@ -294,5 +305,13 @@ export function useDirectusSync(
     }
   }, [conflicts]);
 
-  return { scheduleWrite, cancelAndDelete, syncError, conflicts, resolveConflict };
+  // ── Mark tables as locally owned (extends grace period) ───────────────────
+  const markAsLocallyOwned = useCallback((...tableIds: TableId[]) => {
+    const now = Date.now();
+    tableIds.forEach((tableId) => {
+      lastWriteTime.current[String(tableId)] = now;
+    });
+  }, []);
+
+  return { scheduleWrite, cancelAndDelete, syncError, conflicts, resolveConflict, markAsLocallyOwned };
 }

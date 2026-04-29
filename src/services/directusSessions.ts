@@ -46,6 +46,18 @@ export async function upsertSession(
   return (await res.json()).data.id;
 }
 
-export async function deleteSession(directusId: number): Promise<void> {
-  await fetch(`${DIRECTUS_URL}/items/table_sessions/${directusId}`, { method: "DELETE" });
+export async function deleteSession(directusId: number): Promise<{ success: boolean; error?: string }> {
+  try {
+    const response = await fetch(`${DIRECTUS_URL}/items/table_sessions/${directusId}`, {
+      method: "DELETE",
+    });
+
+    if (!response.ok) {
+      return { success: false, error: `HTTP ${response.status}` };
+    }
+
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
+  }
 }
