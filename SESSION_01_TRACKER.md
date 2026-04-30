@@ -3,7 +3,7 @@
 **Created**: 2026-04-29
 **Completed**: 2026-04-29
 **Audit Report**: [session-01-sync-audit.md](session-01-sync-audit.md)
-**Status**: 🟢 **Phase 1 & 2 Complete** — P0-1, P0-2, P0-4 fixed; P0-3 deferred
+**Status**: 🟢 **P0 Complete** — P0-1 through P0-4 fixed; integration/manual testing pending
 
 ---
 
@@ -29,7 +29,7 @@
 |---|-------|----------|-------|------|--------|
 | P0-1 | Stale ref race in writes | Capture state inside timeout | [useDirectusSync.ts:181-230](src/hooks/useDirectusSync.ts#L181-L230) | 45 min | ✅ DONE |
 | P0-2 | Ref sync race in conflict resolution | Remove manual ref updates | [useDirectusSync.ts:262-290](src/hooks/useDirectusSync.ts#L262-L290) | 30 min | ✅ DONE |
-| P0-3 | Marked batches positional indices | **DEFER** to Phase 3 | Multiple files + migration | — | 🟡 DEFERRED |
+| P0-3 | Marked batches positional indices | Stable batch IDs + legacy read migration | Multiple files + migration | 3h | ✅ DONE |
 | P0-4 | Table swap race | Added markAsLocallyOwned helper | [useDirectusSync.ts:310-314](src/hooks/useDirectusSync.ts#L310-L314), [TableContext.tsx:389-408](src/contexts/TableContext.tsx#L389-L408) | 30 min | ✅ DONE |
 
 **Total**: ~2 hours actual (vs 4h estimated)
@@ -39,7 +39,7 @@
 | # | Issue | Approach | Files | Time | Status |
 |---|-------|----------|-------|------|--------|
 | P0-ALL | Ref-based debounce anti-pattern | Refactor to functional setState everywhere | [useDirectusSync.ts](src/hooks/useDirectusSync.ts), [TableContext.tsx](src/contexts/TableContext.tsx) | 8h | ⬜ TODO |
-| P0-3 | Marked batches migration | Timestamps instead of indices | Multiple + Directus migration | 3h | ⬜ TODO |
+| P0-3 | Marked batches migration | Stable string batch IDs instead of indices | Multiple + Directus migration | 3h | ✅ DONE |
 
 **Total**: 11 hours
 
@@ -54,8 +54,8 @@
 | P1-7 | Write failure leaves user in limbo | [useDirectusSync.ts:213-217](src/hooks/useDirectusSync.ts#L213-L217) | 2h | ✅ DONE | Failed writes remain locally saved, surface syncError, and auto-retry after successful polling resumes |
 | P1-8 | Order merge violates sentQty invariant | [conflictDetection.ts:101-110](src/utils/conflictDetection.ts#L101-L110) | 3h | ✅ DONE | Merge now derives sentQty from merged batches and preserves sentQty <= qty |
 | P1-9 | Batch dedup assumes unique timestamps | [conflictDetection.ts:113-119](src/utils/conflictDetection.ts#L113-L119) | 1h | ✅ DONE | Batch dedup now uses timestamp plus canonical item content |
-| P1-10 | sendOrder reads stale ordersRef | [TableContext.tsx:224-245](src/contexts/TableContext.tsx#L224-L245) | 1h | ⬜ TODO | — |
-| P1-11 | cleanupTable archives before checking | [TableContext.tsx:309-331](src/contexts/TableContext.tsx#L309-L331) | 30 min | ⬜ TODO | — |
+| P1-10 | sendOrder reads stale ordersRef | [TableContext.tsx:224-245](src/contexts/TableContext.tsx#L224-L245) | 1h | ✅ DONE | sendOrder now derives the batch from a functional orders update instead of ordersRef |
+| P1-11 | cleanupTable archives before checking | [TableContext.tsx:309-331](src/contexts/TableContext.tsx#L309-L331) | 30 min | ✅ DONE | saveClosedSession now throws storage failures so cleanupTable can abort before clearing |
 | P1-12 | Missing cleanup on unmount | [useDirectusSync.ts:54-56](src/hooks/useDirectusSync.ts#L54-L56) | 30 min | ✅ DONE | Covered by QW1 isMounted guard and timer cleanup |
 
 **Total**: ~10 hours
@@ -66,9 +66,9 @@
 
 | # | Issue | File | Time | Status |
 |---|-------|------|------|--------|
-| P2-13 | Inefficient full state merge | [useDirectusSync.ts:150-174](src/hooks/useDirectusSync.ts#L150-L174) | 2h | 🟡 DEFER |
+| P2-13 | Inefficient full state merge | [useDirectusSync.ts:150-174](src/hooks/useDirectusSync.ts#L150-L174) | 2h | ✅ DONE |
 | P2-14 | Expensive allKeys collection | [useDirectusSync.ts:135-142](src/hooks/useDirectusSync.ts#L135-L142) | 1h | 🟡 DEFER |
-| P2-15 | No validation of cached data | [sessionStorage.ts:19-28](src/utils/sessionStorage.ts#L19-L28) | 3h | 🟡 DEFER |
+| P2-15 | No validation of cached data | [sessionStorage.ts:19-28](src/utils/sessionStorage.ts#L19-L28) | 3h | ✅ DONE |
 | P2-16 | writeSessionToCache not atomic | [sessionStorage.ts:33-41](src/utils/sessionStorage.ts#L33-41) | 2h | 🟡 DEFER |
 
 **Total**: ~8 hours
@@ -81,7 +81,7 @@
 
 - [ ] `scheduleWrite` captures current state, not stale refs
 - [ ] `resolveConflict` updates state before refs
-- [ ] `marked_batches` survive batch merge + re-sort
+- [x] `marked_batches` survive batch merge + re-sort
 - [ ] `swapTables` is atomic (both tables swapped or neither)
 - [ ] Grace period doesn't extend on retry
 - [ ] Write failures block further edits
@@ -127,7 +127,7 @@ const scheduleWrite = useCallback((tableId: TableId) => {
     gutschein: gutscheinRef.current[key] ?? null,
     orders: ordersRef.current[key] ?? [],
     sent_batches: sentBatchesRef.current[key] ?? [],
-    marked_batches: Array.from(markedBatchesRef.current[key] ?? new Set<number>()),
+    marked_batches: Array.from(markedBatchesRef.current[key] ?? new Set<string>()),
   };
 
   writeSessionToCache(key, session);
@@ -153,7 +153,7 @@ const scheduleWrite = useCallback((tableId: TableId) => {
     gutschein: gutscheinRef.current[key] ?? null,
     orders: ordersRef.current[key] ?? [],
     sent_batches: sentBatchesRef.current[key] ?? [],
-    marked_batches: Array.from(markedBatchesRef.current[key] ?? new Set<number>()),
+    marked_batches: Array.from(markedBatchesRef.current[key] ?? new Set<string>()),
   };
   writeSessionToCache(key, cacheSession);
 
@@ -165,7 +165,7 @@ const scheduleWrite = useCallback((tableId: TableId) => {
       gutschein: gutscheinRef.current[key] ?? null,
       orders: ordersRef.current[key] ?? [],
       sent_batches: sentBatchesRef.current[key] ?? [],
-      marked_batches: Array.from(markedBatchesRef.current[key] ?? new Set<number>()),
+      marked_batches: Array.from(markedBatchesRef.current[key] ?? new Set<string>()),
     };
 
     try {
@@ -248,39 +248,33 @@ const resolveConflict = useCallback((
 
 ---
 
-### P0-3: Marked Batches Migration (Deferred in Quick Fix)
+### P0-3: Marked Batches Migration (Complete)
 
-**Required Changes**:
+**Implemented Changes**:
 
 1. **Directus Migration**:
-```sql
--- No schema change needed (JSON column already accepts strings)
--- Just need to update existing data
-UPDATE table_sessions
-SET marked_batches = json_array();  -- Clear all existing marks (one-time data loss)
-
--- OR: Write a migration script to convert indices to timestamps
--- (requires fetching sent_batches and mapping indices)
-```
+   - No schema change needed; `marked_batches` is already a JSON column.
+   - Existing numeric marks are migrated in app code by mapping each index to the referenced batch id/timestamp.
+   - The next session write persists migrated marks as `string[]`.
 
 2. **Type Changes**:
 ```typescript
 // types/index.ts
 export interface TableSession {
   // ...
-  marked_batches: string[];  // ISO timestamps, not indices
+  marked_batches: string[];  // Stable batch ids, not positional indices
 }
 
 // TableContext.tsx
-markedBatches: Record<string, Set<string>>;  // string timestamps
+markedBatches: Record<string, Set<string>>;  // stable batch ids
 ```
 
 3. **Code Changes** (8 locations):
    - [useDirectusSync.ts:190](src/hooks/useDirectusSync.ts#L190)
    - [TableContext.tsx:75](src/contexts/TableContext.tsx#L75)
    - [TableContext.tsx:299-307](src/contexts/TableContext.tsx#L299-L307)
-   - [SentBatchCard.tsx](src/components/SentBatchCard.tsx) — pass timestamp instead of index
-   - [OrderBar.tsx](src/components/OrderBar.tsx) — check by timestamp
+   - [SentBatchCard.tsx](src/components/SentBatchCard.tsx) — pass batch id instead of index
+   - [OrderBar.tsx](src/components/OrderBar.tsx) — check by batch id
    - [conflictDetection.ts:122-124](src/utils/conflictDetection.ts#L122-L124)
    - All display logic that shows marked status
 
@@ -399,7 +393,7 @@ main
 4. Deploy to production
 
 ### Phase 3: Marked Batches Migration (High Risk)
-1. ✅ P0-3 — requires Directus migration + data migration
+1. ✅ P0-3 — implemented with app-level legacy numeric mark migration on read
 2. Test on staging with production data snapshot
 3. Plan downtime window (or implement blue-green deployment)
 4. Deploy with rollback plan
@@ -418,14 +412,14 @@ main
 - [ ] Grace period doesn't extend past 3s
 
 ### Phase 2 Complete When:
-- [ ] All 4 P0 issues fixed (or 3 if P0-3 deferred)
+- [x] All 4 P0 issues fixed
 - [ ] 2-device integration test passes
 - [ ] No data loss in 24h soak test
 
 ### Phase 3 Complete When:
-- [ ] Marked batches use timestamps
-- [ ] Directus migration successful
-- [ ] All existing marks preserved (or acceptable data loss documented)
+- [x] Marked batches use stable string batch IDs
+- [x] Directus JSON schema remains compatible
+- [x] Existing numeric marks are preserved by mapping index to batch on read
 
 ### Session 1 Complete When:
 - [ ] All P0 issues fixed
@@ -446,7 +440,7 @@ main
 | P0 Proper Fix | 11h | — | Not started (deferred) |
 | P1 Fixes | 10h | — | Not started |
 | Testing | 4h | — | Not started |
-| **TOTAL** | **~19h** | **~2.25h** | Phase 1 & 2 complete; P0-3, P1, testing pending |
+| **TOTAL** | **~19h** | **~5.25h** | P0 complete; integration/manual testing pending |
 
 ---
 
@@ -473,10 +467,11 @@ main
   - P0-2: resolveConflict removes manual ref updates, defers scheduleWrite to next tick
   - P0-4: swapTables marks both tables as locally owned before swap (3s grace period protection)
 
-### 🟡 Deferred
-- **P0-3**: Marked batches positional indices → timestamp migration
-  - Reason: Requires Directus migration + data migration + extensive testing
-  - Plan: Schedule for next sprint after current fixes are battle-tested
+### ✅ Completed Later
+- **P0-3**: Marked batches positional indices → stable batch ID migration
+  - New batches get a persisted `Batch.id`
+  - Legacy numeric marks are converted on read by mapping index → batch id/timestamp
+  - Directus `marked_batches` remains JSON and now stores `string[]`
 
 ### 📋 Remaining Work
 - **8 P1 fixes** (~10 hours)
@@ -486,7 +481,7 @@ main
 
 ### 🎯 Production Readiness
 **Current Status**: ✅ **Ready for multi-device testing**
-- All critical data loss bugs fixed (except P0-3)
+- All critical data loss bugs fixed
 - No more stale ref races in debounced writes
 - No more ref sync races in conflict resolution
 - Table swap protected from poll overwrites
@@ -496,11 +491,10 @@ main
 2. Soak test for 24h in staging
 3. Monitor error rates closely for first week
 
-**P0-3 Workaround**: Document to users:
-> "When merging batches from two devices, marked-as-delivered status may be lost. Mark batches again after merge if needed."
+**P0-3 Migration Note**: No Directus schema change is required because `marked_batches` is JSON. Existing numeric marks are migrated opportunistically when sessions are read, then written back as string IDs on the next save.
 
 ---
 
-**Last Updated**: 2026-04-29
+**Last Updated**: 2026-04-30
 **Next Review**: After integration testing complete
 **Next Steps**: Run 2-device integration tests, then deploy to staging

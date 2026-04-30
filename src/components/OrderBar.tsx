@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { useMenu } from "../contexts/MenuContext";
 import { useTable } from "../contexts/TableContext";
 import { groupByDestination, DESTINATIONS, DEST_LABELS } from "../utils/batchGrouping";
+import { batchMarkId } from "../utils/batchMarks";
 import { S } from "../styles/appStyles";
 import type { OrderItem, Batch, TableId, MenuItem, MenuItemVariant } from "../types";
 
@@ -44,7 +45,8 @@ export function OrderBar({ tableId, unsent, batches, expanded, onToggleExpand, o
     hasSentRef.current ? { animation: "none" } :
     {};
 
-  const allMarked = batches.length > 0 && batches.every((_, i) => table.markedBatches[tableId]?.has(i));
+  const tableMarks = table.markedBatches[String(tableId)];
+  const allMarked = batches.length > 0 && batches.every((batch) => tableMarks?.has(batchMarkId(batch)));
   const statusDotColor = allMarked ? "#52b87a" : "#e05252";
 
   return (
@@ -76,26 +78,27 @@ export function OrderBar({ tableId, unsent, batches, expanded, onToggleExpand, o
           <div style={{ overflow: "hidden" }}>
             {[...batches].reverse().map((batch, batchIdx) => {
               const actualBatchIdx = batches.length - 1 - batchIdx;
-              const isMarked = table.markedBatches[tableId]?.has(actualBatchIdx) || false;
+              const markId = batchMarkId(batch);
+              const isMarked = tableMarks?.has(markId) || false;
               const accentColor = isMarked ? "#52b87a" : "#e05252";
               const sectionStyle = { ...S.sentSection, ...(isMarked ? S.sentSectionMarked : S.sentSectionPending) };
               const batchByDest = groupByDestination(batch.items);
               const ts = typeof batch.timestamp === "string" ? new Date(batch.timestamp) : batch.timestamp;
               return (
-                <div key={actualBatchIdx}>
+                <div key={`${markId}-${actualBatchIdx}`}>
                   <div style={S.sentDivider}>
                     <div style={{ ...S.sentDividerLine, background: accentColor }} />
                     <span style={S.sentDividerText}>
                       Sent {ts.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
                     </span>
                     <button style={{ ...S.markBtn, borderColor: accentColor }} onClick={() => {
-                      table.toggleMarkBatch(tableId, actualBatchIdx);
+                      table.toggleMarkBatch(tableId, markId);
                       // Only close slider if marking the last unmarked batch
                       const willBeMarked = !isMarked;
                       if (willBeMarked) {
                         // Check if all other batches are already marked
-                        const allOthersMarked = batches.every((_, i) =>
-                          i === actualBatchIdx || table.markedBatches[tableId]?.has(i)
+                        const allOthersMarked = batches.every((otherBatch, i) =>
+                          i === actualBatchIdx || tableMarks?.has(batchMarkId(otherBatch))
                         );
                         if (allOthersMarked) {
                           onToggleExpand(); // Close only if this was the last one

@@ -1,18 +1,19 @@
-import type { OrderItem, Orders, SentBatches, TableId, TableStatus, ExpandedItem, Destination } from "../types";
+import type { OrderItem, Orders, SentBatches, TableId, TableStatus, ExpandedItem, Destination, MarkedBatchId } from "../types";
+import { batchMarkId } from "./batchMarks";
 
 export function getTableStatus(
   tableId: TableId,
   orders: Orders,
   seatedTables: Set<TableId> = new Set(),
   sentBatches: SentBatches = {},
-  markedBatches: Record<string, Set<number>> = {}
+  markedBatches: Record<string, Set<MarkedBatchId>> = {}
 ): TableStatus {
   const order = orders[tableId as string];
   const batches = sentBatches[tableId as string] || [];
   const marked = markedBatches[tableId as string];
 
   if (batches.length > 0) {
-    const allMarked = batches.every((_, idx) => marked?.has(idx));
+    const allMarked = batches.every((batch) => marked?.has(batchMarkId(batch)));
     return allMarked ? "confirmed" : "unconfirmed";
   }
 

@@ -88,6 +88,8 @@ src/
   period. Preserve this conflict model unless explicitly changing sync strategy.
 - Bills are optimistic: temporary client IDs are replaced by Directus IDs after
   writes succeed.
+- Marked batches are stored as stable string batch IDs, not positional array
+  indices. Legacy numeric marks are migrated on read by mapping index to batch.
 - Paid bills should be modified through named `AppContext` actions, not by
   mutating `paidBills` directly.
 - Bill edit mode is local until "Done"; "Cancel" restores the snapshot.

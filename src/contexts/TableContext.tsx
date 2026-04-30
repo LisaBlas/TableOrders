@@ -2,6 +2,7 @@ import {
   createContext, useContext, useState, useCallback, useEffect, useRef, useMemo,
   type ReactNode,
 } from "react";
+import { flushSync } from "react-dom";
 import { useApp } from "./AppContext";
 import { useMenu } from "./MenuContext";
 import { useDirectusSync } from "../hooks/useDirectusSync";
@@ -10,10 +11,11 @@ import {
   saveClosedSession, loadClosedSession, clearClosedSession,
   type ArchivedSession,
 } from "../utils/closedSessionArchive";
+import { batchMarkId, createBatchId } from "../utils/batchMarks";
 import type { SessionConflict } from "../utils/conflictDetection";
 import type {
   Orders, OrderItem, SentBatches, Batch, GutscheinAmounts,
-  TableId, MenuItem, MenuItemVariant, MenuCategory, ExpandedItem,
+  TableId, MenuItem, MenuItemVariant, MenuCategory, ExpandedItem, MarkedBatchId,
 } from "../types";
 
 // ── Helper: Swap state between two tables ──
@@ -32,7 +34,7 @@ interface TableContextValue {
   seatedTables: Set<TableId>;
   sentBatches: SentBatches;
   gutscheinAmounts: GutscheinAmounts;
-  markedBatches: Record<string, Set<number>>;
+  markedBatches: Record<string, Set<MarkedBatchId>>;
   syncError: boolean;
 
   // Conflicts
@@ -57,7 +59,7 @@ interface TableContextValue {
   removeGutschein: (tableId: TableId) => void;
   cleanupTable: (tableId: TableId, billTempId?: string) => void;
   removePaidItems: (tableId: TableId, paidItems: ExpandedItem[]) => void;
-  toggleMarkBatch: (tableId: TableId, batchIndex: number) => void;
+  toggleMarkBatch: (tableId: TableId, batchId: MarkedBatchId) => void;
   swapTables: (fromTableId: TableId, toTableId: TableId) => void;
 }
 
@@ -72,7 +74,7 @@ export function TableProvider({ children }: { children: ReactNode }) {
   const [seatedTablesArr, setSeatedTablesArr] = useState<TableId[]>([]);
   const [sentBatches, setSentBatches] = useState<SentBatches>({});
   const [gutscheinAmounts, setGutscheinAmounts] = useState<GutscheinAmounts>({});
-  const [markedBatches, setMarkedBatches] = useState<Record<string, Set<number>>>({});
+  const [markedBatches, setMarkedBatches] = useState<Record<string, Set<MarkedBatchId>>>({});
 
   const seatedTables = useMemo(() => new Set<TableId>(seatedTablesArr), [seatedTablesArr]);
 
@@ -83,10 +85,6 @@ export function TableProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     archiveRef.current = { orders, seatedTablesArr, sentBatches, gutscheinAmounts, markedBatches };
   }, [orders, seatedTablesArr, sentBatches, gutscheinAmounts, markedBatches]);
-
-  // sendOrder reads orders synchronously before any setState fires
-  const ordersRef = useRef(orders);
-  useEffect(() => { ordersRef.current = orders; }, [orders]);
 
   // ── Directus sync (polling, debounced writes, conflict resolution) ─────────
   const { scheduleWrite, cancelAndDelete, syncError, conflicts, resolveConflict, markAsLocallyOwned } = useDirectusSync(
@@ -222,23 +220,32 @@ export function TableProvider({ children }: { children: ReactNode }) {
   }, [scheduleWrite]);
 
   const sendOrder = useCallback((tableId: TableId) => {
-    const current = ordersRef.current[String(tableId)] || [];
-    const hasUnsent = current.some((o: OrderItem) => o.qty - (o.sentQty || 0) > 0);
-    if (!hasUnsent) return;
+    const key = String(tableId);
+    let nextBatch: Batch | null = null;
 
-    const batchItems = current
-      .filter((o: OrderItem) => o.qty - (o.sentQty || 0) > 0)
-      .map((o: OrderItem) => ({ ...o, qty: o.qty - (o.sentQty || 0) }));
+    flushSync(() => {
+      setOrders((prev) => {
+        const current = prev[key] || [];
+        const batchItems = current
+          .filter((o: OrderItem) => o.qty - (o.sentQty || 0) > 0)
+          .map((o: OrderItem) => ({ ...o, qty: o.qty - (o.sentQty || 0) }));
 
-    const batch: Batch = { timestamp: new Date().toISOString(), items: batchItems };
+        if (!batchItems.length) return prev;
 
+        nextBatch = { id: createBatchId(), timestamp: new Date().toISOString(), items: batchItems };
+        return {
+          ...prev,
+          [key]: current.map((o: OrderItem) => ({ ...o, sentQty: o.qty })),
+        };
+      });
+    });
+
+    if (!nextBatch) return;
+
+    const batch = nextBatch;
     setSentBatches((prev) => ({
       ...prev,
-      [String(tableId)]: [...(prev[String(tableId)] || []), batch],
-    }));
-    setOrders((prev) => ({
-      ...prev,
-      [String(tableId)]: (prev[String(tableId)] || []).map((o: OrderItem) => ({ ...o, sentQty: o.qty })),
+      [key]: [...(prev[key] || []), batch],
     }));
     showToast("Order sent!");
     scheduleWrite(tableId);
@@ -246,7 +253,7 @@ export function TableProvider({ children }: { children: ReactNode }) {
 
   const addBillEditBatch = useCallback((tableId: TableId, batchItems: OrderItem[]) => {
     if (!batchItems.length) return;
-    const batch: Batch = { timestamp: new Date().toISOString(), items: batchItems };
+    const batch: Batch = { id: createBatchId(), timestamp: new Date().toISOString(), items: batchItems };
     setSentBatches((prev) => ({
       ...prev,
       [String(tableId)]: [...(prev[String(tableId)] || []), batch],
@@ -296,11 +303,11 @@ export function TableProvider({ children }: { children: ReactNode }) {
     scheduleWrite(tableId);
   }, [showToast, scheduleWrite]);
 
-  const toggleMarkBatch = useCallback((tableId: TableId, batchIndex: number) => {
+  const toggleMarkBatch = useCallback((tableId: TableId, batchId: MarkedBatchId) => {
     setMarkedBatches((prev) => {
-      const tableMarks = prev[String(tableId)] || new Set<number>();
+      const tableMarks = prev[String(tableId)] || new Set<MarkedBatchId>();
       const next = new Set(tableMarks);
-      if (next.has(batchIndex)) next.delete(batchIndex); else next.add(batchIndex);
+      if (next.has(batchId)) next.delete(batchId); else next.add(batchId);
       return { ...prev, [String(tableId)]: next };
     });
     scheduleWrite(tableId);
@@ -316,7 +323,7 @@ export function TableProvider({ children }: { children: ReactNode }) {
       sentBatches: snap.sentBatches[key] ?? [],
       gutschein: snap.gutscheinAmounts[key] ?? null,
       seated: snap.seatedTablesArr.some((id) => String(id) === key),
-      markedBatches: Array.from(snap.markedBatches[key] ?? new Set<number>()),
+      markedBatches: Array.from(snap.markedBatches[key] ?? new Set<MarkedBatchId>()),
       billTempId,
     };
 
@@ -352,7 +359,11 @@ export function TableProvider({ children }: { children: ReactNode }) {
     if (session.sentBatches.length) setSentBatches((prev) => ({ ...prev, [key]: session.sentBatches }));
     if (session.gutschein != null) setGutscheinAmounts((prev) => ({ ...prev, [key]: session.gutschein! }));
     if (session.markedBatches.length) {
-      setMarkedBatches((prev) => ({ ...prev, [key]: new Set(session.markedBatches) }));
+      const markIds = new Set(session.markedBatches.map((mark) => {
+        const batch = session.sentBatches.find((b) => batchMarkId(b) === mark || b.timestamp === mark);
+        return batch ? batchMarkId(batch) : mark;
+      }));
+      setMarkedBatches((prev) => ({ ...prev, [key]: markIds }));
     }
 
     if (session.billTempId) {

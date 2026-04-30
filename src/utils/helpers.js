@@ -1,10 +1,10 @@
 export function getTableStatus(tableId, orders, seatedTables = new Set(), sentBatches = {}, markedBatches = {}) {
   const order = orders[tableId];
   const batches = sentBatches[tableId] || [];
-  const marked = markedBatches[tableId]; // Set<number> | undefined
+  const marked = markedBatches[tableId]; // Set<string> | undefined
 
   if (batches.length > 0) {
-    const allMarked = batches.every((_, idx) => marked?.has(idx));
+    const allMarked = batches.every((batch) => marked?.has(batch.id ?? batch.timestamp));
     return allMarked ? "confirmed" : "unconfirmed";
   }
 

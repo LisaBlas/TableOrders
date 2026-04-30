@@ -109,8 +109,8 @@ src/
   seated: boolean,          // Is table seated?
   gutschein: number | null, // Gutschein amount
   orders: OrderItem[],      // Full order state (unsent + sent)
-  sent_batches: Batch[],    // Sent order batches with timestamps
-  marked_batches: number[]  // Array of batch indices marked as delivered
+  sent_batches: Batch[],    // Sent order batches with stable ids + timestamps
+  marked_batches: string[]  // Array of stable batch ids marked as delivered
 }
 ```
 
@@ -200,6 +200,7 @@ src/
 - **Sent items** are locked, shown in batch history
 - **Table swap** — long-press (500ms) activates swap mode; tap destination table; all state swapped bidirectionally (orders, sentBatches, markedBatches, gutscheinAmounts, seated status)
 - **Batch colour coding** — sent batch sections show a red left-border accent when pending delivery, green when marked; the collapsed slider shows a matching status dot
+- **Marked batches** are keyed by stable `Batch.id` strings, with legacy timestamp fallback; never store positional batch indices
 - **Split by item** expands qty > 1 into individual units for granular splitting
 - **Clipboard integration** for order/ticket export (no kitchen backend)
 - **Toast notifications** (2s auto-dismiss) for user feedback

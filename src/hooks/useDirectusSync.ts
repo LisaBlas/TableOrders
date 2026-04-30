@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchAllSessions, upsertSession, deleteSession, parseTableId } from "../services/directusSessions";
-import type { Orders, SentBatches, GutscheinAmounts, TableId } from "../types";
+import type { Orders, SentBatches, GutscheinAmounts, TableId, MarkedBatchId } from "../types";
 import { DEBOUNCE_DELAY_MS, POLL_INTERVAL_MS, OWNERSHIP_GRACE_MS, MAX_RETRIES } from "../config/appConfig";
 import { readSessionCache, writeSessionToCache, removeSessionFromCache, type CachedSession } from "../utils/sessionStorage";
 import { detectConflicts, mergeSessions, type SessionConflict } from "../utils/conflictDetection";
@@ -11,7 +11,7 @@ interface SyncState {
   seatedTablesArr: TableId[];
   sentBatches: SentBatches;
   gutscheinAmounts: GutscheinAmounts;
-  markedBatches: Record<string, Set<number>>;
+  markedBatches: Record<string, Set<MarkedBatchId>>;
 }
 
 interface SyncSetters {
@@ -19,8 +19,32 @@ interface SyncSetters {
   setSeatedTablesArr: Dispatch<SetStateAction<TableId[]>>;
   setSentBatches: Dispatch<SetStateAction<SentBatches>>;
   setGutscheinAmounts: Dispatch<SetStateAction<GutscheinAmounts>>;
-  setMarkedBatches: Dispatch<SetStateAction<Record<string, Set<number>>>>;
+  setMarkedBatches: Dispatch<SetStateAction<Record<string, Set<MarkedBatchId>>>>;
 }
+
+const jsonEqual = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+
+const tableIdsEqual = (a: TableId[], b: TableId[]) => {
+  if (a.length !== b.length) return false;
+  const bKeys = new Set(b.map(String));
+  return a.every((id) => bKeys.has(String(id)));
+};
+
+const markedBatchesEqual = (
+  a: Record<string, Set<MarkedBatchId>>,
+  b: Record<string, Set<MarkedBatchId>>
+) => {
+  const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+  for (const key of keys) {
+    const aSet = a[key] ?? new Set<MarkedBatchId>();
+    const bSet = b[key] ?? new Set<MarkedBatchId>();
+    if (aSet.size !== bSet.size) return false;
+    for (const value of aSet) {
+      if (!bSet.has(value)) return false;
+    }
+  }
+  return true;
+};
 
 export function useDirectusSync(
   state: SyncState,
@@ -92,7 +116,7 @@ export function useDirectusSync(
         const newSeated = new Set<TableId>();
         const newSentBatches: SentBatches = {};
         const newGutschein: GutscheinAmounts = {};
-        const newMarkedBatches: Record<string, Set<number>> = {};
+        const newMarkedBatches: Record<string, Set<MarkedBatchId>> = {};
 
         Object.entries(readSessionCache()).forEach(([key, session]) => {
           const tableId = parseTableId(key);
@@ -164,7 +188,7 @@ export function useDirectusSync(
     const newSeated = new Set<TableId>();
     const newSentBatches: SentBatches = {};
     const newGutschein: GutscheinAmounts = {};
-    const newMarkedBatches: Record<string, Set<number>> = {};
+    const newMarkedBatches: Record<string, Set<MarkedBatchId>> = {};
 
     allKeys.forEach((key) => {
       if (isLocallyOwned(key)) {
@@ -198,11 +222,12 @@ export function useDirectusSync(
       }
     });
 
-    setOrders(newOrders);
-    setSeatedTablesArr(Array.from(newSeated));
-    setSentBatches(newSentBatches);
-    setGutscheinAmounts(newGutschein);
-    setMarkedBatches(newMarkedBatches);
+    const newSeatedArr = Array.from(newSeated);
+    if (!jsonEqual(newOrders, ordersRef.current)) setOrders(newOrders);
+    if (!tableIdsEqual(newSeatedArr, seatedTablesArrRef.current)) setSeatedTablesArr(newSeatedArr);
+    if (!jsonEqual(newSentBatches, sentBatchesRef.current)) setSentBatches(newSentBatches);
+    if (!jsonEqual(newGutschein, gutscheinRef.current)) setGutscheinAmounts(newGutschein);
+    if (!markedBatchesEqual(newMarkedBatches, markedBatchesRef.current)) setMarkedBatches(newMarkedBatches);
 
     failedWriteKeys.current.forEach((key) => {
       if (pendingWrites.current.has(key) || retryingFailedWrites.current.has(key)) return;
@@ -228,7 +253,7 @@ export function useDirectusSync(
       gutschein: gutscheinRef.current[key] ?? null,
       orders: ordersRef.current[key] ?? [],
       sent_batches: sentBatchesRef.current[key] ?? [],
-      marked_batches: Array.from(markedBatchesRef.current[key] ?? new Set<number>()),
+      marked_batches: Array.from(markedBatchesRef.current[key] ?? new Set<MarkedBatchId>()),
     };
 
     // Write to localStorage immediately (no debounce)
@@ -243,7 +268,7 @@ export function useDirectusSync(
         gutschein: gutscheinRef.current[key] ?? null,
         orders: ordersRef.current[key] ?? [],
         sent_batches: sentBatchesRef.current[key] ?? [],
-        marked_batches: Array.from(markedBatchesRef.current[key] ?? new Set<number>()),
+        marked_batches: Array.from(markedBatchesRef.current[key] ?? new Set<MarkedBatchId>()),
       };
 
       try {

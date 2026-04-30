@@ -210,8 +210,8 @@ const posEntries = billItems.reduce((acc, item) => {
   seated: boolean,        // Is table seated?
   gutschein: decimal,     // Gutschein amount (nullable)
   orders: json,           // OrderItem[] (full order state)
-  sent_batches: json,     // Batch[] (sent order batches with timestamps)
-  marked_batches: json,   // number[] (batch indices marked as delivered)
+  sent_batches: json,     // Batch[] (sent order batches with stable ids + timestamps)
+  marked_batches: json,   // string[] (stable batch ids marked as delivered)
   date_created: datetime,
   date_updated: datetime
 }

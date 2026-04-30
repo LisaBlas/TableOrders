@@ -1,5 +1,6 @@
 import type { OrderItem, Batch } from "../types";
 import type { CachedSession } from "./sessionStorage";
+import { batchMarkId } from "./batchMarks";
 
 export interface SessionConflict {
   tableId: string;
@@ -21,7 +22,7 @@ export function detectConflicts(
     gutschein: number | null;
     orders: OrderItem[];
     sent_batches: Batch[];
-    marked_batches: number[];
+    marked_batches: string[];
   }>
 ): SessionConflict[] {
   const conflicts: SessionConflict[] = [];
@@ -66,8 +67,8 @@ function sortedBatches(batches: Batch[]) {
     .map((b) => ({ ...b, items: sortedOrders(b.items) }));
 }
 
-function sortedNums(nums: number[]) {
-  return [...nums].sort((a, b) => a - b);
+function sortedStrings(values: string[]) {
+  return [...values].sort((a, b) => a.localeCompare(b));
 }
 
 function hasConflict(local: CachedSession, remote: CachedSession): boolean {
@@ -80,7 +81,7 @@ function hasConflict(local: CachedSession, remote: CachedSession): boolean {
   if (JSON.stringify(sortedBatches(local.sent_batches)) !== JSON.stringify(sortedBatches(remote.sent_batches)))
     return true;
 
-  if (JSON.stringify(sortedNums(local.marked_batches)) !== JSON.stringify(sortedNums(remote.marked_batches)))
+  if (JSON.stringify(sortedStrings(local.marked_batches)) !== JSON.stringify(sortedStrings(remote.marked_batches)))
     return true;
 
   return false;
@@ -97,6 +98,30 @@ function orderKey(item: OrderItem): string {
 
 function batchKey(batch: Batch): string {
   return `${batch.timestamp}|${JSON.stringify(sortedOrders(batch.items))}`;
+}
+
+function mergeMarkedBatches(
+  local: CachedSession,
+  remote: CachedSession,
+  mergedBatches: Batch[]
+): string[] {
+  const mergedBatchMap = new Map(mergedBatches.map((batch) => [batchKey(batch), batch]));
+  const markIds = new Set<string>();
+
+  [local, remote].forEach((session) => {
+    session.marked_batches.forEach((markId) => {
+      const sourceBatch = session.sent_batches.find((batch) => batchMarkId(batch) === markId);
+      if (!sourceBatch) {
+        markIds.add(markId);
+        return;
+      }
+
+      const mergedBatch = mergedBatchMap.get(batchKey(sourceBatch));
+      markIds.add(mergedBatch ? batchMarkId(mergedBatch) : markId);
+    });
+  });
+
+  return Array.from(markIds);
 }
 
 function sumBatchSentQty(batches: Batch[]) {
@@ -166,10 +191,7 @@ export function mergeSessions(local: CachedSession, remote: CachedSession): Cach
 
   const mergedOrders = mergeOrdersWithSentInvariant(local.orders, remote.orders, mergedBatches);
 
-  // Merge marked batches: union of both sets
-  const mergedMarkedBatches = Array.from(
-    new Set([...local.marked_batches, ...remote.marked_batches])
-  );
+  const mergedMarkedBatches = mergeMarkedBatches(local, remote, mergedBatches);
 
   return {
     table_id: local.table_id,

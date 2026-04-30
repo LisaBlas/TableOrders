@@ -1,4 +1,5 @@
 import type { TableId, OrderItem, Batch } from "../types";
+import { normalizeMarkedBatchIds, type RawMarkedBatchId } from "../utils/batchMarks";
 
 const DIRECTUS_URL = import.meta.env.VITE_DIRECTUS_URL ?? "https://cms.blasalviz.com";
 
@@ -9,7 +10,11 @@ export interface TableSession {
   gutschein: number | null;
   orders: OrderItem[];
   sent_batches: Batch[];
-  marked_batches: number[];
+  marked_batches: string[];
+}
+
+interface RawTableSession extends Omit<TableSession, "marked_batches"> {
+  marked_batches?: RawMarkedBatchId[];
 }
 
 export function parseTableId(id: string): TableId {
@@ -21,7 +26,12 @@ export async function fetchAllSessions(): Promise<TableSession[]> {
   const res = await fetch(`${DIRECTUS_URL}/items/table_sessions?limit=-1`);
   if (!res.ok) throw new Error(`sessions fetch ${res.status}`);
   const { data } = await res.json();
-  return data;
+  return (data as RawTableSession[]).map((session) => ({
+    ...session,
+    orders: session.orders ?? [],
+    sent_batches: session.sent_batches ?? [],
+    marked_batches: normalizeMarkedBatchIds(session.marked_batches, session.sent_batches ?? []),
+  }));
 }
 
 export async function upsertSession(

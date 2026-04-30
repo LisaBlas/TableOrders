@@ -88,11 +88,13 @@ export interface OrderItem {
 export type Orders = Record<string, OrderItem[]>;
 
 export interface Batch {
+  id?: string;
   timestamp: string;
   items: OrderItem[];
 }
 
 export type SentBatches = Record<string, Batch[]>;
+export type MarkedBatchId = string;
 
 export type Destination = "bar" | "counter" | "kitchen";
 
