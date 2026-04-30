@@ -49,14 +49,14 @@
 
 | # | Issue | File | Time | Status | Depends On |
 |---|-------|------|------|--------|------------|
-| P1-5 | Grace period extends on retry | [useDirectusSync.ts:209-212](src/hooks/useDirectusSync.ts#L209-L212) | 15 min | ⬜ TODO | — |
-| P1-6 | Conflict detection skips locally owned | [useDirectusSync.ts:123-125](src/hooks/useDirectusSync.ts#L123-L125) | 2h | ⬜ TODO | — |
-| P1-7 | Write failure leaves user in limbo | [useDirectusSync.ts:213-217](src/hooks/useDirectusSync.ts#L213-L217) | 2h | ⬜ TODO | — |
-| P1-8 | Order merge violates sentQty invariant | [conflictDetection.ts:101-110](src/utils/conflictDetection.ts#L101-L110) | 3h | ⬜ TODO | P0-2 |
-| P1-9 | Batch dedup assumes unique timestamps | [conflictDetection.ts:113-119](src/utils/conflictDetection.ts#L113-L119) | 1h | ⬜ TODO | — |
+| P1-5 | Grace period extends on retry | [useDirectusSync.ts:209-212](src/hooks/useDirectusSync.ts#L209-L212) | 15 min | ✅ DONE | Retries now reuse the active Directus write callback instead of re-entering scheduleWrite |
+| P1-6 | Conflict detection skips locally owned | [useDirectusSync.ts:123-125](src/hooks/useDirectusSync.ts#L123-L125) | 2h | ✅ DONE | Reconnect conflict detection now compares dirty local sessions after real offline recovery |
+| P1-7 | Write failure leaves user in limbo | [useDirectusSync.ts:213-217](src/hooks/useDirectusSync.ts#L213-L217) | 2h | ✅ DONE | Failed writes remain locally saved, surface syncError, and auto-retry after successful polling resumes |
+| P1-8 | Order merge violates sentQty invariant | [conflictDetection.ts:101-110](src/utils/conflictDetection.ts#L101-L110) | 3h | ✅ DONE | Merge now derives sentQty from merged batches and preserves sentQty <= qty |
+| P1-9 | Batch dedup assumes unique timestamps | [conflictDetection.ts:113-119](src/utils/conflictDetection.ts#L113-L119) | 1h | ✅ DONE | Batch dedup now uses timestamp plus canonical item content |
 | P1-10 | sendOrder reads stale ordersRef | [TableContext.tsx:224-245](src/contexts/TableContext.tsx#L224-L245) | 1h | ⬜ TODO | — |
 | P1-11 | cleanupTable archives before checking | [TableContext.tsx:309-331](src/contexts/TableContext.tsx#L309-L331) | 30 min | ⬜ TODO | — |
-| P1-12 | Missing cleanup on unmount | [useDirectusSync.ts:54-56](src/hooks/useDirectusSync.ts#L54-L56) | 30 min | ⬜ TODO | QW1 (duplicate) |
+| P1-12 | Missing cleanup on unmount | [useDirectusSync.ts:54-56](src/hooks/useDirectusSync.ts#L54-L56) | 30 min | ✅ DONE | Covered by QW1 isMounted guard and timer cleanup |
 
 **Total**: ~10 hours
 

@@ -49,6 +49,9 @@ export function useDirectusSync(
   const pendingWrites = useRef(new Set<string>());           // tableIds with in-flight writes
   const writeTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const retryCounts = useRef<Record<string, number>>({});
+  const failedWriteKeys = useRef(new Set<string>());
+  const retryingFailedWrites = useRef(new Set<string>());
+  const [hasFailedWrites, setHasFailedWrites] = useState(false);
   const wasOffline = useRef(false);                          // Track offline→online transition
   const isMounted = useRef(true);                            // Track component mount state
 
@@ -124,18 +127,22 @@ export function useDirectusSync(
     remoteSessions.forEach((s) => { sessionIdMap.current[s.table_id] = s.id; });
 
     const isLocallyOwned = (key: string) =>
-      pendingWrites.current.has(key) || now - (lastWriteTime.current[key] ?? 0) < OWNERSHIP_GRACE_MS;
+      pendingWrites.current.has(key) ||
+      failedWriteKeys.current.has(key) ||
+      now - (lastWriteTime.current[key] ?? 0) < OWNERSHIP_GRACE_MS;
 
-    // Detect conflicts only for tables we don't locally own — avoids false positives
-    // from the 500ms debounce window where localStorage is ahead of Directus.
-    // Only relevant after an offline→online transition when another device may have diverged.
+    const isLocallyDirty = (key: string) =>
+      pendingWrites.current.has(key) || failedWriteKeys.current.has(key);
+
+    // Only detect conflicts after a real offline→online transition, and only
+    // for tables this device changed while remote writes were not confirmed.
     if (wasOffline.current) {
       wasOffline.current = false;
       const localCache = readSessionCache();
-      const unownedCache = Object.fromEntries(
-        Object.entries(localCache).filter(([key]) => !isLocallyOwned(key))
+      const dirtyLocalCache = Object.fromEntries(
+        Object.entries(localCache).filter(([key]) => isLocallyDirty(key))
       );
-      const detectedConflicts = detectConflicts(unownedCache, remoteSessions);
+      const detectedConflicts = detectConflicts(dirtyLocalCache, remoteSessions);
       if (detectedConflicts.length > 0) {
         console.log(`Detected ${detectedConflicts.length} sync conflict(s)`);
         setConflicts(detectedConflicts);
@@ -196,6 +203,15 @@ export function useDirectusSync(
     setSentBatches(newSentBatches);
     setGutscheinAmounts(newGutschein);
     setMarkedBatches(newMarkedBatches);
+
+    failedWriteKeys.current.forEach((key) => {
+      if (pendingWrites.current.has(key) || retryingFailedWrites.current.has(key)) return;
+
+      retryingFailedWrites.current.add(key);
+      setTimeout(() => {
+        scheduleWrite(parseTableId(key));
+      }, 0);
+    });
   }, [remoteSessions, syncError, setOrders, setSeatedTablesArr, setSentBatches, setGutscheinAmounts, setMarkedBatches]);
 
   // ── Debounced write: batches rapid state changes into one Directus call ───
@@ -219,7 +235,7 @@ export function useDirectusSync(
     writeSessionToCache(key, cacheSession);
 
     // Debounced Directus write — capture FRESH state inside timeout
-    writeTimers.current[key] = setTimeout(async () => {
+    const writeToDirectus = async () => {
       // Re-capture refs to get current state (not stale snapshot from T0)
       const session = {
         table_id: key,
@@ -235,6 +251,9 @@ export function useDirectusSync(
         sessionIdMap.current[key] = newId;
         delete retryCounts.current[key];
         pendingWrites.current.delete(key);
+        retryingFailedWrites.current.delete(key);
+        failedWriteKeys.current.delete(key);
+        setHasFailedWrites(failedWriteKeys.current.size > 0);
         lastWriteTime.current[key] = Date.now();
       } catch (e) {
         if (!isMounted.current) return;
@@ -246,14 +265,19 @@ export function useDirectusSync(
         if (attempts < MAX_RETRIES) {
           if (attempts === 1) showToast("Table state not saved - retrying");
           // Don't update lastWriteTime on retry — keeps original grace period
-          scheduleWrite(tableId);
+          writeTimers.current[key] = setTimeout(writeToDirectus, DEBOUNCE_DELAY_MS);
         } else {
-          showToast("Table state not saved - check network");
+          showToast("Table state saved locally - will retry when connection returns");
           delete retryCounts.current[key];
           pendingWrites.current.delete(key);
+          retryingFailedWrites.current.delete(key);
+          failedWriteKeys.current.add(key);
+          setHasFailedWrites(true);
         }
       }
-    }, DEBOUNCE_DELAY_MS);
+    };
+
+    writeTimers.current[key] = setTimeout(writeToDirectus, DEBOUNCE_DELAY_MS);
   }, [showToast]);
 
   // ── Cancel pending write and delete session from Directus + localStorage ──
@@ -261,6 +285,9 @@ export function useDirectusSync(
     const key = String(tableId);
     clearTimeout(writeTimers.current[key]);
     pendingWrites.current.delete(key);
+    retryingFailedWrites.current.delete(key);
+    failedWriteKeys.current.delete(key);
+    setHasFailedWrites(failedWriteKeys.current.size > 0);
     delete lastWriteTime.current[key];
     delete retryCounts.current[key];
 
@@ -333,5 +360,5 @@ export function useDirectusSync(
     });
   }, []);
 
-  return { scheduleWrite, cancelAndDelete, syncError, conflicts, resolveConflict, markAsLocallyOwned };
+  return { scheduleWrite, cancelAndDelete, syncError: syncError || hasFailedWrites, conflicts, resolveConflict, markAsLocallyOwned };
 }

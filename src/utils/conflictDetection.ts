@@ -57,12 +57,12 @@ export function detectConflicts(
 }
 
 function sortedOrders(orders: OrderItem[]) {
-  return [...orders].sort((a, b) => a.id.localeCompare(b.id));
+  return [...orders].sort((a, b) => orderKey(a).localeCompare(orderKey(b)));
 }
 
 function sortedBatches(batches: Batch[]) {
   return [...batches]
-    .sort((a, b) => a.timestamp.localeCompare(b.timestamp))
+    .sort((a, b) => batchKey(a).localeCompare(batchKey(b)))
     .map((b) => ({ ...b, items: sortedOrders(b.items) }));
 }
 
@@ -86,37 +86,85 @@ function hasConflict(local: CachedSession, remote: CachedSession): boolean {
   return false;
 }
 
+function orderKey(item: OrderItem): string {
+  return [
+    item.id,
+    item.note ?? "",
+    item.variantType ?? "",
+    item.price,
+  ].join("|");
+}
+
+function batchKey(batch: Batch): string {
+  return `${batch.timestamp}|${JSON.stringify(sortedOrders(batch.items))}`;
+}
+
+function sumBatchSentQty(batches: Batch[]) {
+  const counts = new Map<string, number>();
+
+  batches.forEach((batch) => {
+    batch.items.forEach((item) => {
+      const key = orderKey(item);
+      counts.set(key, (counts.get(key) ?? 0) + item.qty);
+    });
+  });
+
+  return counts;
+}
+
+function mergeOrdersWithSentInvariant(
+  localOrders: OrderItem[],
+  remoteOrders: OrderItem[],
+  mergedBatches: Batch[]
+): OrderItem[] {
+  const orderMap = new Map<string, OrderItem>();
+  const unsentCounts = new Map<string, number>();
+  const sentCounts = sumBatchSentQty(mergedBatches);
+
+  [...localOrders, ...remoteOrders].forEach((item) => {
+    const key = orderKey(item);
+    if (!orderMap.has(key)) orderMap.set(key, { ...item });
+
+    const unsentQty = Math.max(0, item.qty - (item.sentQty ?? 0));
+    unsentCounts.set(key, (unsentCounts.get(key) ?? 0) + unsentQty);
+
+    const previousSent = sentCounts.get(key) ?? 0;
+    sentCounts.set(key, Math.max(previousSent, item.sentQty ?? 0));
+  });
+
+  return Array.from(orderMap.entries())
+    .map(([key, item]) => {
+      const sentQty = sentCounts.get(key) ?? 0;
+      const unsentQty = unsentCounts.get(key) ?? 0;
+      return {
+        ...item,
+        sentQty,
+        qty: sentQty + unsentQty,
+      };
+    })
+    .filter((item) => item.qty > 0);
+}
+
 /**
  * Merge two sessions by combining their data
- * - Merge orders by item ID (keep both if different IDs, sum qty if same ID)
- * - Concat batches chronologically, deduplicated by timestamp
+ * - Merge orders by item key, preserving sentQty <= qty from merged batches
+ * - Concat batches chronologically, deduplicated by full batch content
  * - Gutschein: Math.max (preserve whichever device has it set)
  * - Seated = true if either is seated
  * - Merge marked batches (union)
  */
 export function mergeSessions(local: CachedSession, remote: CachedSession): CachedSession {
-  // Merge orders: combine by item ID
-  const orderMap = new Map<string, OrderItem>();
-
-  [...local.orders, ...remote.orders].forEach((item) => {
-    const existing = orderMap.get(item.id);
-    if (existing) {
-      // Same item exists - sum quantities
-      existing.qty += item.qty;
-      existing.sentQty += item.sentQty;
-    } else {
-      orderMap.set(item.id, { ...item });
-    }
-  });
-
-  // Merge batches: deduplicate by timestamp, then sort chronologically
+  // Merge batches: deduplicate exact duplicates, then sort chronologically.
   const batchMap = new Map<string, Batch>();
   [...local.sent_batches, ...remote.sent_batches].forEach((b) => {
-    if (!batchMap.has(b.timestamp)) batchMap.set(b.timestamp, b);
+    const key = batchKey(b);
+    if (!batchMap.has(key)) batchMap.set(key, { ...b, items: sortedOrders(b.items) });
   });
   const mergedBatches = Array.from(batchMap.values()).sort(
-    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    (a, b) => batchKey(a).localeCompare(batchKey(b))
   );
+
+  const mergedOrders = mergeOrdersWithSentInvariant(local.orders, remote.orders, mergedBatches);
 
   // Merge marked batches: union of both sets
   const mergedMarkedBatches = Array.from(
@@ -130,7 +178,7 @@ export function mergeSessions(local: CachedSession, remote: CachedSession): Cach
       local.gutschein !== null || remote.gutschein !== null
         ? Math.max(local.gutschein ?? 0, remote.gutschein ?? 0)
         : null,
-    orders: Array.from(orderMap.values()),
+    orders: mergedOrders,
     sent_batches: mergedBatches,
     marked_batches: mergedMarkedBatches,
   };
