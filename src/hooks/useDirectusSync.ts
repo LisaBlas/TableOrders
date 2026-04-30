@@ -78,8 +78,10 @@ export function useDirectusSync(
   useEffect(() => {
     const now = Date.now();
 
-    // If Directus failed, load from localStorage once on the transition to offline
-    if (!remoteSessions) {
+    // If Directus failed, load from localStorage once on the transition to offline.
+    // This runs before the data check because TanStack Query can retain stale
+    // data from a previous successful poll after a later refetch fails.
+    if (syncError) {
       if (!wasOffline.current) {
         wasOffline.current = true;
 
@@ -104,6 +106,12 @@ export function useDirectusSync(
         setGutscheinAmounts(newGutschein);
         setMarkedBatches(newMarkedBatches);
       }
+      return;
+    }
+
+    // While the first query is still loading, do nothing. Treating initial
+    // undefined data as offline makes every reload look like a reconnect.
+    if (!remoteSessions) {
       return;
     }
 
@@ -161,13 +169,25 @@ export function useDirectusSync(
         if (markedBatchesRef.current[key]?.size) newMarkedBatches[key] = markedBatchesRef.current[key];
       } else {
         const session = remoteMap.get(key);
-        if (!session) return; // deleted remotely — drop from local state
+        if (!session) {
+          // Deleted remotely - drop from local state and offline cache.
+          removeSessionFromCache(key);
+          return;
+        }
         const tableId = parseTableId(key);
         if (session.orders?.length) newOrders[key] = session.orders;
         if (session.seated) newSeated.add(tableId);
         if (session.sent_batches?.length) newSentBatches[key] = session.sent_batches;
         if (session.gutschein != null) newGutschein[key] = session.gutschein;
         if (session.marked_batches?.length) newMarkedBatches[key] = new Set(session.marked_batches);
+        writeSessionToCache(key, {
+          table_id: session.table_id,
+          seated: session.seated,
+          gutschein: session.gutschein,
+          orders: session.orders ?? [],
+          sent_batches: session.sent_batches ?? [],
+          marked_batches: session.marked_batches ?? [],
+        });
       }
     });
 
@@ -176,7 +196,7 @@ export function useDirectusSync(
     setSentBatches(newSentBatches);
     setGutscheinAmounts(newGutschein);
     setMarkedBatches(newMarkedBatches);
-  }, [remoteSessions, setOrders, setSeatedTablesArr, setSentBatches, setGutscheinAmounts, setMarkedBatches]);
+  }, [remoteSessions, syncError, setOrders, setSeatedTablesArr, setSentBatches, setGutscheinAmounts, setMarkedBatches]);
 
   // ── Debounced write: batches rapid state changes into one Directus call ───
   // ── Also writes to localStorage immediately for offline resilience ─────────
