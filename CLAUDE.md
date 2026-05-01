@@ -194,7 +194,8 @@ src/
 ## Key Behaviors
 - **Authentication required** — App blocked until login with valid credentials
 - **Real-time multi-device sync** — Table state (orders, batches, gutschein, seated) synced to Directus every 500ms (debounced); fetched every 2 seconds
-- **Conflict resolution** — Remote state overwrites local after 3-second grace period; prevents race conditions during debounce window
+- **Conflict resolution** — Dirty local table sessions store a last-synced base snapshot/hash; reconnect uses three-way comparison (base/local/remote) before prompting
+- **Conflict prompts are recovery-only** — Normal online table edits may create short-lived dirty local records for refresh safety, but conflict detection should only prompt during offline→online recovery or failed-write retry paths
 - **Optimistic bill creation** — Bills added to cache immediately with `tempId`; replaced with `directusId` on successful Directus write
 - **Unsent items** can be modified (qty +/-)
 - **Sent items** are locked, shown in batch history
@@ -222,7 +223,8 @@ src/
 - **Berlin timezone hardcoded** — `todayBerlinDate()` and `berlinDayBoundsUTC()` assume Europe/Berlin; not configurable
 - **2-second polling overhead** — Table sessions refetch every 2s; could be optimized with WebSockets for lower latency
 - **500ms debounce on writes** — Balance between responsiveness and API load; may feel sluggish on slow connections
-- **Manual conflict resolution only** — Conflicts (detected on offline→online transition) prompt the user to choose local, remote, or merge. No OT/CRDT; normal operation is last-write-wins with a 3s local-ownership grace period
+- **Manual conflict resolution only** — Dirty local table sessions are tracked with base/local/operation metadata in localStorage and conflicts prompt the user to choose local, remote, or merge before retrying. No OT/CRDT; normal online operation still uses a 3s local-ownership grace period around confirmed writes
+- **Order IDs can be numeric** — Directus/static menu data may produce numeric `OrderItem.id` values. Session cache validators must accept string or number IDs; hash/canonical comparison can normalize IDs to strings
 
 ## Future Improvements (if productionizing)
 1. ~~**Persistence**~~ — ✅ Done via Directus (bills + menu + table sessions)
@@ -315,7 +317,7 @@ Table sessions are deleted when table closes (no historical tracking).
 - Table swap uses long-press (500ms threshold, `LONG_PRESS_MS` constant) — `longFiredRef` guards normal taps but is bypassed in swap mode to allow target selection
 - `AppContext` exposes named bill action functions (`addPaidBill`, `markBillAddedToPOS`, `removePaidBillItem`, `restorePaidBillItem`, etc.) — do not manipulate `paidBills` directly
 - Auth credentials stored in localStorage key `authToken` (JWT-like format but no server-side validation)
-- localStorage keys in use: `authToken` (auth), `paidBills` (offline bill fallback), `lastClosedSession` (24h table archive)
+- localStorage keys in use: `authToken` (auth), `paidBills` (offline bill fallback), `lastClosedSession` (24h table archive), `table_orders_client_id` (stable sync client id), `table_sessions_cache` (offline table state), `table_sessions_dirty` (dirty upsert/delete records with base/local snapshots), `table_sessions_sync_meta` (last synced base hashes)
 - `syncError` boolean exposed from `TableContext` — sourced from `useDirectusSync` → `useQuery` `isError` on the sessions poll
 - `ErrorBoundary` accepts `inline` prop: when true renders a compact "Something went wrong / Try again" card that resets boundary state instead of a full-page reload screen
 - Berlin timezone handling: `todayBerlinDate()` uses Intl.DateTimeFormat; `berlinDayBoundsUTC()` calculates UTC bounds accounting for DST
@@ -323,3 +325,4 @@ Table sessions are deleted when table closes (no historical tracking).
 - POS crossing tracked via `crossed_qty` field (incremented when item entered into POS, decremented if restored)
 - Optimistic updates use `tempId` prefix to distinguish from `directusId` (replaced on successful write)
 - Table state conflict resolution: `lastWriteTime` tracked per table; 3-second grace period before accepting remote overwrites
+- Offline-sync debugging lesson: when refresh loses local orders, first verify cached session validation. Numeric item IDs previously caused valid-looking localStorage sessions to be rejected on read.

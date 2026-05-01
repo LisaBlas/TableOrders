@@ -38,14 +38,25 @@ export async function upsertSession(
   directusId: number | null,
   data: Omit<TableSession, "id">
 ): Promise<number> {
-  if (directusId) {
-    const res = await fetch(`${DIRECTUS_URL}/items/table_sessions/${directusId}`, {
+  let resolvedId = directusId;
+
+  if (!resolvedId) {
+    const lookup = await fetch(
+      `${DIRECTUS_URL}/items/table_sessions?filter[table_id][_eq]=${encodeURIComponent(data.table_id)}&limit=1`
+    );
+    if (!lookup.ok) throw new Error(`session lookup ${lookup.status}`);
+    const { data: matches } = await lookup.json();
+    resolvedId = Array.isArray(matches) && matches[0]?.id ? matches[0].id : null;
+  }
+
+  if (resolvedId) {
+    const res = await fetch(`${DIRECTUS_URL}/items/table_sessions/${resolvedId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
     if (!res.ok) throw new Error(`session PATCH ${res.status}`);
-    return directusId;
+    return resolvedId;
   }
   const res = await fetch(`${DIRECTUS_URL}/items/table_sessions`, {
     method: "POST",

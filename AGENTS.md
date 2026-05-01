@@ -84,8 +84,16 @@ src/
 - Table sessions live in Directus `table_sessions`.
 - Orders sync to Directus with a 500ms debounce and are fetched every 2 seconds.
 - Bills for the active day poll every 5 seconds.
-- Remote table state can overwrite local state after the 3-second write grace
-  period. Preserve this conflict model unless explicitly changing sync strategy.
+- Dirty table state stores a last-synced base snapshot/hash and uses three-way
+  base/local/remote comparison on reconnect before prompting for conflict
+  resolution. Remote table state can still overwrite clean local state after
+  the 3-second write grace period.
+- Conflict detection must be gated to real offline/failed-write recovery paths.
+  Normal online edits also create short-lived dirty records for durability, but
+  must not open conflict modals just because local differs from the last poll.
+- Menu/order item IDs may be numeric from Directus/static data. Local cache and
+  conflict validators must accept both string and number IDs; normalize IDs only
+  for hashing/comparison, not by rejecting numeric cached sessions.
 - Bills are optimistic: temporary client IDs are replaced by Directus IDs after
   writes succeed.
 - Marked batches are stored as stable string batch IDs, not positional array
@@ -135,6 +143,9 @@ src/
   flow at mobile and tablet/desktop widths.
 - For sync, bill creation, POS crossing, clearing sales, or split payments,
   verify the relevant Directus service calls and cache updates.
+- For offline conflict work, inspect localStorage keys `table_sessions_dirty`,
+  `table_sessions_cache`, and `table_sessions_sync_meta` on the reconnecting
+  device.
 - Existing Python helper tests/scripts are present (`test_ds.py`,
   `test_swap.py`), but the project does not currently have a standard JS test
   command.
@@ -144,7 +155,7 @@ src/
 - No kitchen backend, print integration, payment integration, or shift
   management.
 - Polling-based sync instead of WebSockets.
-- Last-write-wins conflict model with no merge strategy.
+- Manual conflict resolution model with local/remote/merge choices; no OT/CRDT.
 - Berlin timezone and table count are not configurable.
 
 ## Agent Safety Notes

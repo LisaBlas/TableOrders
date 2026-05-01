@@ -92,8 +92,7 @@ function Router() {
       )}
       {toast && <Toast message={toast} />}
 
-      {/* Conflict resolution modal (only show on tables view to avoid interrupting workflows) */}
-      {conflicts.length > 0 && view === "tables" && (
+      {conflicts.length > 0 && (
         <ConflictResolutionModal
           conflict={conflicts[0]}
           conflictIndex={1}

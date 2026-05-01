@@ -11,6 +11,14 @@ import {
   saveClosedSession, loadClosedSession, clearClosedSession,
   type ArchivedSession,
 } from "../utils/closedSessionArchive";
+import {
+  markSessionDirty,
+  readDirtySessionRecords,
+  readSessionCache,
+  updateDirtyLocalSession,
+  writeSessionToCache,
+  type CachedSession,
+} from "../utils/sessionStorage";
 import { batchMarkId, createBatchId } from "../utils/batchMarks";
 import type { SessionConflict } from "../utils/conflictDetection";
 import type {
@@ -65,16 +73,51 @@ interface TableContextValue {
 
 const TableContext = createContext<TableContextValue | null>(null);
 
+function loadStoredTableState() {
+  const sessions = new Map<string, CachedSession>();
+
+  Object.entries(readSessionCache()).forEach(([key, session]) => {
+    sessions.set(key, session);
+  });
+
+  Object.entries(readDirtySessionRecords()).forEach(([key, record]) => {
+    if (record.operation === "delete") {
+      sessions.delete(key);
+      return;
+    }
+    if (record.local_session) sessions.set(key, record.local_session);
+  });
+
+  const initial = {
+    orders: {} as Orders,
+    seatedTablesArr: [] as TableId[],
+    sentBatches: {} as SentBatches,
+    gutscheinAmounts: {} as GutscheinAmounts,
+    markedBatches: {} as Record<string, Set<MarkedBatchId>>,
+  };
+
+  sessions.forEach((session, key) => {
+    if (session.orders.length) initial.orders[key] = session.orders;
+    if (session.seated) initial.seatedTablesArr.push(parseTableId(key));
+    if (session.sent_batches.length) initial.sentBatches[key] = session.sent_batches;
+    if (session.gutschein != null) initial.gutscheinAmounts[key] = session.gutschein;
+    if (session.marked_batches.length) initial.markedBatches[key] = new Set(session.marked_batches);
+  });
+
+  return initial;
+}
+
 export function TableProvider({ children }: { children: ReactNode }) {
   const { showToast, cancelBillByTempId } = useApp();
   const { minQty2Ids } = useMenu();
+  const initialState = useMemo(() => loadStoredTableState(), []);
 
   // ── State ─────────────────────────────────────────────────────────────────
-  const [orders, setOrders] = useState<Orders>({});
-  const [seatedTablesArr, setSeatedTablesArr] = useState<TableId[]>([]);
-  const [sentBatches, setSentBatches] = useState<SentBatches>({});
-  const [gutscheinAmounts, setGutscheinAmounts] = useState<GutscheinAmounts>({});
-  const [markedBatches, setMarkedBatches] = useState<Record<string, Set<MarkedBatchId>>>({});
+  const [orders, setOrders] = useState<Orders>(() => initialState.orders);
+  const [seatedTablesArr, setSeatedTablesArr] = useState<TableId[]>(() => initialState.seatedTablesArr);
+  const [sentBatches, setSentBatches] = useState<SentBatches>(() => initialState.sentBatches);
+  const [gutscheinAmounts, setGutscheinAmounts] = useState<GutscheinAmounts>(() => initialState.gutscheinAmounts);
+  const [markedBatches, setMarkedBatches] = useState<Record<string, Set<MarkedBatchId>>>(() => initialState.markedBatches);
 
   const seatedTables = useMemo(() => new Set<TableId>(seatedTablesArr), [seatedTablesArr]);
 
@@ -92,6 +135,27 @@ export function TableProvider({ children }: { children: ReactNode }) {
     { setOrders, setSeatedTablesArr, setSentBatches, setGutscheinAmounts, setMarkedBatches },
     showToast
   );
+
+  const persistDirtySession = useCallback((
+    tableId: TableId,
+    overrides: Partial<Omit<CachedSession, "table_id">> = {}
+  ) => {
+    const key = String(tableId);
+    const session: CachedSession = {
+      table_id: key,
+      seated: seatedTablesArr.some((id) => String(id) === key),
+      gutschein: gutscheinAmounts[key] ?? null,
+      orders: orders[key] ?? [],
+      sent_batches: sentBatches[key] ?? [],
+      marked_batches: Array.from(markedBatches[key] ?? new Set<MarkedBatchId>()),
+      ...overrides,
+    };
+    const existingDirty = readDirtySessionRecords()[key];
+    const baseSession = existingDirty?.base_session ?? readSessionCache()[key] ?? null;
+    markSessionDirty(key, session, baseSession);
+    writeSessionToCache(key, session, false);
+    updateDirtyLocalSession(key, session);
+  }, [orders, seatedTablesArr, sentBatches, gutscheinAmounts, markedBatches]);
 
   // ── Actions ───────────────────────────────────────────────────────────────
 
@@ -138,54 +202,49 @@ export function TableProvider({ children }: { children: ReactNode }) {
       ? { ...baseOrderItem, id: `${baseOrderItem.id}-note-${Date.now()}`, note }
       : baseOrderItem;
 
-    setOrders((prev) => {
-      const current = prev[String(tableId)] || [];
-      const existing = note ? null : current.find((o: OrderItem) => o.id === orderItem.id);
-      if (existing) {
-        return {
-          ...prev,
-          [String(tableId)]: current.map((o: OrderItem) =>
-            o.id === orderItem.id ? { ...o, qty: o.qty + 1 } : o
-          ),
-        };
-      }
-      const initialQty = minQty2Ids.has(item.id) ? 2 : 1;
-      return { ...prev, [String(tableId)]: [...current, { ...orderItem, qty: initialQty, sentQty: 0 }] };
-    });
+    const key = String(tableId);
+    const current = orders[key] || [];
+    const existing = note ? null : current.find((o: OrderItem) => o.id === orderItem.id);
+    const nextOrders = existing
+      ? current.map((o: OrderItem) =>
+          o.id === orderItem.id ? { ...o, qty: o.qty + 1 } : o
+        )
+      : [...current, { ...orderItem, qty: minQty2Ids.has(item.id) ? 2 : 1, sentQty: 0 }];
+
+    setOrders((prev) => ({ ...prev, [key]: nextOrders }));
     showToast(`+ ${baseOrderItem.name}`);
     scheduleWrite(tableId);
-  }, [showToast, minQty2Ids, scheduleWrite]);
+    persistDirtySession(tableId, { orders: nextOrders });
+  }, [orders, showToast, minQty2Ids, scheduleWrite, persistDirtySession]);
 
   const addCustomItem = useCallback((tableId: TableId, item: OrderItem) => {
-    setOrders((prev) => {
-      const current = prev[String(tableId)] || [];
-      return { ...prev, [String(tableId)]: [...current, item] };
-    });
+    const key = String(tableId);
+    const nextOrders = [...(orders[key] || []), item];
+    setOrders((prev) => ({ ...prev, [key]: nextOrders }));
     scheduleWrite(tableId);
-  }, [scheduleWrite]);
+    persistDirtySession(tableId, { orders: nextOrders });
+  }, [orders, scheduleWrite, persistDirtySession]);
 
   const removeItem = useCallback((tableId: TableId, itemId: string) => {
-    setOrders((prev) => {
-      const current = prev[String(tableId)] || [];
-      return {
-        ...prev,
-        [String(tableId)]: current
-          .map((o: OrderItem) => {
-            if (o.id === itemId) {
-              const unsent = o.qty - (o.sentQty || 0);
-              if (unsent > 0) {
-                const newQty = o.qty - 1;
-                if (newQty === 1 && minQty2Ids.has(o.id)) return { ...o, qty: 0 };
-                return { ...o, qty: newQty };
-              }
-            }
-            return o;
-          })
-          .filter((o: OrderItem) => o.qty > 0),
-      };
-    });
+    const key = String(tableId);
+    const nextOrders = (orders[key] || [])
+      .map((o: OrderItem) => {
+        if (o.id === itemId) {
+          const unsent = o.qty - (o.sentQty || 0);
+          if (unsent > 0) {
+            const newQty = o.qty - 1;
+            if (newQty === 1 && minQty2Ids.has(o.id)) return { ...o, qty: 0 };
+            return { ...o, qty: newQty };
+          }
+        }
+        return o;
+      })
+      .filter((o: OrderItem) => o.qty > 0);
+
+    setOrders((prev) => ({ ...prev, [key]: nextOrders }));
     scheduleWrite(tableId);
-  }, [minQty2Ids, scheduleWrite]);
+    persistDirtySession(tableId, { orders: nextOrders });
+  }, [orders, minQty2Ids, scheduleWrite, persistDirtySession]);
 
   const removeItemFromBill = useCallback((tableId: TableId, itemId: string) => {
     setOrders((prev) => {
@@ -222,6 +281,8 @@ export function TableProvider({ children }: { children: ReactNode }) {
   const sendOrder = useCallback((tableId: TableId) => {
     const key = String(tableId);
     let nextBatch: Batch | null = null;
+    let nextOrders: OrderItem[] | null = null;
+    let nextSentBatches: Batch[] | null = null;
 
     flushSync(() => {
       setOrders((prev) => {
@@ -233,9 +294,10 @@ export function TableProvider({ children }: { children: ReactNode }) {
         if (!batchItems.length) return prev;
 
         nextBatch = { id: createBatchId(), timestamp: new Date().toISOString(), items: batchItems };
+        nextOrders = current.map((o: OrderItem) => ({ ...o, sentQty: o.qty }));
         return {
           ...prev,
-          [key]: current.map((o: OrderItem) => ({ ...o, sentQty: o.qty })),
+          [key]: nextOrders,
         };
       });
     });
@@ -243,13 +305,18 @@ export function TableProvider({ children }: { children: ReactNode }) {
     if (!nextBatch) return;
 
     const batch = nextBatch;
+    nextSentBatches = [...(sentBatches[key] || []), batch];
     setSentBatches((prev) => ({
       ...prev,
       [key]: [...(prev[key] || []), batch],
     }));
     showToast("Order sent!");
     scheduleWrite(tableId);
-  }, [showToast, scheduleWrite]);
+    persistDirtySession(tableId, {
+      orders: nextOrders ?? orders[key] ?? [],
+      sent_batches: nextSentBatches,
+    });
+  }, [orders, sentBatches, showToast, scheduleWrite, persistDirtySession]);
 
   const addBillEditBatch = useCallback((tableId: TableId, batchItems: OrderItem[]) => {
     if (!batchItems.length) return;
@@ -304,14 +371,17 @@ export function TableProvider({ children }: { children: ReactNode }) {
   }, [showToast, scheduleWrite]);
 
   const toggleMarkBatch = useCallback((tableId: TableId, batchId: MarkedBatchId) => {
+    const key = String(tableId);
+    const tableMarks = markedBatches[key] || new Set<MarkedBatchId>();
+    const next = new Set(tableMarks);
+    if (next.has(batchId)) next.delete(batchId); else next.add(batchId);
+
     setMarkedBatches((prev) => {
-      const tableMarks = prev[String(tableId)] || new Set<MarkedBatchId>();
-      const next = new Set(tableMarks);
-      if (next.has(batchId)) next.delete(batchId); else next.add(batchId);
-      return { ...prev, [String(tableId)]: next };
+      return { ...prev, [key]: next };
     });
     scheduleWrite(tableId);
-  }, [scheduleWrite]);
+    persistDirtySession(tableId, { marked_batches: Array.from(next) });
+  }, [markedBatches, scheduleWrite, persistDirtySession]);
 
   const cleanupTable = useCallback((tableId: TableId, billTempId?: string) => {
     const key = String(tableId);

@@ -1,10 +1,22 @@
 import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchAllSessions, upsertSession, deleteSession, parseTableId } from "../services/directusSessions";
+import { fetchAllSessions, upsertSession, deleteSession, parseTableId, type TableSession } from "../services/directusSessions";
 import type { Orders, SentBatches, GutscheinAmounts, TableId, MarkedBatchId } from "../types";
-import { DEBOUNCE_DELAY_MS, POLL_INTERVAL_MS, OWNERSHIP_GRACE_MS, MAX_RETRIES } from "../config/appConfig";
-import { readSessionCache, writeSessionToCache, removeSessionFromCache, type CachedSession } from "../utils/sessionStorage";
-import { detectConflicts, mergeSessions, type SessionConflict } from "../utils/conflictDetection";
+import { DEBOUNCE_DELAY_MS, POLL_INTERVAL_MS, OWNERSHIP_GRACE_MS } from "../config/appConfig";
+import {
+  readDirtySessionRecords,
+  readSessionCache,
+  writeSessionToCache,
+  removeSessionFromCache,
+  removeSessionDataFromCache,
+  markSessionDirty,
+  markSessionDeleted,
+  updateDirtyLocalSession,
+  clearSessionDirty,
+  sessionHash,
+  type CachedSession,
+} from "../utils/sessionStorage";
+import { detectDirtySessionConflicts, mergeSessions, type SessionConflict } from "../utils/conflictDetection";
 
 interface SyncState {
   orders: Orders;
@@ -46,6 +58,24 @@ const markedBatchesEqual = (
   return true;
 };
 
+const hasSessionData = (session: CachedSession | undefined) =>
+  !!session && (
+    session.seated ||
+    session.orders.length > 0 ||
+    session.sent_batches.length > 0 ||
+    session.gutschein != null ||
+    session.marked_batches.length > 0
+  );
+
+const remoteToCachedSession = (session: Omit<TableSession, "id">): CachedSession => ({
+  table_id: session.table_id,
+  seated: session.seated,
+  gutschein: session.gutschein,
+  orders: session.orders ?? [],
+  sent_batches: session.sent_batches ?? [],
+  marked_batches: session.marked_batches ?? [],
+});
+
 export function useDirectusSync(
   state: SyncState,
   setters: SyncSetters,
@@ -60,6 +90,7 @@ export function useDirectusSync(
   const sentBatchesRef = useRef(sentBatches);
   const gutscheinRef = useRef(gutscheinAmounts);
   const markedBatchesRef = useRef(markedBatches);
+  const remoteSessionsRef = useRef<TableSession[] | undefined>(undefined);
 
   useEffect(() => { ordersRef.current = orders; }, [orders]);
   useEffect(() => { seatedTablesArrRef.current = seatedTablesArr; }, [seatedTablesArr]);
@@ -72,7 +103,6 @@ export function useDirectusSync(
   const lastWriteTime = useRef<Record<string, number>>({});  // tableId → epoch ms of last write
   const pendingWrites = useRef(new Set<string>());           // tableIds with in-flight writes
   const writeTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
-  const retryCounts = useRef<Record<string, number>>({});
   const failedWriteKeys = useRef(new Set<string>());
   const retryingFailedWrites = useRef(new Set<string>());
   const [hasFailedWrites, setHasFailedWrites] = useState(false);
@@ -99,6 +129,46 @@ export function useDirectusSync(
     staleTime: 1000,
   });
 
+  useEffect(() => { remoteSessionsRef.current = remoteSessions; }, [remoteSessions]);
+
+  useEffect(() => {
+    const existingCache = readSessionCache();
+    const dirtyRecords = readDirtySessionRecords();
+    Object.entries(dirtyRecords).forEach(([key, record]) => {
+      if (record.operation === "delete") return;
+
+      const session = {
+        table_id: key,
+        seated: seatedTablesArr.some((id) => String(id) === key),
+        gutschein: gutscheinAmounts[key] ?? null,
+        orders: orders[key] ?? [],
+        sent_batches: sentBatches[key] ?? [],
+        marked_batches: Array.from(markedBatches[key] ?? new Set<MarkedBatchId>()),
+      };
+
+      if (!hasSessionData(session) && hasSessionData(existingCache[key])) return;
+
+      writeSessionToCache(key, session, false);
+      updateDirtyLocalSession(key, session);
+    });
+  }, [orders, seatedTablesArr, sentBatches, gutscheinAmounts, markedBatches]);
+
+  const readCurrentSession = useCallback((key: string): CachedSession => ({
+    table_id: key,
+    seated: seatedTablesArrRef.current.some((id) => String(id) === key),
+    gutschein: gutscheinRef.current[key] ?? null,
+    orders: ordersRef.current[key] ?? [],
+    sent_batches: sentBatchesRef.current[key] ?? [],
+    marked_batches: Array.from(markedBatchesRef.current[key] ?? new Set<MarkedBatchId>()),
+  }), []);
+
+  const persistLocalSnapshot = useCallback((key: string) => {
+    const session = readCurrentSession(key);
+    writeSessionToCache(key, session, false);
+    updateDirtyLocalSession(key, session);
+    return session;
+  }, [readCurrentSession]);
+
   // ── Merge remote → local, respecting the 3s local-ownership grace period ──
   // ── Falls back to localStorage if Directus is unavailable ──────────────────
   // ── Detects conflicts when transitioning from offline to online ────────────
@@ -118,7 +188,31 @@ export function useDirectusSync(
         const newGutschein: GutscheinAmounts = {};
         const newMarkedBatches: Record<string, Set<MarkedBatchId>> = {};
 
-        Object.entries(readSessionCache()).forEach(([key, session]) => {
+        const dirtyRecords = readDirtySessionRecords();
+        const cache = readSessionCache();
+        const offlineSessions = new Map<string, CachedSession>();
+
+        Object.entries(cache).forEach(([key, session]) => {
+          offlineSessions.set(key, session);
+        });
+
+        Object.entries(dirtyRecords).forEach(([key, record]) => {
+          if (record.operation === "delete") {
+            offlineSessions.delete(key);
+            return;
+          }
+          if (record.local_session) offlineSessions.set(key, record.local_session);
+        });
+
+        Object.entries(ordersRef.current).forEach(([key, value]) => {
+          if (value.length) offlineSessions.set(key, readCurrentSession(key));
+        });
+        seatedTablesArrRef.current.forEach((id) => offlineSessions.set(String(id), readCurrentSession(String(id))));
+        Object.keys(sentBatchesRef.current).forEach((key) => offlineSessions.set(key, readCurrentSession(key)));
+        Object.keys(gutscheinRef.current).forEach((key) => offlineSessions.set(key, readCurrentSession(key)));
+        Object.keys(markedBatchesRef.current).forEach((key) => offlineSessions.set(key, readCurrentSession(key)));
+
+        offlineSessions.forEach((session, key) => {
           const tableId = parseTableId(key);
           if (session.orders?.length) newOrders[key] = session.orders;
           if (session.seated) newSeated.add(tableId);
@@ -150,29 +244,65 @@ export function useDirectusSync(
 
     remoteSessions.forEach((s) => { sessionIdMap.current[s.table_id] = s.id; });
 
+    const dirtyRecords = readDirtySessionRecords();
+    const durableDirtyKeys = new Set(Object.keys(dirtyRecords));
+    const reconnectingFromOffline = wasOffline.current;
+    const hasFailedWritesNow = failedWriteKeys.current.size > 0;
+    const shouldReadLocalCache = wasOffline.current ||
+      failedWriteKeys.current.size > 0 ||
+      durableDirtyKeys.size > 0;
+    const localCache = shouldReadLocalCache ? readSessionCache() : {};
+    const dirtyUpsertKeys = new Set(
+      Object.entries(dirtyRecords)
+        .filter(([, record]) => record.operation === "upsert" && hasSessionData(record.local_session ?? localCache[record.table_id]))
+        .map(([key]) => key)
+    );
+    const dirtyDeleteKeys = new Set(
+      Object.entries(dirtyRecords)
+        .filter(([, record]) => record.operation === "delete")
+        .map(([key]) => key)
+    );
+
+    durableDirtyKeys.forEach((key) => {
+      if (!dirtyUpsertKeys.has(key) && !dirtyDeleteKeys.has(key) && !pendingWrites.current.has(key) && !failedWriteKeys.current.has(key)) {
+        clearSessionDirty(key);
+      }
+    });
+
     const isLocallyOwned = (key: string) =>
       pendingWrites.current.has(key) ||
       failedWriteKeys.current.has(key) ||
+      (reconnectingFromOffline && dirtyUpsertKeys.has(key)) ||
       now - (lastWriteTime.current[key] ?? 0) < OWNERSHIP_GRACE_MS;
 
-    const isLocallyDirty = (key: string) =>
-      pendingWrites.current.has(key) || failedWriteKeys.current.has(key);
-
-    // Only detect conflicts after a real offline→online transition, and only
-    // for tables this device changed while remote writes were not confirmed.
-    if (wasOffline.current) {
+    // Detect conflicts for dirty local sessions before retrying or accepting
+    // remote state. Dirty keys persist through refreshes after offline edits.
+    if (reconnectingFromOffline || hasFailedWritesNow) {
+      const includePendingWrites = wasOffline.current;
       wasOffline.current = false;
-      const localCache = readSessionCache();
-      const dirtyLocalCache = Object.fromEntries(
-        Object.entries(localCache).filter(([key]) => isLocallyDirty(key))
-      );
-      const detectedConflicts = detectConflicts(dirtyLocalCache, remoteSessions);
+      const dirtyCandidates = { ...dirtyRecords };
+      [...failedWriteKeys.current, ...(includePendingWrites ? pendingWrites.current : [])].forEach((key) => {
+        const localSession = hasSessionData(readCurrentSession(key)) ? readCurrentSession(key) : localCache[key];
+        if (!localSession) return;
+        dirtyCandidates[key] = dirtyCandidates[key] ?? {
+          table_id: key,
+          operation: "upsert",
+          base_hash: sessionHash(remoteMap.get(key) ? remoteToCachedSession(remoteMap.get(key)!) : null),
+          base_session: remoteMap.get(key) ? remoteToCachedSession(remoteMap.get(key)!) : null,
+          local_session: localSession,
+          last_local_edit_at: new Date().toISOString(),
+          client_id: "runtime",
+        };
+      });
+      const detectedConflicts = detectDirtySessionConflicts(dirtyCandidates, remoteSessions);
       if (detectedConflicts.length > 0) {
         console.log(`Detected ${detectedConflicts.length} sync conflict(s)`);
         setConflicts(detectedConflicts);
         syncPaused.current = true;
         return;
       }
+    } else {
+      wasOffline.current = false;
     }
 
     const allKeys = new Set([
@@ -182,6 +312,7 @@ export function useDirectusSync(
       ...Object.keys(sentBatchesRef.current),
       ...Object.keys(gutscheinRef.current),
       ...Object.keys(markedBatchesRef.current),
+      ...dirtyUpsertKeys,
     ]);
 
     const newOrders: Orders = {};
@@ -191,13 +322,31 @@ export function useDirectusSync(
     const newMarkedBatches: Record<string, Set<MarkedBatchId>> = {};
 
     allKeys.forEach((key) => {
+      if (dirtyDeleteKeys.has(key)) {
+        removeSessionDataFromCache(key);
+        return;
+      }
+
       if (isLocallyOwned(key)) {
+        const dirtySession = dirtyRecords[key]?.local_session;
+        const cachedSession = dirtySession ?? localCache[key];
         const tableId = parseTableId(key);
-        if (ordersRef.current[key]?.length) newOrders[key] = ordersRef.current[key];
-        if (seatedTablesArrRef.current.some((id) => String(id) === key)) newSeated.add(tableId);
-        if (sentBatchesRef.current[key]?.length) newSentBatches[key] = sentBatchesRef.current[key];
-        if (gutscheinRef.current[key] != null) newGutschein[key] = gutscheinRef.current[key];
-        if (markedBatchesRef.current[key]?.size) newMarkedBatches[key] = markedBatchesRef.current[key];
+        const localOrders = dirtySession?.orders ?? ordersRef.current[key] ?? cachedSession?.orders;
+        const localSentBatches = dirtySession?.sent_batches ?? sentBatchesRef.current[key] ?? cachedSession?.sent_batches;
+        const localGutschein = dirtySession?.gutschein ?? gutscheinRef.current[key] ?? cachedSession?.gutschein;
+        const localMarkedBatches = dirtySession?.marked_batches
+          ? new Set(dirtySession.marked_batches)
+          : markedBatchesRef.current[key] ??
+            (cachedSession?.marked_batches ? new Set(cachedSession.marked_batches) : undefined);
+        const localSeated = dirtySession?.seated ||
+          seatedTablesArrRef.current.some((id) => String(id) === key) ||
+          cachedSession?.seated;
+
+        if (localOrders?.length) newOrders[key] = localOrders;
+        if (localSeated) newSeated.add(tableId);
+        if (localSentBatches?.length) newSentBatches[key] = localSentBatches;
+        if (localGutschein != null) newGutschein[key] = localGutschein;
+        if (localMarkedBatches?.size) newMarkedBatches[key] = localMarkedBatches;
       } else {
         const session = remoteMap.get(key);
         if (!session) {
@@ -211,14 +360,7 @@ export function useDirectusSync(
         if (session.sent_batches?.length) newSentBatches[key] = session.sent_batches;
         if (session.gutschein != null) newGutschein[key] = session.gutschein;
         if (session.marked_batches?.length) newMarkedBatches[key] = new Set(session.marked_batches);
-        writeSessionToCache(key, {
-          table_id: session.table_id,
-          seated: session.seated,
-          gutschein: session.gutschein,
-          orders: session.orders ?? [],
-          sent_batches: session.sent_batches ?? [],
-          marked_batches: session.marked_batches ?? [],
-        });
+        writeSessionToCache(key, remoteToCachedSession(session));
       }
     });
 
@@ -237,6 +379,41 @@ export function useDirectusSync(
         scheduleWrite(parseTableId(key));
       }, 0);
     });
+
+    dirtyUpsertKeys.forEach((key) => {
+      if (pendingWrites.current.has(key) || retryingFailedWrites.current.has(key)) return;
+
+      retryingFailedWrites.current.add(key);
+      setTimeout(() => {
+        scheduleWrite(parseTableId(key));
+      }, 0);
+    });
+
+    dirtyDeleteKeys.forEach((key) => {
+      if (pendingWrites.current.has(key) || retryingFailedWrites.current.has(key)) return;
+
+      const directusId = sessionIdMap.current[key] ?? remoteMap.get(key)?.id;
+      if (!directusId) {
+        clearSessionDirty(key);
+        removeSessionDataFromCache(key);
+        return;
+      }
+
+      retryingFailedWrites.current.add(key);
+      deleteSession(directusId).then((result) => {
+        retryingFailedWrites.current.delete(key);
+        if (result.success) {
+          delete sessionIdMap.current[key];
+          failedWriteKeys.current.delete(key);
+          clearSessionDirty(key);
+          removeSessionFromCache(key);
+          setHasFailedWrites(failedWriteKeys.current.size > 0);
+        } else {
+          failedWriteKeys.current.add(key);
+          setHasFailedWrites(true);
+        }
+      });
+    });
   }, [remoteSessions, syncError, setOrders, setSeatedTablesArr, setSentBatches, setGutscheinAmounts, setMarkedBatches]);
 
   // ── Debounced write: batches rapid state changes into one Directus call ───
@@ -246,64 +423,73 @@ export function useDirectusSync(
     pendingWrites.current.add(key);
     clearTimeout(writeTimers.current[key]);
 
-    // Capture state snapshot for immediate localStorage write (offline resilience)
-    const cacheSession = {
-      table_id: key,
-      seated: seatedTablesArrRef.current.some((id) => String(id) === key),
-      gutschein: gutscheinRef.current[key] ?? null,
-      orders: ordersRef.current[key] ?? [],
-      sent_batches: sentBatchesRef.current[key] ?? [],
-      marked_batches: Array.from(markedBatchesRef.current[key] ?? new Set<MarkedBatchId>()),
-    };
+    // Persist the dirty marker immediately. A state effect writes the committed
+    // table snapshot to localStorage after React applies the edit.
+    const existingDirtyRecord = readDirtySessionRecords()[key];
+    const remoteBase = remoteSessionsRef.current?.find((s) => s.table_id === key);
+    const baseSession = existingDirtyRecord?.base_session ??
+      (remoteBase ? remoteToCachedSession(remoteBase) : readSessionCache()[key] ?? null);
+    markSessionDirty(key, existingDirtyRecord?.local_session ?? null, baseSession);
 
-    // Write to localStorage immediately (no debounce)
-    writeSessionToCache(key, cacheSession);
+    setTimeout(() => {
+      const record = readDirtySessionRecords()[key];
+      if (isMounted.current && record?.operation === "upsert" && !record.local_session) {
+        persistLocalSnapshot(key);
+      }
+    }, 0);
 
     // Debounced Directus write — capture FRESH state inside timeout
     const writeToDirectus = async () => {
-      // Re-capture refs to get current state (not stale snapshot from T0)
-      const session = {
-        table_id: key,
-        seated: seatedTablesArrRef.current.some((id) => String(id) === key),
-        gutschein: gutscheinRef.current[key] ?? null,
-        orders: ordersRef.current[key] ?? [],
-        sent_batches: sentBatchesRef.current[key] ?? [],
-        marked_batches: Array.from(markedBatchesRef.current[key] ?? new Set<MarkedBatchId>()),
-      };
+      const existingDirty = readDirtySessionRecords()[key];
+      const session = existingDirty?.operation === "upsert" && existingDirty.local_session
+        ? existingDirty.local_session
+        : persistLocalSnapshot(key);
 
       try {
+        const dirtyRecord = readDirtySessionRecords()[key];
+        const shouldCheckConflictBeforeWrite = failedWriteKeys.current.has(key);
+        if (dirtyRecord && shouldCheckConflictBeforeWrite) {
+          const freshRemoteSessions = await fetchAllSessions();
+          remoteSessionsRef.current = freshRemoteSessions;
+          freshRemoteSessions.forEach((s) => { sessionIdMap.current[s.table_id] = s.id; });
+
+          const detectedConflicts = detectDirtySessionConflicts({ [key]: dirtyRecord }, freshRemoteSessions);
+          if (detectedConflicts.length > 0) {
+            setConflicts((prev) => prev.some((c) => c.tableId === key)
+              ? prev
+              : [...prev, detectedConflicts[0]]);
+            syncPaused.current = true;
+            pendingWrites.current.delete(key);
+            retryingFailedWrites.current.delete(key);
+            failedWriteKeys.current.add(key);
+            setHasFailedWrites(true);
+            return;
+          }
+        }
+
         const newId = await upsertSession(sessionIdMap.current[key] ?? null, session);
         sessionIdMap.current[key] = newId;
-        delete retryCounts.current[key];
+        writeSessionToCache(key, session);
         pendingWrites.current.delete(key);
         retryingFailedWrites.current.delete(key);
         failedWriteKeys.current.delete(key);
+        clearSessionDirty(key);
         setHasFailedWrites(failedWriteKeys.current.size > 0);
         lastWriteTime.current[key] = Date.now();
       } catch (e) {
         if (!isMounted.current) return;
 
-        const attempts = (retryCounts.current[key] ?? 0) + 1;
-        retryCounts.current[key] = attempts;
-        console.error(`Session write failed (attempt ${attempts}/${MAX_RETRIES}):`, e);
-
-        if (attempts < MAX_RETRIES) {
-          if (attempts === 1) showToast("Table state not saved - retrying");
-          // Don't update lastWriteTime on retry — keeps original grace period
-          writeTimers.current[key] = setTimeout(writeToDirectus, DEBOUNCE_DELAY_MS);
-        } else {
-          showToast("Table state saved locally - will retry when connection returns");
-          delete retryCounts.current[key];
-          pendingWrites.current.delete(key);
-          retryingFailedWrites.current.delete(key);
-          failedWriteKeys.current.add(key);
-          setHasFailedWrites(true);
-        }
+        console.error("Session write failed:", e);
+        showToast("Table state saved locally - will retry when connection returns");
+        pendingWrites.current.delete(key);
+        retryingFailedWrites.current.delete(key);
+        failedWriteKeys.current.add(key);
+        setHasFailedWrites(true);
       }
     };
 
     writeTimers.current[key] = setTimeout(writeToDirectus, DEBOUNCE_DELAY_MS);
-  }, [showToast]);
+  }, [persistLocalSnapshot, showToast]);
 
   // ── Cancel pending write and delete session from Directus + localStorage ──
   const cancelAndDelete = useCallback((tableId: TableId) => {
@@ -311,25 +497,38 @@ export function useDirectusSync(
     clearTimeout(writeTimers.current[key]);
     pendingWrites.current.delete(key);
     retryingFailedWrites.current.delete(key);
-    failedWriteKeys.current.delete(key);
-    setHasFailedWrites(failedWriteKeys.current.size > 0);
     delete lastWriteTime.current[key];
-    delete retryCounts.current[key];
 
-    // Remove from localStorage
-    removeSessionFromCache(key);
+    const remoteBase = remoteSessionsRef.current?.find((s) => s.table_id === key);
+    const baseSession = remoteBase ? remoteToCachedSession(remoteBase) : readSessionCache()[key] ?? readCurrentSession(key);
+    markSessionDeleted(key, hasSessionData(baseSession) ? baseSession : null);
+    removeSessionDataFromCache(key);
 
     // Remove from Directus
-    const directusId = sessionIdMap.current[key];
+    const directusId = sessionIdMap.current[key] ?? remoteBase?.id;
     if (directusId) {
-      delete sessionIdMap.current[key];
       deleteSession(directusId).then((result) => {
-        if (!result.success) {
+        if (result.success) {
+          delete sessionIdMap.current[key];
+          failedWriteKeys.current.delete(key);
+          clearSessionDirty(key);
+          removeSessionFromCache(key);
+          setHasFailedWrites(failedWriteKeys.current.size > 0);
+        } else {
+          failedWriteKeys.current.add(key);
+          setHasFailedWrites(true);
           console.error(`Failed to delete session: ${result.error}`);
         }
       });
+    } else if (!hasSessionData(baseSession)) {
+      failedWriteKeys.current.delete(key);
+      clearSessionDirty(key);
+      setHasFailedWrites(failedWriteKeys.current.size > 0);
+    } else {
+      failedWriteKeys.current.add(key);
+      setHasFailedWrites(true);
     }
-  }, []);
+  }, [readCurrentSession]);
 
   // ── Resolve conflict and apply chosen resolution ──────────────────────────
   const resolveConflict = useCallback((
@@ -347,7 +546,12 @@ export function useDirectusSync(
     const tableIdParsed = parseTableId(key);
 
     // Apply resolved session to state — refs will be synced by useEffects (lines 40-44)
-    setOrders((prev) => ({ ...prev, [key]: resolvedSession.orders }));
+    setOrders((prev) => {
+      const next = { ...prev };
+      if (resolvedSession.orders.length) next[key] = resolvedSession.orders;
+      else delete next[key];
+      return next;
+    });
 
     setSeatedTablesArr((prev) => {
       const s = new Set(prev);
@@ -356,9 +560,24 @@ export function useDirectusSync(
       return Array.from(s);
     });
 
-    setSentBatches((prev) => ({ ...prev, [key]: resolvedSession.sent_batches }));
-    setGutscheinAmounts((prev) => ({ ...prev, [key]: resolvedSession.gutschein ?? 0 }));
-    setMarkedBatches((prev) => ({ ...prev, [key]: new Set(resolvedSession.marked_batches) }));
+    setSentBatches((prev) => {
+      const next = { ...prev };
+      if (resolvedSession.sent_batches.length) next[key] = resolvedSession.sent_batches;
+      else delete next[key];
+      return next;
+    });
+    setGutscheinAmounts((prev) => {
+      const next = { ...prev };
+      if (resolvedSession.gutschein != null) next[key] = resolvedSession.gutschein;
+      else delete next[key];
+      return next;
+    });
+    setMarkedBatches((prev) => {
+      const next = { ...prev };
+      if (resolvedSession.marked_batches.length) next[key] = new Set(resolvedSession.marked_batches);
+      else delete next[key];
+      return next;
+    });
 
     // Remove from conflicts queue
     setConflicts((prev) => prev.filter((c) => c.tableId !== tableId));

@@ -50,7 +50,7 @@
 | # | Issue | File | Time | Status | Depends On |
 |---|-------|------|------|--------|------------|
 | P1-5 | Grace period extends on retry | [useDirectusSync.ts:209-212](src/hooks/useDirectusSync.ts#L209-L212) | 15 min | ✅ DONE | Retries now reuse the active Directus write callback instead of re-entering scheduleWrite |
-| P1-6 | Conflict detection skips locally owned | [useDirectusSync.ts:123-125](src/hooks/useDirectusSync.ts#L123-L125) | 2h | ✅ DONE | Reconnect conflict detection now compares dirty local sessions after real offline recovery |
+| P1-6 | Conflict detection skips locally owned | [useDirectusSync.ts:123-125](src/hooks/useDirectusSync.ts#L123-L125) | 2h | ✅ DONE | Dirty local sessions are now tracked in localStorage so reconnect/refresh can still trigger conflict detection |
 | P1-7 | Write failure leaves user in limbo | [useDirectusSync.ts:213-217](src/hooks/useDirectusSync.ts#L213-L217) | 2h | ✅ DONE | Failed writes remain locally saved, surface syncError, and auto-retry after successful polling resumes |
 | P1-8 | Order merge violates sentQty invariant | [conflictDetection.ts:101-110](src/utils/conflictDetection.ts#L101-L110) | 3h | ✅ DONE | Merge now derives sentQty from merged batches and preserves sentQty <= qty |
 | P1-9 | Batch dedup assumes unique timestamps | [conflictDetection.ts:113-119](src/utils/conflictDetection.ts#L113-L119) | 1h | ✅ DONE | Batch dedup now uses timestamp plus canonical item content |

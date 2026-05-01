@@ -1,5 +1,6 @@
 import type { OrderItem, Batch } from "../types";
-import type { CachedSession } from "./sessionStorage";
+import type { CachedSession, DirtySessionRecord } from "./sessionStorage";
+import { sessionHash } from "./sessionStorage";
 import { batchMarkId } from "./batchMarks";
 
 export interface SessionConflict {
@@ -59,6 +60,71 @@ export function detectConflicts(
 
 function sortedOrders(orders: OrderItem[]) {
   return [...orders].sort((a, b) => orderKey(a).localeCompare(orderKey(b)));
+}
+
+export function detectDirtySessionConflicts(
+  dirtyRecords: Record<string, DirtySessionRecord>,
+  remoteSessions: Array<{
+    id: number;
+    table_id: string;
+    seated: boolean;
+    gutschein: number | null;
+    orders: OrderItem[];
+    sent_batches: Batch[];
+    marked_batches: string[];
+  }>
+): SessionConflict[] {
+  const conflicts: SessionConflict[] = [];
+  const remoteMap = new Map(remoteSessions.map((s) => [s.table_id, s]));
+
+  Object.entries(dirtyRecords).forEach(([tableId, record]) => {
+    const remoteSession = remoteMap.get(tableId);
+    const remoteCached = remoteSession
+      ? {
+          table_id: remoteSession.table_id,
+          seated: remoteSession.seated,
+          gutschein: remoteSession.gutschein,
+          orders: remoteSession.orders,
+          sent_batches: remoteSession.sent_batches,
+          marked_batches: remoteSession.marked_batches,
+        }
+      : null;
+    const remoteHash = sessionHash(remoteCached);
+    const remoteChanged = record.base_hash === null
+      ? remoteCached !== null
+      : remoteHash !== record.base_hash;
+
+    if (!remoteChanged) return;
+
+    if (record.operation === "delete") {
+      if (record.base_session && remoteCached) {
+        conflicts.push({
+          tableId,
+          local: { ...record.base_session, orders: [], sent_batches: [], marked_batches: [], seated: false, gutschein: null },
+          remote: remoteCached,
+        });
+      }
+      return;
+    }
+
+    if (!record.local_session || !remoteCached) return;
+
+    const localHash = sessionHash(record.local_session);
+    const localChanged = record.base_hash === null
+      ? localHash !== null
+      : localHash !== record.base_hash;
+    const localMatchesRemote = localHash === remoteHash;
+
+    if (localChanged && !localMatchesRemote) {
+      conflicts.push({
+        tableId,
+        local: record.local_session,
+        remote: remoteCached,
+      });
+    }
+  });
+
+  return conflicts;
 }
 
 function sortedBatches(batches: Batch[]) {
