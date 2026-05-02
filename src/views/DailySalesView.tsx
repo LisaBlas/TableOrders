@@ -18,7 +18,7 @@ export function DailySalesView() {
     restoreBillFromPOS,
     removePaidBillItem,
     restorePaidBillItem,
-    editingBillIndex,
+    editingBillId,
     enterBillEditMode,
     exitBillEditMode,
     cancelBillEditMode,
@@ -262,7 +262,7 @@ export function DailySalesView() {
                     <BillCard
                       key={bill.directusId || bill.tempId || `bill-${billIndex}`}
                       bill={bill}
-                      isEditing={editingBillIndex === billIndex}
+                      isEditing={editingBillId === bill.directusId}
                       onEdit={() => enterBillEditMode(billIndex)}
                       onDone={exitBillEditMode}
                       onCancel={cancelBillEditMode}

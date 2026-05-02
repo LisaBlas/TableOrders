@@ -7,6 +7,8 @@ import { createEqualSplitTableBill } from "../utils/billFactory";
 import { BackIcon } from "../components/icons";
 import { S } from "../styles/appStyles";
 
+const MAX_EQUAL_SPLIT_GUESTS = 20;
+
 export function SplitEqualView() {
   const app = useApp();
   const table = useTable();
@@ -18,6 +20,10 @@ export function SplitEqualView() {
   const billableTotal = Math.max(0, ticketTotal - gutschein);
 
   const equalShare = state.equalGuests > 0 ? billableTotal / state.equalGuests : 0;
+  const equalShareRounded = state.equalGuests > 0 ? Math.round(equalShare * 100) / 100 : 0;
+  const lastGuestShare = state.equalGuests > 1
+    ? Math.round((billableTotal - equalShareRounded * (state.equalGuests - 1)) * 100) / 100
+    : equalShareRounded;
   const hasConfirmedPayments = state.equalPayments.some(p => p.confirmed);
 
   const closeSplitTable = () => {
@@ -28,7 +34,7 @@ export function SplitEqualView() {
       gutschein: table.gutscheinAmounts[tableId] || 0,
       guests: state.equalGuests,
       equalPayments: state.equalPayments,
-      equalShare,
+      equalShare: equalShareRounded,
     });
 
     app.addPaidBill(bill);
@@ -82,20 +88,24 @@ export function SplitEqualView() {
           <div style={S.guestCounter}>
             <button style={S.guestCountBtn} onClick={() => dispatch({ type: "SET_EQUAL_GUESTS", count: Math.max(1, state.equalGuests - 1) })}>−</button>
             <span style={S.guestCountNum}>{state.equalGuests}</span>
-            <button style={S.guestCountBtn} onClick={() => dispatch({ type: "SET_EQUAL_GUESTS", count: state.equalGuests + 1 })}>+</button>
+            <button
+              style={S.guestCountBtn}
+              onClick={() => dispatch({ type: "SET_EQUAL_GUESTS", count: Math.min(MAX_EQUAL_SPLIT_GUESTS, state.equalGuests + 1) })}
+              disabled={state.equalGuests >= MAX_EQUAL_SPLIT_GUESTS}
+            >+</button>
           </div>
         </div>
         <div style={S.divider} />
         <div style={S.equalShareRow}>
           <span style={S.equalShareLabel}>Each guest pays</span>
-          <span style={S.equalShareAmt}>{equalShare.toFixed(2)}€</span>
+          <span style={S.equalShareAmt}>{equalShareRounded.toFixed(2)}€</span>
         </div>
         {state.equalGuests > 1 && (
           <div style={S.equalBreakdown}>
             {Array.from({ length: state.equalGuests }).map((_, i) => (
               <div key={i} style={S.equalGuestRow}>
                 <span style={S.equalGuestChip}>Guest {i + 1}</span>
-                <span style={S.equalGuestAmt}>{equalShare.toFixed(2)}€</span>
+                <span style={S.equalGuestAmt}>{i === state.equalGuests - 1 ? lastGuestShare.toFixed(2) : equalShareRounded.toFixed(2)}€</span>
               </div>
             ))}
           </div>
@@ -110,7 +120,7 @@ export function SplitEqualView() {
               <div style={S.paymentInputRow}>
                 <input
                   type="number"
-                  placeholder={equalShare.toFixed(2)}
+                  placeholder={(idx === state.equalGuests - 1 ? lastGuestShare : equalShareRounded).toFixed(2)}
                   value={payment.amount}
                   onChange={(e) => dispatch({ type: "UPDATE_EQUAL_PAYMENT", index: idx, payment: { ...payment, amount: e.target.value } })}
                   step="0.01" min="0"
@@ -121,7 +131,9 @@ export function SplitEqualView() {
                   style={payment.confirmed ? S.paymentCheckConfirmed : S.paymentCheck}
                   onClick={() => {
                     if (!payment.confirmed) {
-                      const amount = payment.amount && parseFloat(payment.amount) > 0 ? parseFloat(payment.amount) : equalShare;
+                      const parsedAmount = parseFloat(payment.amount);
+                      const defaultShare = idx === state.equalGuests - 1 ? lastGuestShare : equalShareRounded;
+                      const amount = !Number.isNaN(parsedAmount) && parsedAmount > 0 ? parsedAmount : defaultShare;
                       const updated = [...state.equalPayments];
                       updated[idx] = { amount: amount.toString(), confirmed: true };
                       dispatch({ type: "ADD_EQUAL_PAYMENT", payments: [...updated, { amount: "", confirmed: false }] });
@@ -135,8 +147,13 @@ export function SplitEqualView() {
           {(() => {
             const confirmed = state.equalPayments.filter((p) => p.confirmed);
             if (confirmed.length > 0) {
-              const totalPaid = confirmed.reduce((sum, p) => sum + parseFloat(p.amount), 0);
-              const expectedTotal = confirmed.length * equalShare;
+              const totalPaid = confirmed.reduce((sum, p) => {
+                const parsedAmount = parseFloat(p.amount);
+                return sum + (!Number.isNaN(parsedAmount) ? parsedAmount : 0);
+              }, 0);
+              const expectedTotal = confirmed.length >= state.equalGuests
+                ? (state.equalGuests - 1) * equalShareRounded + lastGuestShare
+                : confirmed.length * equalShareRounded;
               const totalTip = totalPaid - expectedTotal;
               return (
                 <div style={S.paymentTip}>
@@ -205,20 +222,24 @@ export function SplitEqualView() {
               <div style={S.guestCounter}>
                 <button style={S.guestCountBtn} onClick={() => dispatch({ type: "SET_EQUAL_GUESTS", count: Math.max(1, state.equalGuests - 1) })}>−</button>
                 <span style={S.guestCountNum}>{state.equalGuests}</span>
-                <button style={S.guestCountBtn} onClick={() => dispatch({ type: "SET_EQUAL_GUESTS", count: state.equalGuests + 1 })}>+</button>
+                <button
+                  style={S.guestCountBtn}
+                  onClick={() => dispatch({ type: "SET_EQUAL_GUESTS", count: Math.min(MAX_EQUAL_SPLIT_GUESTS, state.equalGuests + 1) })}
+                  disabled={state.equalGuests >= MAX_EQUAL_SPLIT_GUESTS}
+                >+</button>
               </div>
             </div>
             <div style={S.divider} />
             <div style={S.equalShareRow}>
               <span style={S.equalShareLabel}>Each guest pays</span>
-              <span style={S.equalShareAmt}>{equalShare.toFixed(2)}€</span>
+              <span style={S.equalShareAmt}>{equalShareRounded.toFixed(2)}€</span>
             </div>
             {state.equalGuests > 1 && (
               <div style={S.equalBreakdown}>
                 {Array.from({ length: state.equalGuests }).map((_, i) => (
                   <div key={i} style={S.equalGuestRow}>
                     <span style={S.equalGuestChip}>Guest {i + 1}</span>
-                    <span style={S.equalGuestAmt}>{equalShare.toFixed(2)}€</span>
+                    <span style={S.equalGuestAmt}>{i === state.equalGuests - 1 ? lastGuestShare.toFixed(2) : equalShareRounded.toFixed(2)}€</span>
                   </div>
                 ))}
               </div>
@@ -235,7 +256,7 @@ export function SplitEqualView() {
                 <div style={S.paymentInputRow}>
                   <input
                     type="number"
-                    placeholder={equalShare.toFixed(2)}
+                    placeholder={(idx === state.equalGuests - 1 ? lastGuestShare : equalShareRounded).toFixed(2)}
                     value={payment.amount}
                     onChange={(e) => dispatch({ type: "UPDATE_EQUAL_PAYMENT", index: idx, payment: { ...payment, amount: e.target.value } })}
                     step="0.01" min="0"
@@ -246,7 +267,9 @@ export function SplitEqualView() {
                     style={payment.confirmed ? S.paymentCheckConfirmed : S.paymentCheck}
                     onClick={() => {
                       if (!payment.confirmed) {
-                        const amount = payment.amount && parseFloat(payment.amount) > 0 ? parseFloat(payment.amount) : equalShare;
+                        const parsedAmount = parseFloat(payment.amount);
+                        const defaultShare = idx === state.equalGuests - 1 ? lastGuestShare : equalShareRounded;
+                        const amount = !Number.isNaN(parsedAmount) && parsedAmount > 0 ? parsedAmount : defaultShare;
                         const updated = [...state.equalPayments];
                         updated[idx] = { amount: amount.toString(), confirmed: true };
                         dispatch({ type: "ADD_EQUAL_PAYMENT", payments: [...updated, { amount: "", confirmed: false }] });
@@ -260,8 +283,13 @@ export function SplitEqualView() {
             {(() => {
               const confirmed = state.equalPayments.filter((p) => p.confirmed);
               if (confirmed.length > 0) {
-                const totalPaid = confirmed.reduce((sum, p) => sum + parseFloat(p.amount), 0);
-                const expectedTotal = confirmed.length * equalShare;
+                const totalPaid = confirmed.reduce((sum, p) => {
+                  const parsedAmount = parseFloat(p.amount);
+                  return sum + (!Number.isNaN(parsedAmount) ? parsedAmount : 0);
+                }, 0);
+                const expectedTotal = confirmed.length >= state.equalGuests
+                  ? (state.equalGuests - 1) * equalShareRounded + lastGuestShare
+                  : confirmed.length * equalShareRounded;
                 const totalTip = totalPaid - expectedTotal;
                 return (
                   <div style={S.paymentTip}>

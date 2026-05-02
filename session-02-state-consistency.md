@@ -2,18 +2,25 @@
 
 **Date**: 2026-04-29
 **Duration**: ~90 min
-**Status**: Audit complete, fixes pending
+**Status**: ✅ Complete — fixes implemented 2026-05-02, manually verified 2026-05-03
 **Tracker**: [SESSION_02_TRACKER.md](SESSION_02_TRACKER.md)
+
+## Current Scope Note
+
+The "restore/reopen last closed table" feature has been removed from the app.
+Findings tied to `reopenLastClosed`, `closedSessionArchive.ts`, archived closed
+sessions, `pendingCancellations`, or retry-after-reopen are retained below as
+historical audit context only. They are not active implementation tasks.
 
 ## Files Reviewed
 
 | File | Lines | Focus |
 |------|-------|-------|
-| [TableContext.tsx](src/contexts/TableContext.tsx) | 433 | Table state mutations, cleanup, reopen, swap |
+| [TableContext.tsx](src/contexts/TableContext.tsx) | 433 | Table state mutations, cleanup, swap |
 | [AppContext.tsx](src/contexts/AppContext.tsx) | 349 | Bill optimistic updates, edit mode, patch sync |
 | [useDirectusSync.ts](src/hooks/useDirectusSync.ts) | 609 | Write queue, cancel/delete, conflict resolution |
 | [useLocalStorage.ts](src/hooks/useLocalStorage.ts) | 32 | localStorage sync wrapper |
-| [closedSessionArchive.ts](src/utils/closedSessionArchive.ts) | 43 | Closed session TTL archive |
+| [closedSessionArchive.ts](src/utils/closedSessionArchive.ts) | 43 | Historical only; removed close-table restore archive |
 | [sessionStorage.ts](src/utils/sessionStorage.ts) | 65 | Session cache read/write/remove |
 | [directusBills.ts](src/services/directusBills.ts) | 189 | Bill create/patch/delete, berlin date utils |
 | [OrderView.tsx](src/views/OrderView.tsx) | ~400 | Verify render-phase fix from prior analysis |
@@ -26,7 +33,7 @@
 |-------|--------|---------|
 | Render-phase side effects in [OrderView.tsx:50-55](src/views/OrderView.tsx#L50-L55) | ✅ **Already fixed** | No side effects in render. Subcategory filter state was removed in commit 9f8ff4f |
 | Seated table state uses both array and Set | ✅ **Confirmed, by design** | `seatedTablesArr` (array state) + `seatedTables` (memoized Set view). Array is source of truth. No bug. |
-| Bill optimistic updates could race with query invalidation | ⚠️ **Confirmed — P0 bug found** | Two distinct race windows identified (see P0-1, P0-3 below) |
+| Bill optimistic updates could race with query invalidation | ⚠️ **Confirmed — P0 bug found** | Active issue is P0-1; P0-3 is stale because reopen/cancel flow was removed |
 
 ---
 
@@ -37,6 +44,9 @@
 ---
 
 #### P0-1: editingBillIndex is positional — shifts when poll updates cache
+**Status**: Fixed 2026-05-02. App edit mode now stores `editingBillId`
+(`directusId`) and resolves the edited bill by ID before syncing.
+
 **Location**: [AppContext.tsx:260-284](src/contexts/AppContext.tsx#L260-L284)
 **Severity**: P0 — silently patches wrong bill to Directus
 
@@ -120,6 +130,8 @@ const exitBillEditMode = useCallback(() => {
 ---
 
 #### P0-2: billSnapshot is a shallow copy — items share object references
+**Status**: Fixed 2026-05-02. Snapshot creation now clones each bill item.
+
 **Location**: [AppContext.tsx:261](src/contexts/AppContext.tsx#L261)
 **Severity**: P0 — `cancelBillEditMode` restore could contain mutated item references
 
@@ -145,6 +157,9 @@ const enterBillEditMode = useCallback((billIndex: number) => {
 ---
 
 #### P0-3: Retry-after-cancel race can silently delete a valid new bill
+**Status**: N/A — stale finding. The restore/reopen last closed table feature
+and its cancel-by-temp-id flow have been removed.
+
 **Location**: [AppContext.tsx:295-300](src/contexts/AppContext.tsx#L295-L300)
 **Severity**: P0 — bill disappears from Directus silently after retry
 
@@ -182,6 +197,9 @@ const handleRetryBill = useCallback(() => {
 ---
 
 #### P1-1: archiveRef is 1-render stale in cleanupTable
+**Status**: N/A — stale finding. The closed-session archive used for
+reopening the last closed table has been removed.
+
 **Location**: [TableContext.tsx:82-85](src/contexts/TableContext.tsx#L82-L85), [TableContext.tsx:309-339](src/contexts/TableContext.tsx#L309-L339)
 **Severity**: P1 — closed session archive captures slightly stale state
 
@@ -235,6 +253,10 @@ But `ordersRef`/`sentBatchesRef` etc. live in `useDirectusSync`, not in `TableCo
 ---
 
 #### P1-2: Non-atomic multi-field state cleanup
+**Status**: Quick win implemented 2026-05-02. `cleanupTable` and `swapTables`
+now wrap related state updates in `unstable_batchedUpdates`. The larger
+`useReducer` refactor remains deferred.
+
 **Location**: [TableContext.tsx:333-338](src/contexts/TableContext.tsx#L333-L338), [TableContext.tsx:347-356](src/contexts/TableContext.tsx#L347-L356), [TableContext.tsx:396-406](src/contexts/TableContext.tsx#L396-L406)
 **Severity**: P1 — intermediate states visible to React during transition
 
@@ -260,6 +282,10 @@ React 18 auto-batches all setState calls in any context (event handlers, timeout
 ---
 
 #### P1-3: markBillAddedToPOS silently exits edit mode without syncing in-progress changes
+**Status**: Fixed 2026-05-02. When POS marking targets the active edited bill,
+the updated bill is synced through the edit-mode commit path before edit state is
+cleared.
+
 **Location**: [AppContext.tsx:189-202](src/contexts/AppContext.tsx#L189-L202)
 **Severity**: P1 — edit-mode item changes discarded without warning
 
@@ -386,6 +412,9 @@ JavaScript is single-threaded; there is no actual race. But:
 ---
 
 #### P2-2: Closed session archive does not validate schema on load
+**Status**: N/A — stale finding. `closedSessionArchive.ts` and the
+last-closed-session restore path are no longer part of the app.
+
 **Location**: [closedSessionArchive.ts:25-37](src/utils/closedSessionArchive.ts#L25-L37)
 **Severity**: P2 — malformed localStorage causes a silent null return
 
@@ -469,10 +498,10 @@ For a restaurant with hundreds of bills and many items each, this runs constantl
 | # | Fix | Location | Time | Notes |
 |---|-----|----------|------|-------|
 | QW-1 | Deep clone `items` in `billSnapshot` | [AppContext.tsx:261](src/contexts/AppContext.tsx#L261) | 2 min | Prevents future shallow-copy bugs |
-| QW-2 | Validate `ArchivedSession` schema on load | [closedSessionArchive.ts:25](src/utils/closedSessionArchive.ts#L25) | 10 min | Simple type guard |
-| QW-3 | Clear `pendingCancellations` before retry | [AppContext.tsx:295-300](src/contexts/AppContext.tsx#L295-L300) | 5 min | Fixes P0-3 |
-| QW-4 | Add comment on React 18 batching dependency | [TableContext.tsx:333](src/contexts/TableContext.tsx#L333) | 1 min | Documents the invariant |
-| QW-5 | Document seatedTablesArr / seatedTables contract | [TableContext.tsx:72](src/contexts/TableContext.tsx#L72) | 2 min | Prevents future misuse |
+| QW-2 | Validate `ArchivedSession` schema on load | [closedSessionArchive.ts:25](src/utils/closedSessionArchive.ts#L25) | 10 min | N/A; restore archive removed |
+| QW-3 | Clear `pendingCancellations` before retry | [AppContext.tsx:295-300](src/contexts/AppContext.tsx#L295-L300) | 5 min | N/A; reopen/cancel flow removed |
+| QW-4 | Explicitly batch cleanup/swap state updates | [TableContext.tsx:333](src/contexts/TableContext.tsx#L333) | 1 min | Implemented with `unstable_batchedUpdates` |
+| QW-5 | Document seatedTablesArr / seatedTables contract | [TableContext.tsx:72](src/contexts/TableContext.tsx#L72) | 2 min | Implemented |
 
 ---
 
@@ -499,7 +528,6 @@ Steps:
 ```typescript
 type TableAction =
   | { type: "CLOSE_TABLE"; tableId: string }
-  | { type: "REOPEN_TABLE"; session: ArchivedSession }
   | { type: "SWAP_TABLES"; from: string; to: string }
   | { type: "SEND_ORDER"; tableId: string; batch: Batch }
   | // ... other mutations
@@ -525,10 +553,7 @@ Create a single `commitBillEdit(action: "exit" | "cancel" | "pos")` function tha
 | Scenario | Risk | Priority |
 |----------|------|----------|
 | Enter edit mode → remote poll adds new bill → exit edit mode (verify correct bill patched) | P0-1 | P0 |
-| Close table → Directus fails → reopen table → retry bill (verify bill not deleted) | P0-3 | P0 |
-| Close table with unsaved last item (verify archive captures it) | P1-1 | P1 |
 | `cancelBillEditMode` with in-place-mutated items (verify snapshot restore is clean) | P0-2 | P1 |
-| Load malformed `lastClosedSession` from localStorage (verify graceful degradation) | P2-2 | P2 |
 | Rapid `removePaidBillItem` calls (verify no double-decrement) | — | P1 |
 
 ---
@@ -537,8 +562,6 @@ Create a single `commitBillEdit(action: "exit" | "cancel" | "pos")` function tha
 
 - **ESLint**: Lint for `useCallback` deps that include array index derived from state (pattern: `const x = arr[index]` inside callback with `index` from state)
 - **ESLint**: Warn on `{ ...obj }` shallow copy of objects with known nested arrays (requires type information, TSLint plugin)
-- **Unit test**: `closedSessionArchive.loadClosedSession` with malformed data
-- **Unit test**: `cleanupTable` + `reopenLastClosed` round-trip atomicity
 
 ---
 

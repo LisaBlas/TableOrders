@@ -3,7 +3,7 @@
 **Created**: 2026-04-29
 **Completed**: 2026-04-29
 **Audit Report**: [session-01-sync-audit.md](session-01-sync-audit.md)
-**Status**: 🟢 **P0 Complete** — P0-1 through P0-4 fixed; integration/manual testing pending
+**Status**: 🟢 **Session 1 Complete for Codebase Analysis** — P0/P1 fixes implemented, targeted manual sync tests passed, hook/action regression tests added; release deferred until Sessions 1-3 hardening is complete
 
 ---
 
@@ -15,7 +15,7 @@
 |---|-------|------|------|--------|-------|
 | QW1 | Add isMounted guard | [useDirectusSync.ts:53](src/hooks/useDirectusSync.ts#L53) | 10 min | ✅ DONE | Added isMounted ref + guard in catch block |
 | QW2 | Remove lastWriteTime on retry | [useDirectusSync.ts:217](src/hooks/useDirectusSync.ts#L217) | 3 min | ✅ DONE | Removed line, added comment |
-| QW3 | Try-catch saveClosedSession | [TableContext.tsx:322-330](src/contexts/TableContext.tsx#L322-L330) | 5 min | ✅ DONE | Added try-catch, abort on failure |
+| QW3 | Try-catch saveClosedSession | [TableContext.tsx:322-330](src/contexts/TableContext.tsx#L322-L330) | 5 min | ✅ N/A | `saveClosedSession` removed — bill saved to `paidBills` localStorage before `cleanupTable` runs; abort-on-failure guard no longer applicable |
 
 ---
 
@@ -45,7 +45,7 @@
 
 ---
 
-### Phase 3: P1 High Priority Fixes — ⏳ NOT STARTED
+### Phase 3: P1 High Priority Fixes — ✅ COMPLETE
 
 | # | Issue | File | Time | Status | Depends On |
 |---|-------|------|------|--------|------------|
@@ -55,7 +55,7 @@
 | P1-8 | Order merge violates sentQty invariant | [conflictDetection.ts:101-110](src/utils/conflictDetection.ts#L101-L110) | 3h | ✅ DONE | Merge now derives sentQty from merged batches and preserves sentQty <= qty |
 | P1-9 | Batch dedup assumes unique timestamps | [conflictDetection.ts:113-119](src/utils/conflictDetection.ts#L113-L119) | 1h | ✅ DONE | Batch dedup now uses timestamp plus canonical item content |
 | P1-10 | sendOrder reads stale ordersRef | [TableContext.tsx:224-245](src/contexts/TableContext.tsx#L224-L245) | 1h | ✅ DONE | sendOrder now derives the batch from a functional orders update instead of ordersRef |
-| P1-11 | cleanupTable archives before checking | [TableContext.tsx:309-331](src/contexts/TableContext.tsx#L309-L331) | 30 min | ✅ DONE | saveClosedSession now throws storage failures so cleanupTable can abort before clearing |
+| P1-11 | cleanupTable archives before checking | [TableContext.tsx:309-331](src/contexts/TableContext.tsx#L309-L331) | 30 min | ✅ N/A | Architecture changed: `addPaidBill` (with `paidBills` localStorage backup) runs before `cleanupTable`; no archive step needed |
 | P1-12 | Missing cleanup on unmount | [useDirectusSync.ts:54-56](src/hooks/useDirectusSync.ts#L54-L56) | 30 min | ✅ DONE | Covered by QW1 isMounted guard and timer cleanup |
 
 **Total**: ~10 hours
@@ -68,7 +68,7 @@
 |---|-------|------|------|--------|
 | P2-13 | Inefficient full state merge | [useDirectusSync.ts:150-174](src/hooks/useDirectusSync.ts#L150-L174) | 2h | ✅ DONE |
 | P2-14 | Expensive allKeys collection | [useDirectusSync.ts:135-142](src/hooks/useDirectusSync.ts#L135-L142) | 1h | 🟡 DEFER |
-| P2-15 | No validation of cached data | [sessionStorage.ts:19-28](src/utils/sessionStorage.ts#L19-L28) | 3h | ✅ DONE |
+| P2-15 | No validation of cached data | [sessionStorage.ts:19-28](src/utils/sessionStorage.ts#L19-L28) | 3h | ✅ DONE | Implemented with hand-written type-guards (`isOrderItem`, `isBatch`, `isCachedSession`) — no Zod; unit tested |
 | P2-16 | writeSessionToCache not atomic | [sessionStorage.ts:33-41](src/utils/sessionStorage.ts#L33-41) | 2h | 🟡 DEFER |
 
 **Total**: ~8 hours
@@ -77,35 +77,57 @@
 
 ## Testing Checklist
 
-### Unit Tests — ⬜ NOT STARTED
+### Unit Tests — ✅ CORE COVERAGE ADDED
 
-- [ ] `scheduleWrite` captures current state, not stale refs
-- [ ] `resolveConflict` updates state before refs
-- [x] `marked_batches` survive batch merge + re-sort
-- [ ] `swapTables` is atomic (both tables swapped or neither)
-- [ ] Grace period doesn't extend on retry
-- [ ] Write failures block further edits
-- [ ] `sendOrder` reads current state, not refs
-- [ ] `cleanupTable` aborts if archiving fails
+**Infrastructure**: vitest + jsdom installed; `npm test` runs 53 tests in ~1s
 
-### Integration Tests — ⬜ NOT STARTED
+**Pure utility tests** — ✅ DONE ([src/utils/\_\_tests\_\_/](src/utils/__tests__/))
 
+| File | Tests | Coverage |
+|------|-------|---------|
+| [batchMarks.test.ts](src/utils/__tests__/batchMarks.test.ts) | 8 | `batchMarkId`, `normalizeMarkedBatchIds` (string pass-through, numeric index conversion, out-of-bounds, dedup, null/empty) |
+| [conflictDetection.test.ts](src/utils/__tests__/conflictDetection.test.ts) | 19 | `mergeSessions` (basic, sentQty invariant, batch dedup, marks survive re-sort), `detectConflicts` |
+| [sessionStorage.test.ts](src/utils/__tests__/sessionStorage.test.ts) | 17 | `readSessionCache` (corrupted JSON, numeric IDs, sentQty normalization, legacy marked_batches), write/read roundtrip, `markSessionDirty`, `clearSessionCache` |
+
+**React hook tests** — ✅ STARTED ([src/hooks/__tests__/useDirectusSync.test.tsx](src/hooks/__tests__/useDirectusSync.test.tsx))
+- [x] `scheduleWrite` captures current state, not stale refs
+- [x] `resolveConflict` updates state before refs
+- [x] `marked_batches` survive batch merge + re-sort ← covered above
+- [x] `markAsLocallyOwned` protects locally swapped tables from fresh remote poll overwrites during grace period
+- [x] `swapTables` is atomic at TableContext action level (both tables swapped or neither)
+- [x] Grace period doesn't extend on retry / failed writes do not re-enter debounce retry loop
+- [x] Write failures surface `syncError` and preserve dirty local state for retry
+- [x] `sendOrder` reads current state, not refs
+- [ ] ~~`cleanupTable` aborts if archiving fails~~ — N/A: `saveClosedSession` removed; bills protected by `paidBills` localStorage + Directus
+
+### Integration Tests — ✅ TARGETED MANUAL PASS
+
+- [x] **2-device verification**: completed manually on 2026-05-02
+- [x] **Offline conflict recovery**: offline 5+ minutes, edit, reconnect, conflict modal appears — passed manually on 2026-05-03
+- [x] **Table swap during poll**: swap tables while another device is polling — passed manually on 2026-05-03
+- [x] **Marked batch stability**: mark batch on device A, send batch on device B, marks stay on correct batch — passed manually on 2026-05-03
+- [x] **Rapid writes**: 10 edits in 1 second persist correctly — passed manually on 2026-05-03
+- [x] **Write failure during grace period**: failed write preserves dirty local state and recovers — passed manually on 2026-05-03
 - [ ] **Concurrent edit race**: Two devices edit same table 400ms apart
 - [ ] **Conflict resolution during poll**: Trigger conflict modal while poll active
 - [ ] **Batch merge with interleaved timestamps**: Verify marks persist correctly
-- [ ] **Table swap during poll**: Swap tables, poll fires mid-swap
-- [ ] **Write failure during grace period**: Simulate network failure
-- [ ] **Offline for 5+ minutes**: Go offline, edit, come back, verify conflict detected
-- [ ] **Rapid writes**: 10 edits in 1 second, verify all persist
 - [ ] **Simultaneous batches**: Two devices send batch at same millisecond
 
-### Manual Tests — ⬜ NOT STARTED
+### Manual Tests — ✅ TARGETED MANUAL PASS
 
-- [ ] Open 2 browser tabs, edit same table on both
-- [ ] Mark batch on device A, send new batch on device B, verify marks stay correct
-- [ ] Swap tables while other device is editing
-- [ ] Disconnect network, edit, reconnect, verify conflict modal appears
+- [x] Open 2 browser tabs/devices, edit same table on both
+- [x] Mark batch on device A, send new batch on device B, verify marks stay correct — passed 2026-05-03
+- [x] Swap tables while another device is polling — passed 2026-05-03
+- [x] Disconnect network for 5+ minutes, edit, reconnect, verify conflict modal appears — passed 2026-05-03
+- [x] Rapid write burst: 10 edits in 1 second persist correctly — passed 2026-05-03
+- [x] Write failure during grace period preserves local state and recovers — passed 2026-05-03
 - [ ] Fill localStorage to capacity, close table, verify error message
+
+### Manual Verification Log
+
+**2026-05-03**: All requested targeted Session 1 manual sync tests passed:
+offline conflict recovery, table swap while polling, marked batch stability across devices,
+rapid writes, and write failure during grace period.
 
 ---
 
@@ -344,19 +366,32 @@ const swapTables = useCallback((fromId: TableId, toId: TableId) => {
 
 ## Decision Log
 
+### 2026-05-02: Release Decision
+
+**Decision**: Do not release Session 1 independently.
+
+**Rationale**:
+- Session 1 sync fixes are complete enough to continue development.
+- Production release should wait until Session 1, Session 2, and Session 3 hardening measures are implemented together.
+- The 24h soak remains a release gate, but should run last against the combined release candidate rather than this Session 1-only batch.
+
+**Next Action**: Continue with Session 2 and Session 3 hardening; defer production soak/deploy until the combined hardening batch is ready.
+
+---
+
 ### 2026-04-29: Implementation Approach
 
 **Options**:
 - **A**: Quick Fix (4h) — Capture state inside timeout, defer marked_batches migration
 - **B**: Proper Fix (11h) — Full functional setState refactor + marked_batches migration
 
-**Decision**: ⏸️ **PENDING USER INPUT**
+**Decision**: ✅ **Option A implemented**
 
 **Rationale**:
-- Option A: Ships faster, lower risk, but doesn't eliminate root cause
-- Option B: Eliminates entire class of bugs, better long-term, but higher short-term risk
+- Option A shipped the critical fixes with lower short-term risk.
+- Option B remains a possible future refactor if ref-based debounce becomes a recurring maintenance cost.
 
-**Recommendation**: Option A for now, Option B in next sprint after testing.
+**Recommendation**: Keep Option B deferred unless Session 2/3 work exposes a concrete need for the broader refactor.
 
 ---
 
@@ -413,7 +448,7 @@ main
 
 ### Phase 2 Complete When:
 - [x] All 4 P0 issues fixed
-- [ ] 2-device integration test passes
+- [x] Targeted 2-device/manual sync tests pass
 - [ ] No data loss in 24h soak test
 
 ### Phase 3 Complete When:
@@ -422,12 +457,14 @@ main
 - [x] Existing numeric marks are preserved by mapping index to batch on read
 
 ### Session 1 Complete When:
-- [ ] All P0 issues fixed
-- [ ] All quick wins implemented
-- [ ] Integration tests pass
-- [ ] Manual testing complete
-- [ ] Deployed to production
-- [ ] Monitoring shows no sync errors for 1 week
+- [x] All P0 issues fixed
+- [x] All quick wins implemented
+- [x] Core regression tests pass
+- [x] Initial 2-device manual verification complete
+- [ ] Combined Sessions 1-3 hardening release candidate is ready
+- [ ] 24h soak passes against the combined release candidate
+- [ ] Deployed to production after explicit approval
+- [ ] Monitoring shows no sync errors for 1 week after deployment
 
 ---
 
@@ -438,9 +475,9 @@ main
 | Quick Wins | 18 min | ~15 min | ✅ Completed 2026-04-29 |
 | P0 Quick Fix | 4h | ~2h | ✅ Completed 2026-04-29 (faster than estimated) |
 | P0 Proper Fix | 11h | — | Not started (deferred) |
-| P1 Fixes | 10h | — | Not started |
-| Testing | 4h | — | Not started |
-| **TOTAL** | **~19h** | **~5.25h** | P0 complete; integration/manual testing pending |
+| P1 Fixes | 10h | ~10h | ✅ Completed |
+| Testing | 4h | ~4h+ | Hook/action tests added; 2-device verification and targeted manual sync tests passed |
+| **TOTAL** | **~19h** | **~15h+** | P0/P1 complete for analysis; targeted manual sync tests passed; production soak/deploy deferred until Sessions 1-3 hardening release candidate |
 
 ---
 
@@ -474,27 +511,27 @@ main
   - Directus `marked_batches` remains JSON and now stores `string[]`
 
 ### 📋 Remaining Work
-- **8 P1 fixes** (~10 hours)
-- **4 P2 optimizations** (~8 hours, optional)
-- **Integration tests** (~4 hours)
-- **Manual testing** (~2 hours)
+- Optional edge-case integration scenarios not covered by targeted manual verification: simultaneous millisecond batches, conflict resolution exactly during an active poll, and localStorage capacity failure
+- Optional extra action coverage for table close/delete recovery paths
+- Optional P2 cleanup: allKeys collection and atomic cache write improvements
 
 ### 🎯 Production Readiness
-**Current Status**: ✅ **Ready for multi-device testing**
+**Current Status**: ✅ **Analysis complete; release intentionally deferred**
 - All critical data loss bugs fixed
 - No more stale ref races in debounced writes
 - No more ref sync races in conflict resolution
 - Table swap protected from poll overwrites
+- Targeted manual sync tests passed on 2026-05-03
 
 **Before Full Production**:
-1. Run integration tests (2-device concurrent edits)
-2. Soak test for 24h in staging
-3. Monitor error rates closely for first week
+1. Finish Session 1, Session 2, and Session 3 hardening measures as one release candidate
+2. Soak test for 24h in staging/real service conditions
+3. Deploy only after explicit approval, then monitor error rates closely for the first week
 
 **P0-3 Migration Note**: No Directus schema change is required because `marked_batches` is JSON. Existing numeric marks are migrated opportunistically when sessions are read, then written back as string IDs on the next save.
 
 ---
 
-**Last Updated**: 2026-04-30
-**Next Review**: After integration testing complete
-**Next Steps**: Run 2-device integration tests, then deploy to staging
+**Last Updated**: 2026-05-03
+**Next Review**: Session 2 — State Consistency
+**Next Steps**: Continue Session 2 and Session 3 hardening; defer soak/deploy until the combined hardening release candidate is ready

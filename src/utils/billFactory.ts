@@ -49,10 +49,17 @@ export function createFullTableBill(params: {
 export function calculateEqualSplitTip(
   equalPayments: PaymentInput[],
   equalShare: number,
+  totalGuests: number,
+  billableTotal: number,
 ): number {
   const confirmedPayments = equalPayments.filter((payment) => payment.confirmed);
   const totalPaid = confirmedPayments.reduce((sum, payment) => sum + parseFloat(payment.amount), 0);
-  return totalPaid > 0 ? totalPaid - confirmedPayments.length * equalShare : 0;
+  if (totalPaid <= 0) return 0;
+  const lastGuestShare = Math.round((billableTotal - equalShare * (totalGuests - 1)) * 100) / 100;
+  const expected = confirmedPayments.length >= totalGuests
+    ? (totalGuests - 1) * equalShare + lastGuestShare
+    : confirmedPayments.length * equalShare;
+  return totalPaid - expected;
 }
 
 export function createEqualSplitTableBill(params: {
@@ -64,7 +71,9 @@ export function createEqualSplitTableBill(params: {
   equalShare: number;
 }): BillWithTip {
   const items = getSentBillItems(params.orders, params.tableId);
-  const tip = calculateEqualSplitTip(params.equalPayments, params.equalShare);
+  const subtotal = getBillSubtotal(items);
+  const billableTotal = getBillTotal(subtotal, params.gutschein);
+  const tip = calculateEqualSplitTip(params.equalPayments, params.equalShare, params.guests, billableTotal);
 
   return {
     ...baseTableBill(params.tableId, items, params.gutschein),

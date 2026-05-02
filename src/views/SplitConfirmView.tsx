@@ -30,7 +30,8 @@ export function SplitConfirmView() {
     // Calculate tip
     const guestsWithPayment = state.payments.filter((p) => state.itemPayments[p.guestNum]?.confirmed);
     const totalTip = guestsWithPayment.reduce((sum, p) => {
-      const paid = parseFloat(state.itemPayments[p.guestNum].amount);
+      const parsedPaid = parseFloat(state.itemPayments[p.guestNum].amount);
+      const paid = !Number.isNaN(parsedPaid) ? parsedPaid : p.total;
       return sum + (paid - p.total);
     }, 0);
 
@@ -133,8 +134,9 @@ export function SplitConfirmView() {
             <button
               style={guestPayment?.confirmed ? S.paymentCheckConfirmed : S.paymentCheck}
               onClick={() => {
-                const amount = guestPayment?.amount && parseFloat(guestPayment.amount) > 0
-                  ? parseFloat(guestPayment.amount) : lastPayment.total;
+                const parsedAmount = parseFloat(guestPayment?.amount || "");
+                const amount = !Number.isNaN(parsedAmount) && parsedAmount > 0
+                  ? parsedAmount : lastPayment.total;
                 dispatch({
                   type: "UPDATE_ITEM_PAYMENT",
                   guestNum: lastPayment.guestNum,
@@ -145,7 +147,8 @@ export function SplitConfirmView() {
             >✓</button>
           </div>
           {guestPayment?.confirmed && (() => {
-            const paid = parseFloat(guestPayment.amount);
+            const parsedPaid = parseFloat(guestPayment.amount);
+            const paid = !Number.isNaN(parsedPaid) ? parsedPaid : lastPayment.total;
             const tip = paid - lastPayment.total;
             return <div style={S.paymentTip}>Tip: {tip >= 0 ? `+${tip.toFixed(2)}€` : `${tip.toFixed(2)}€`}</div>;
           })()}
@@ -247,8 +250,9 @@ export function SplitConfirmView() {
               <button
                 style={guestPayment?.confirmed ? S.paymentCheckConfirmed : S.paymentCheck}
                 onClick={() => {
-                  const amount = guestPayment?.amount && parseFloat(guestPayment.amount) > 0
-                    ? parseFloat(guestPayment.amount) : lastPayment.total;
+                  const parsedAmount = parseFloat(guestPayment?.amount || "");
+                  const amount = !Number.isNaN(parsedAmount) && parsedAmount > 0
+                    ? parsedAmount : lastPayment.total;
                   dispatch({
                     type: "UPDATE_ITEM_PAYMENT",
                     guestNum: lastPayment.guestNum,
@@ -259,7 +263,8 @@ export function SplitConfirmView() {
               >✓</button>
             </div>
             {guestPayment?.confirmed && (() => {
-              const paid = parseFloat(guestPayment.amount);
+              const parsedPaid = parseFloat(guestPayment.amount);
+              const paid = !Number.isNaN(parsedPaid) ? parsedPaid : lastPayment.total;
               const tip = paid - lastPayment.total;
               return <div style={S.paymentTip}>Tip: {tip >= 0 ? `+${tip.toFixed(2)}€` : `${tip.toFixed(2)}€`}</div>;
             })()}

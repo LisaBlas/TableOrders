@@ -181,6 +181,10 @@ export function useDirectusSync(
     return () => window.clearInterval(interval);
   }, [hasFailedWrites, conflicts.length, runRecoveryFetch]);
 
+  // Writes localStorage after each React state change (fires after render, ~16ms delay).
+  // Acceptable risk: a crash in this window loses only the current action. The dirty marker
+  // written by scheduleWrite → persistLocalSnapshot lands in the same macrotask as the write
+  // (before this effect runs), so the dirty flag survives even if the local cache lags briefly.
   useEffect(() => {
     const existingCache = readSessionCache();
     const dirtyRecords = readDirtySessionRecords();
@@ -650,7 +654,11 @@ export function useDirectusSync(
     markSessionDirty(key, resolvedSession, conflict.remote);
     writeSessionToCache(key, resolvedSession, false);
 
-    // Persist after refs are synced (defer until next tick to ensure useEffects have run)
+    // Defer scheduleWrite so snapshot refs (ordersRef etc.) are updated by their useEffects
+    // before the write reads them. This is safe despite the apparent poll race: syncPaused.current
+    // stays true until conflicts.length hits 0, which requires the setConflicts() call above to
+    // render first. The merge effect guards on syncPaused, so it cannot overwrite the resolved
+    // state before this setTimeout fires.
     setTimeout(() => {
       scheduleWrite(tableIdParsed);
     }, 0);

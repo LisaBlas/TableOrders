@@ -13,25 +13,28 @@ export function useTableClose(tableId: TableId, sent: OrderItem[], isLargeScreen
   const [paymentConfirmed, setPaymentConfirmed] = useState(false);
 
   const gutschein = table.gutscheinAmounts[tableId] || 0;
-  const sentSubtotal = sent.reduce((s, o) => s + o.price * o.qty, 0);
+  const sentSubtotal = sent.reduce((s, o) => s + o.price * (o.sentQty || 0), 0);
   const total = Math.max(0, sentSubtotal - gutschein);
 
   const handleConfirmPayment = () => {
+    const parsedPaymentAmount = parseFloat(paymentAmount);
     const amount =
-      paymentAmount && parseFloat(paymentAmount) > 0 ? parseFloat(paymentAmount) : total;
+      !Number.isNaN(parsedPaymentAmount) && parsedPaymentAmount > 0 ? parsedPaymentAmount : total;
     setPaymentAmount(amount.toString());
     setPaymentConfirmed(true);
   };
 
   const submitClose = () => {
     const tempId = crypto.randomUUID();
-    const paid = paymentAmount ? parseFloat(paymentAmount) : total;
+    const parsedPaymentAmount = parseFloat(paymentAmount);
+    const paid =
+      !Number.isNaN(parsedPaymentAmount) && parsedPaymentAmount > 0 ? parsedPaymentAmount : total;
     const tip = paid - total;
 
     app.addPaidBill({
       tempId,
       tableId: displayId,
-      items: sent.map((o: OrderItem) => ({ ...o })),
+      items: sent.map((o: OrderItem) => ({ ...o, qty: o.sentQty || 0 })),
       total,
       subtotal: gutschein > 0 ? sentSubtotal : undefined,
       gutschein: gutschein > 0 ? gutschein : undefined,

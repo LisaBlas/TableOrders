@@ -271,10 +271,10 @@ SplitDoneView: UNREACHABLE (dead code hazard)
 
 ## Quick Wins (<30 min)
 
-- [ ] **Fix `o.qty` → `o.sentQty`** — [useTableClose.ts:15](src/hooks/useTableClose.ts#L15) — 5 min
-- [ ] **Add NaN guard to parseFloat** — 3 locations — 10 min
-- [ ] **Cap guest count at 20** — [SplitEqualView.tsx:84](src/views/SplitEqualView.tsx#L84) — 2 min
-- [ ] **Normalize bill items in useTableClose** — [useTableClose.ts:33](src/hooks/useTableClose.ts#L33) — 5 min
+- [x] **Fix `o.qty` → `o.sentQty`** — [useTableClose.ts:15](src/hooks/useTableClose.ts#L15) — completed 2026-05-02
+- [x] **Add NaN guard to parseFloat** — 3 locations — completed 2026-05-02
+- [x] **Cap guest count at 20** — [SplitEqualView.tsx:84](src/views/SplitEqualView.tsx#L84) — completed 2026-05-02
+- [x] **Normalize bill items in useTableClose** — [useTableClose.ts:33](src/hooks/useTableClose.ts#L33) — completed 2026-05-02
 
 ---
 
@@ -283,8 +283,8 @@ SplitDoneView: UNREACHABLE (dead code hazard)
 ### 🔄 1. Unify Close Logic (2 hours)
 All three close paths duplicate `addPaidBill → cleanupTable → setView("tables")`. Extract a `closeTable(tableId, bill)` helper that handles persistence, cleanup, and navigation consistently. Makes the race condition fix (P1 #1) a single-site change.
 
-### 🔄 2. Fix Equal Split Rounding (1 hour)
-Introduce `computeEqualShares(total, guests)` that returns `[n-1 rounded shares, 1 adjusted last share]` summing to exactly `total`. Use rounded shares everywhere instead of raw float division.
+### ✅ 2. Fix Equal Split Rounding — DONE 2026-05-02
+Inline `equalShareRounded` + `lastGuestShare` in SplitEqualView; `calculateEqualSplitTip` updated to accept `totalGuests` + `billableTotal` and compute the correct expected total. Remainder assigned to last guest.
 
 ### 🔄 3. Remove SplitDoneView or Wire It Up (30 min)
 Either delete the file (dead code) or make it the canonical final settlement step and remove bill creation from SplitConfirmView.
@@ -293,13 +293,13 @@ Either delete the file (dead code) or make it the canonical final settlement ste
 
 ## Test Gaps
 
-- [ ] Full close with qty > sentQty: verify bill uses sentQty, not qty
-- [ ] Equal split €10 / 3 guests: verify displayed amounts sum to €10 exactly
-- [ ] Equal split: each guest pays shown amount; verify tip = 0 (not −€0.01)
-- [ ] Equal split close: Directus write fails; kill tab; reopen; verify bill is recoverable
-- [ ] Item split: close table without assigning gutschein; verify bill correctly shows discount
+- [x] Full close with qty > sentQty: verify bill uses sentQty, not qty — fixed QW1+QW4
+- [x] Equal split €10 / 3 guests: verify displayed amounts sum to €10 exactly — fixed P1-3
+- [x] Equal split: each guest pays shown amount; verify tip = 0 (not −€0.01) — fixed P1-3
+- [ ] Equal split close: Directus write fails; kill tab; reopen; verify bill is recoverable — partial (Option A done; Option B deferred)
+- [ ] Item split: close table without assigning gutschein; verify bill correctly shows discount — P2-8 pending
 - [ ] Item split: two guests, last item is gutschein; verify final paidTotal is correct
-- [ ] 1000 guest count: verify UI doesn't freeze
+- [x] 1000 guest count: verify UI doesn't freeze — fixed QW3 (capped at 20)
 
 ---
 
@@ -313,4 +313,4 @@ Either delete the file (dead code) or make it the canonical final settlement ste
 | Quick Wins | 4  | ~22 min  |
 | **Total** | **9** | **~5h** |
 
-**Critical Path**: Fix P1 #2 (qty/sentQty overcharge) before next shift — it affects every full-table close where orders weren't fully sent. P1 #3 (equal split rounding) is cosmetic but visible to waitstaff daily.
+**Critical Path**: All P1 fixes shipped 2026-05-02. Ready for unit tests and manual smoke tests before production deploy.

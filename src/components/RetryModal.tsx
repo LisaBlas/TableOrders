@@ -3,10 +3,9 @@ import type { CSSProperties } from "react";
 interface RetryModalProps {
   message: string;
   onRetry: () => void;
-  onCancel: () => void;
 }
 
-export default function RetryModal({ message, onRetry, onCancel }: RetryModalProps) {
+export default function RetryModal({ message, onRetry }: RetryModalProps) {
   const overlayStyle: CSSProperties = {
     position: "fixed",
     top: 0,
@@ -43,13 +42,7 @@ export default function RetryModal({ message, onRetry, onCancel }: RetryModalPro
     lineHeight: 1.5,
   };
 
-  const buttonRowStyle: CSSProperties = {
-    display: "flex",
-    gap: "12px",
-    justifyContent: "flex-end",
-  };
-
-  const buttonBaseStyle: CSSProperties = {
+  const retryButtonStyle: CSSProperties = {
     padding: "10px 20px",
     borderRadius: "8px",
     border: "none",
@@ -57,51 +50,24 @@ export default function RetryModal({ message, onRetry, onCancel }: RetryModalPro
     fontWeight: 600,
     cursor: "pointer",
     transition: "all 0.2s",
-  };
-
-  const cancelButtonStyle: CSSProperties = {
-    ...buttonBaseStyle,
-    backgroundColor: "#f0f0f0",
-    color: "#333",
-  };
-
-  const retryButtonStyle: CSSProperties = {
-    ...buttonBaseStyle,
     backgroundColor: "#4CAF50",
     color: "#fff",
+    width: "100%",
   };
 
   return (
     <div style={overlayStyle}>
       <div style={modalStyle}>
-        <div style={titleStyle}>⚠️ Save Failed</div>
+        <div style={titleStyle}>⚠️ Bill Not Saved</div>
         <div style={messageStyle}>{message}</div>
-        <div style={buttonRowStyle}>
-          <button
-            style={cancelButtonStyle}
-            onClick={onCancel}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = "#e0e0e0";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = "#f0f0f0";
-            }}
-          >
-            Cancel
-          </button>
-          <button
-            style={retryButtonStyle}
-            onClick={onRetry}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = "#45a049";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = "#4CAF50";
-            }}
-          >
-            Retry
-          </button>
-        </div>
+        <button
+          style={retryButtonStyle}
+          onClick={onRetry}
+          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#45a049"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#4CAF50"; }}
+        >
+          Retry
+        </button>
       </div>
     </div>
   );

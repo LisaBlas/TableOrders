@@ -2,7 +2,7 @@ import {
   createContext, useContext, useState, useCallback, useEffect, useMemo,
   type ReactNode,
 } from "react";
-import { flushSync } from "react-dom";
+import { flushSync, unstable_batchedUpdates } from "react-dom";
 import { useApp } from "./AppContext";
 import { useMenu } from "./MenuContext";
 import { useDirectusSync } from "../hooks/useDirectusSync";
@@ -111,6 +111,7 @@ export function TableProvider({ children }: { children: ReactNode }) {
 
   // ── State ─────────────────────────────────────────────────────────────────
   const [orders, setOrders] = useState<Orders>(() => initialState.orders);
+  // Array is the serializable source of truth; consumers get a Set view below.
   const [seatedTablesArr, setSeatedTablesArr] = useState<TableId[]>(() => initialState.seatedTablesArr);
   const [sentBatches, setSentBatches] = useState<SentBatches>(() => initialState.sentBatches);
   const [gutscheinAmounts, setGutscheinAmounts] = useState<GutscheinAmounts>(() => initialState.gutscheinAmounts);
@@ -388,15 +389,17 @@ export function TableProvider({ children }: { children: ReactNode }) {
 
   const cleanupTable = useCallback((tableId: TableId) => {
     const key = String(tableId);
-    setOrders((prev) => { const n = { ...prev }; delete n[key]; return n; });
-    setSeatedTablesArr((prev) => prev.filter((id) => String(id) !== key));
-    setSentBatches((prev) => { const n = { ...prev }; delete n[key]; return n; });
-    setGutscheinAmounts((prev) => { const n = { ...prev }; delete n[key]; return n; });
-    setMarkedBatches((prev) => { const n = { ...prev }; delete n[key]; return n; });
+    unstable_batchedUpdates(() => {
+      setOrders((prev) => { const n = { ...prev }; delete n[key]; return n; });
+      setSeatedTablesArr((prev) => prev.filter((id) => String(id) !== key));
+      setSentBatches((prev) => { const n = { ...prev }; delete n[key]; return n; });
+      setGutscheinAmounts((prev) => { const n = { ...prev }; delete n[key]; return n; });
+      setMarkedBatches((prev) => { const n = { ...prev }; delete n[key]; return n; });
+      if (key.startsWith("ext-")) {
+        setDynamicTables((prev) => prev.filter((t) => t.id !== key));
+      }
+    });
     cancelAndDelete(tableId);
-    if (key.startsWith("ext-")) {
-      setDynamicTables((prev) => prev.filter((t) => t.id !== key));
-    }
   }, [cancelAndDelete, setDynamicTables]);
 
   const removePaidItems = useCallback((tableId: TableId, paidItems: ExpandedItem[]) => {
@@ -428,16 +431,18 @@ export function TableProvider({ children }: { children: ReactNode }) {
     // Mark both tables as locally owned to protect from remote poll overwrites during swap
     markAsLocallyOwned(fromId, toId);
 
-    setOrders((prev) => swapTableState(prev, fk, tk));
-    setSentBatches((prev) => swapTableState(prev, fk, tk));
-    setMarkedBatches((prev) => swapTableState(prev, fk, tk));
-    setGutscheinAmounts((prev) => swapTableState(prev, fk, tk));
-    setSeatedTablesArr((prev) => {
-      const s = new Set<TableId>(prev);
-      const fromSeated = s.has(fromId); const toSeated = s.has(toId);
-      if (toSeated) s.add(fromId); else s.delete(fromId);
-      if (fromSeated) s.add(toId); else s.delete(toId);
-      return Array.from(s);
+    unstable_batchedUpdates(() => {
+      setOrders((prev) => swapTableState(prev, fk, tk));
+      setSentBatches((prev) => swapTableState(prev, fk, tk));
+      setMarkedBatches((prev) => swapTableState(prev, fk, tk));
+      setGutscheinAmounts((prev) => swapTableState(prev, fk, tk));
+      setSeatedTablesArr((prev) => {
+        const s = new Set<TableId>(prev);
+        const fromSeated = s.has(fromId); const toSeated = s.has(toId);
+        if (toSeated) s.add(fromId); else s.delete(fromId);
+        if (fromSeated) s.add(toId); else s.delete(toId);
+        return Array.from(s);
+      });
     });
 
     showToast(`Table ${fromId} ⇄ Table ${toId}`);

@@ -43,6 +43,9 @@ Notes:
 ## Deployment Rules
 - Before source changes, pull latest `main`:
   `git pull origin main`.
+- Current release decision: do not release Session 1 independently. Production
+  soak/deploy is deferred until Session 1, Session 2, and Session 3 hardening
+  measures are implemented as one combined release candidate.
 - Ask before committing, pushing, or deploying.
 - After an approved commit and push to `main`, run `npm run deploy`.
 - Do not touch secrets, credentials, auth files, or production data without
@@ -143,6 +146,10 @@ src/
 ## Testing And Verification
 - Primary verification is `npm run build`.
 - Type-check with `npm.cmd exec tsc -- --noEmit`.
+- Session 1 targeted manual sync verification passed on 2026-05-03:
+  offline conflict recovery, table swap while polling, marked batch stability,
+  rapid writes, and write failure during grace period. The 24h soak/deploy gate
+  remains deferred until the combined Sessions 1-3 hardening release candidate.
 - For UI behavior changes, run `npm run dev` and manually check the affected
   flow at mobile and tablet/desktop widths.
 - For sync, bill creation, POS crossing, clearing sales, or split payments,

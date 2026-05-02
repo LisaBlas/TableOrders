@@ -2,30 +2,30 @@
 
 **Created**: 2026-05-02
 **Audit Report**: [session-03-payment-integrity.md](session-03-payment-integrity.md)
-**Status**: 🔴 **Not started** — audit complete, fixes pending
+**Status**: ✅ **Session 3 complete** — all P1 fixes + manual tests passed; unit tests and optional P2 remain
 
 ---
 
 ## Implementation Status
 
-### Phase 1: Quick Wins (~22 min) — ⬜ NOT STARTED
+### Phase 1: Quick Wins (~22 min) — ✅ COMPLETE
 
 | # | Issue | File | Time | Status |
 |---|-------|------|------|--------|
-| QW1 | Fix `o.qty` → `o.sentQty` for full-close subtotal | [useTableClose.ts:15](src/hooks/useTableClose.ts#L15) | 5 min | ⬜ TODO |
-| QW2 | Add NaN guard to parseFloat in all 3 payment inputs | [useTableClose.ts:19](src/hooks/useTableClose.ts#L19), [SplitEqualView.tsx:123](src/views/SplitEqualView.tsx#L123), [SplitConfirmView.tsx:135](src/views/SplitConfirmView.tsx#L135) | 10 min | ⬜ TODO |
-| QW3 | Cap guest count at 20 | [SplitEqualView.tsx:84](src/views/SplitEqualView.tsx#L84) | 2 min | ⬜ TODO |
-| QW4 | Normalize bill items via sentQty in useTableClose | [useTableClose.ts:33](src/hooks/useTableClose.ts#L33) | 5 min | ⬜ TODO |
+| QW1 | Fix `o.qty` → `o.sentQty` for full-close subtotal | [useTableClose.ts:15](src/hooks/useTableClose.ts#L15) | 5 min | ✅ DONE |
+| QW2 | Add NaN guard to parseFloat in all 3 payment inputs | [useTableClose.ts:19](src/hooks/useTableClose.ts#L19), [SplitEqualView.tsx:123](src/views/SplitEqualView.tsx#L123), [SplitConfirmView.tsx:135](src/views/SplitConfirmView.tsx#L135) | 10 min | ✅ DONE |
+| QW3 | Cap guest count at 20 | [SplitEqualView.tsx:84](src/views/SplitEqualView.tsx#L84) | 2 min | ✅ DONE |
+| QW4 | Normalize bill items via sentQty in useTableClose | [useTableClose.ts:33](src/hooks/useTableClose.ts#L33) | 5 min | ✅ DONE |
 
 ---
 
-### Phase 2: P1 Fixes (~2h) — ⬜ NOT STARTED
+### Phase 2: P1 Fixes (~2h) — ✅ COMPLETE
 
 | # | Issue | File | Time | Status |
 |---|-------|------|------|--------|
-| P1-1 | Race: cleanupTable before bill save confirmed | [useTableClose.ts:42](src/hooks/useTableClose.ts#L42), [SplitEqualView.tsx:34](src/views/SplitEqualView.tsx#L34), [SplitDoneView.tsx:29](src/views/SplitDoneView.tsx#L29) | 1h | ⬜ TODO |
-| P1-2 | useTableClose uses `o.qty` not `o.sentQty` for subtotal | [useTableClose.ts:15](src/hooks/useTableClose.ts#L15) | 5 min (covered by QW1) | ⬜ TODO |
-| P1-3 | Equal split rounding: displayed share ≠ amount used in tip math | [SplitEqualView.tsx:90,138](src/views/SplitEqualView.tsx#L90), [billFactory.ts:54-55](src/utils/billFactory.ts#L54-L55) | 45 min | ⬜ TODO |
+| P1-1 | Race: cleanupTable before bill save confirmed | [RetryModal.tsx](src/components/RetryModal.tsx), [AppContext.tsx](src/contexts/AppContext.tsx) | 1h | ✅ DONE (Option A) |
+| P1-2 | useTableClose uses `o.qty` not `o.sentQty` for subtotal | [useTableClose.ts:15](src/hooks/useTableClose.ts#L15) | — | ✅ DONE (covered by QW1) |
+| P1-3 | Equal split rounding: displayed share ≠ amount used in tip math | [SplitEqualView.tsx:90,138](src/views/SplitEqualView.tsx#L90), [billFactory.ts:54-55](src/utils/billFactory.ts#L54-L55) | 45 min | ✅ DONE |
 
 ---
 
@@ -33,12 +33,12 @@
 
 | # | Issue | File | Time | Status |
 |---|-------|------|------|--------|
-| P2-4 | NaN guard on parseFloat | Multiple | 10 min (covered by QW2) | ⬜ TODO |
-| P2-5 | No upper bound on guest count | [SplitEqualView.tsx:84](src/views/SplitEqualView.tsx#L84) | 2 min (covered by QW3) | ⬜ TODO |
+| P2-4 | NaN guard on parseFloat | Multiple | — | ✅ DONE (covered by QW2) |
+| P2-5 | No upper bound on guest count | [SplitEqualView.tsx:84](src/views/SplitEqualView.tsx#L84) | — | ✅ DONE (covered by QW3) |
 | P2-6 | SplitDoneView dead code / double-bill hazard | [SplitDoneView.tsx](src/views/SplitDoneView.tsx) | 30 min | ⬜ TODO |
-| P2-7 | calculateEqualSplitTip uses raw float | [billFactory.ts:54-55](src/utils/billFactory.ts#L54-L55) | 15 min (part of P1-3) | ⬜ TODO |
+| P2-7 | calculateEqualSplitTip uses raw float | [billFactory.ts:54-55](src/utils/billFactory.ts#L54-L55) | — | ✅ DONE (covered by P1-3) |
 | P2-8 | No warning when gutschein not assigned in item split | [SplitConfirmView.tsx:29](src/views/SplitConfirmView.tsx#L29) | 30 min | ⬜ TODO |
-| P2-9 | Full-close bill items not normalized | [useTableClose.ts:33](src/hooks/useTableClose.ts#L33) | 5 min (covered by QW4) | ⬜ TODO |
+| P2-9 | Full-close bill items not normalized | [useTableClose.ts:33](src/hooks/useTableClose.ts#L33) | — | ✅ DONE (covered by QW4) |
 
 ---
 
@@ -46,8 +46,8 @@
 
 ### Unit Tests — ⬜ NOT STARTED
 - [ ] `getBillSubtotal`: verify uses `sentQty`, not `qty`
-- [ ] `calculateEqualSplitTip`: verify returns 0 for no-tip case (not −0.01)
-- [ ] `computeEqualShares` (new): verify 3-guest €10 gives [3.33, 3.33, 3.34], sums to 10.00
+- [ ] `calculateEqualSplitTip`: €10/3 guests, each pays 3.33 → tip = 0, not −0.01
+- [ ] `calculateEqualSplitTip`: €10/3 guests, last guest pays 3.34 → tip = 0
 - [ ] Full-close bill total: qty=3 sentQty=2 → total = price × 2
 
 ### Integration Tests — ⬜ NOT STARTED
@@ -55,14 +55,14 @@
 - [ ] Equal split €10 / 3 guests → displayed amounts sum to €10
 - [ ] Equal split: each guest pays shown amount → tip = 0 (not negative)
 - [ ] Item split: gutschein not selected → bill shows no discount
-- [ ] Directus write fails on close → retry toast, verify bill persists in localStorage
+- [ ] Directus write fails on close → non-dismissible retry modal blocks UI until resolved
 
-### Manual Tests — ⬜ NOT STARTED
-- [ ] Order item qty=3, send 2, close table — verify receipt shows 2× price
-- [ ] Equal split 10€ / 3, each pays 3.33€ — verify tip shows +€0.00 not −€0.01
-- [ ] Set guest count to 20 — verify + button is disabled at max
-- [ ] Item split with gutschein — verify waiter gets warning if gutschein not assigned
-- [ ] Disconnect network mid-close — verify retry toast, table session still present if bill save fails
+### Manual Tests — ✅ PASSED 2026-05-02
+- [x] Order item qty=3, send 2, close table — verify receipt shows 2× price
+- [x] Equal split 10€ / 3, each pays 3.33€ — verify tip shows +€0.00 not −€0.01
+- [x] Set guest count to 20 — verify + button is disabled at max
+- [ ] Item split with gutschein — verify waiter gets warning if gutschein not assigned (P2-8, not yet implemented)
+- [x] Disconnect network mid-close — non-dismissible retry modal; bill saved on retry with toast
 
 ---
 
@@ -195,10 +195,10 @@ main
 | Phase | Estimated | Actual | Notes |
 |-------|-----------|--------|-------|
 | Audit (session) | 90 min | 90 min | ✅ Complete 2026-05-02 |
-| Quick Wins | 22 min | — | Not started |
-| P1 Fixes | ~2h | — | Not started |
-| P2 Fixes | ~3h | — | Optional |
-| Testing | ~2h | — | Not started |
+| Quick Wins | 22 min | ~22 min | ✅ Complete 2026-05-02 |
+| P1 Fixes | ~2h | ~1h | ✅ Complete 2026-05-02 |
+| P2 Fixes | ~3h | — | Optional (P2-6, P2-8 remain) |
+| Testing | ~2h | ~30 min | Manual tests ✅; unit tests pending |
 | **Total (excl. audit)** | **~7h** | **—** | — |
 
 ---
@@ -206,25 +206,25 @@ main
 ## Success Criteria
 
 ### Phase 1 (Quick Wins) Complete When:
-- [ ] Full-close subtotal uses `sentQty` (no overcharge)
-- [ ] Bill items stored with normalized qty
-- [ ] No NaN-vulnerable parseFloat calls
-- [ ] Guest count capped at 20
+- [x] Full-close subtotal uses `sentQty` (no overcharge)
+- [x] Bill items stored with normalized qty
+- [x] No NaN-vulnerable parseFloat calls
+- [x] Guest count capped at 20
 
 ### Phase 2 (P1 Fixes) Complete When:
-- [ ] Full-close bill recoverable after Directus failure + device restart
-- [ ] Equal split: sum of displayed shares = bill total (no rounding shortfall)
-- [ ] Equal split: no-tip payment shows +€0.00, not −€0.01
+- [x] Bill save failure cannot be silently dismissed (Option A — non-dismissible retry modal)
+- [ ] Bill recoverable after device crash mid-close (Option B — localStorage persistence, deferred)
+- [x] Equal split: sum of displayed shares = bill total (no rounding shortfall)
+- [x] Equal split: no-tip payment shows +€0.00, not −€0.01
 
 ### Session 3 Complete When:
-- [ ] All P1 issues fixed
-- [ ] All quick wins implemented
+- [x] All P1 issues fixed
+- [x] All quick wins implemented
 - [ ] Unit tests for rounding and sentQty
-- [ ] Manual test: equal split €10/3 passes
-- [ ] Manual test: partial-send full-close passes
+- [x] Manual test: equal split €10/3 passes
+- [x] Manual test: partial-send full-close passes
 
 ---
 
 **Last Updated**: 2026-05-02
-**Next Steps**: Start with QW1 (sentQty fix) and QW3 (guest count cap) — lowest risk, highest value
-
+**Next Steps**: Unit tests for `getBillSubtotal`, `calculateEqualSplitTip`, and full-close total. Then commit + deploy as combined RC (Sessions 1–3). Optional: P2-6 (delete SplitDoneView), P2-8 (gutschein warning), Option B localStorage persistence for crash recovery.
