@@ -2,7 +2,7 @@
 
 **Created**: 2026-05-02
 **Audit Report**: [session-03-payment-integrity.md](session-03-payment-integrity.md)
-**Status**: ✅ **Session 3 complete** — all P1 fixes + manual tests passed; unit tests and optional P2 remain
+**Status**: ✅ **Session 3 complete** — all P1 fixes + manual tests + unit tests passed; optional P2 remains
 
 ---
 
@@ -44,11 +44,11 @@
 
 ## Testing Checklist
 
-### Unit Tests — ⬜ NOT STARTED
-- [ ] `getBillSubtotal`: verify uses `sentQty`, not `qty`
-- [ ] `calculateEqualSplitTip`: €10/3 guests, each pays 3.33 → tip = 0, not −0.01
-- [ ] `calculateEqualSplitTip`: €10/3 guests, last guest pays 3.34 → tip = 0
-- [ ] Full-close bill total: qty=3 sentQty=2 → total = price × 2
+### Unit Tests — ✅ COMPLETE (2026-05-03)
+- [x] `getBillSubtotal`: verify uses `sentQty`, not `qty`
+- [x] `calculateEqualSplitTip`: €10/3 guests, each pays 3.33 → tip = 0, not −0.01
+- [x] `calculateEqualSplitTip`: €10/3 guests, last guest pays 3.34 → tip = 0
+- [x] Full-close bill total: qty=3 sentQty=2 → total = price × 2
 
 ### Integration Tests — ⬜ NOT STARTED
 - [ ] Full close with partially-sent items → correct total
@@ -220,11 +220,11 @@ main
 ### Session 3 Complete When:
 - [x] All P1 issues fixed
 - [x] All quick wins implemented
-- [ ] Unit tests for rounding and sentQty
+- [x] Unit tests for rounding and sentQty
 - [x] Manual test: equal split €10/3 passes
 - [x] Manual test: partial-send full-close passes
 
 ---
 
-**Last Updated**: 2026-05-02
-**Next Steps**: Unit tests for `getBillSubtotal`, `calculateEqualSplitTip`, and full-close total. Then commit + deploy as combined RC (Sessions 1–3). Optional: P2-6 (delete SplitDoneView), P2-8 (gutschein warning), Option B localStorage persistence for crash recovery.
+**Last Updated**: 2026-05-03
+**Next Steps**: Commit + deploy as combined RC (Sessions 1–3). Optional: P2-6 (delete SplitDoneView), P2-8 (gutschein warning), Option B localStorage persistence for crash recovery.

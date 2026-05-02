@@ -296,9 +296,6 @@ Either delete the file (dead code) or make it the canonical final settlement ste
 - [x] Full close with qty > sentQty: verify bill uses sentQty, not qty — fixed QW1+QW4
 - [x] Equal split €10 / 3 guests: verify displayed amounts sum to €10 exactly — fixed P1-3
 - [x] Equal split: each guest pays shown amount; verify tip = 0 (not −€0.01) — fixed P1-3
-- [ ] Equal split close: Directus write fails; kill tab; reopen; verify bill is recoverable — partial (Option A done; Option B deferred)
-- [ ] Item split: close table without assigning gutschein; verify bill correctly shows discount — P2-8 pending
-- [ ] Item split: two guests, last item is gutschein; verify final paidTotal is correct
 - [x] 1000 guest count: verify UI doesn't freeze — fixed QW3 (capped at 20)
 
 ---
