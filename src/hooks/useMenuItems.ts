@@ -7,6 +7,24 @@ interface UseMenuItemsParams {
   searchQuery: string;
 }
 
+const WINE_TYPE_ORDER: Record<string, number> = {
+  white: 0,
+  red: 1,
+  rose: 2,
+  sparkling: 3,
+  sparkly: 3,
+  natural: 4,
+};
+
+function getWineTypeOrder(item: MenuItem) {
+  const wineType = item.wineType
+    ?.toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+  return wineType ? WINE_TYPE_ORDER[wineType] ?? 99 : 99;
+}
+
 export function useMenuItems({ activeCategory, searchQuery }: UseMenuItemsParams): MenuItem[] {
   const { menu: MENU } = useMenu();
 
@@ -38,7 +56,8 @@ export function useMenuItems({ activeCategory, searchQuery }: UseMenuItemsParams
             category: "Wines",
             subcategory: "glass",
             wineType: item.variants?.find((v) => v.bottleSubcategory)?.bottleSubcategory,
-          })) || [];
+          }))
+          .sort((a, b) => getWineTypeOrder(a) - getWineTypeOrder(b)) || [];
 
       const staticBottles =
         MENU["Wines"]?.map((item) => ({
@@ -46,7 +65,8 @@ export function useMenuItems({ activeCategory, searchQuery }: UseMenuItemsParams
           category: "Wines",
           subcategory: "bottle",
           wineType: item.subcategory,
-        })) || [];
+        }))
+          .sort((a, b) => getWineTypeOrder(a) - getWineTypeOrder(b)) || [];
 
       return [...winesWithGlasses, ...staticBottles];
     }
