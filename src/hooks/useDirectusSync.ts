@@ -121,15 +121,38 @@ export function useDirectusSync(
   const syncPaused = useRef(false);                          // Pause auto-sync during conflict resolution
 
   // ── Poll remote sessions every 2s ─────────────────────────────────────────
-  const { data: remoteSessions, isError: syncError } = useQuery({
+  const { data: remoteSessions, isError: syncError, refetch: refetchSessions } = useQuery({
     queryKey: ["table_sessions"],
     queryFn: fetchAllSessions,
     refetchInterval: POLL_INTERVAL_MS,
+    refetchOnReconnect: true,
     refetchOnWindowFocus: true,
     staleTime: 1000,
   });
 
   useEffect(() => { remoteSessionsRef.current = remoteSessions; }, [remoteSessions]);
+
+  useEffect(() => {
+    const triggerReconnectSync = () => {
+      const hasDirtySessions = Object.keys(readDirtySessionRecords()).length > 0;
+      if (!hasDirtySessions && failedWriteKeys.current.size === 0) return;
+
+      wasOffline.current = true;
+      void refetchSessions();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") triggerReconnectSync();
+    };
+
+    window.addEventListener("online", triggerReconnectSync);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("online", triggerReconnectSync);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [refetchSessions]);
 
   useEffect(() => {
     const existingCache = readSessionCache();
