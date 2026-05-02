@@ -39,7 +39,7 @@ export function useTableClose(tableId: TableId, sent: OrderItem[], isLargeScreen
       tip: paymentConfirmed ? tip : undefined,
     });
 
-    table.cleanupTable(tableId, tempId);
+    table.cleanupTable(tableId);
     app.showToast(`Table ${tableId} closed — ${total.toFixed(2)}€`);
     app.setOrderViewTab(null);
     app.setView("tables");

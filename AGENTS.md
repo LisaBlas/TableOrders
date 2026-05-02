@@ -102,7 +102,8 @@ src/
   mutating `paidBills` directly.
 - Bill edit mode is local until "Done"; "Cancel" restores the snapshot.
 - Bills are never deleted — persistent record for accounting and analytics.
-- Table sessions are deleted when a table closes.
+- Table sessions are deleted when a table closes, and table close is not
+  reversible in-app.
 - Berlin timezone is intentionally hardcoded for day boundaries.
 
 ## Important Domain Behaviors

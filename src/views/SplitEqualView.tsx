@@ -31,7 +31,7 @@ export function SplitEqualView() {
     });
 
     app.addPaidBill(bill);
-    table.cleanupTable(tableId, bill.tempId);
+    table.cleanupTable(tableId);
     dispatch({ type: "RESET" });
     app.showToast(`Table ${tableId} closed — ${bill.total.toFixed(2)}€`);
     app.setOrderViewTab(null);

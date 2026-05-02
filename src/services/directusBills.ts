@@ -172,18 +172,3 @@ export async function patchBillItem(directusId: string, data: object): Promise<v
   if (!res.ok) throw new Error(`PATCH bill item failed: ${res.status}`);
 }
 
-export async function deleteBill(billDirectusId: string, itemDirectusIds: string[]): Promise<void> {
-  if (itemDirectusIds.length) {
-    await fetch(`${DIRECTUS_URL}/items/bill_items`, {
-      method: "DELETE",
-      headers: getHeaders(),
-      body: JSON.stringify(itemDirectusIds),
-    });
-  }
-  const res = await fetch(`${DIRECTUS_URL}/items/bills/${billDirectusId}`, {
-    method: "DELETE",
-    headers: getHeaders(),
-  });
-  if (!res.ok) throw new Error(`DELETE bill failed: ${res.status}`);
-}
-

@@ -1,5 +1,5 @@
 import {
-  createContext, useContext, useState, useCallback, useEffect, useRef, useMemo,
+  createContext, useContext, useState, useCallback, useEffect, useMemo,
   type ReactNode,
 } from "react";
 import { flushSync } from "react-dom";
@@ -8,10 +8,6 @@ import { useMenu } from "./MenuContext";
 import { useDirectusSync } from "../hooks/useDirectusSync";
 import { parseTableId } from "../services/directusSessions";
 import {
-  saveClosedSession, loadClosedSession, clearClosedSession,
-  type ArchivedSession,
-} from "../utils/closedSessionArchive";
-import {
   markSessionDirty,
   readDirtySessionRecords,
   readSessionCache,
@@ -19,7 +15,7 @@ import {
   writeSessionToCache,
   type CachedSession,
 } from "../utils/sessionStorage";
-import { batchMarkId, createBatchId } from "../utils/batchMarks";
+import { createBatchId } from "../utils/batchMarks";
 import type { SessionConflict } from "../utils/conflictDetection";
 import type {
   Orders, OrderItem, SentBatches, Batch, GutscheinAmounts,
@@ -49,10 +45,6 @@ interface TableContextValue {
   conflicts: SessionConflict[];
   resolveConflict: (conflict: SessionConflict, resolution: "local" | "remote" | "merge") => void;
 
-  // Closed session recovery
-  lastClosedSession: ArchivedSession | null;
-  reopenLastClosed: () => void;
-
   // Actions
   addItem: (tableId: TableId, item: MenuItem, variant: MenuItemVariant | null, category: MenuCategory, note?: string) => void;
   addCustomItem: (tableId: TableId, item: OrderItem) => void;
@@ -65,7 +57,7 @@ interface TableContextValue {
   seatTable: (tableId: TableId) => void;
   applyGutschein: (tableId: TableId, amount: number) => void;
   removeGutschein: (tableId: TableId) => void;
-  cleanupTable: (tableId: TableId, billTempId?: string) => void;
+  cleanupTable: (tableId: TableId) => void;
   removePaidItems: (tableId: TableId, paidItems: ExpandedItem[]) => void;
   toggleMarkBatch: (tableId: TableId, batchId: MarkedBatchId) => void;
   swapTables: (fromTableId: TableId, toTableId: TableId) => void;
@@ -108,7 +100,7 @@ function loadStoredTableState() {
 }
 
 export function TableProvider({ children }: { children: ReactNode }) {
-  const { showToast, cancelBillByTempId } = useApp();
+  const { showToast } = useApp();
   const { minQty2Ids } = useMenu();
   const initialState = useMemo(() => loadStoredTableState(), []);
 
@@ -120,14 +112,6 @@ export function TableProvider({ children }: { children: ReactNode }) {
   const [markedBatches, setMarkedBatches] = useState<Record<string, Set<MarkedBatchId>>>(() => initialState.markedBatches);
 
   const seatedTables = useMemo(() => new Set<TableId>(seatedTablesArr), [seatedTablesArr]);
-
-  const [lastClosedSession, setLastClosedSession] = useState<ArchivedSession | null>(() => loadClosedSession());
-
-  // Snapshot ref used by cleanupTable to archive state before clearing
-  const archiveRef = useRef({ orders, seatedTablesArr, sentBatches, gutscheinAmounts, markedBatches });
-  useEffect(() => {
-    archiveRef.current = { orders, seatedTablesArr, sentBatches, gutscheinAmounts, markedBatches };
-  }, [orders, seatedTablesArr, sentBatches, gutscheinAmounts, markedBatches]);
 
   // ── Directus sync (polling, debounced writes, conflict resolution) ─────────
   const { scheduleWrite, cancelAndDelete, syncError, conflicts, resolveConflict, markAsLocallyOwned } = useDirectusSync(
@@ -383,67 +367,15 @@ export function TableProvider({ children }: { children: ReactNode }) {
     persistDirtySession(tableId, { marked_batches: Array.from(next) });
   }, [markedBatches, scheduleWrite, persistDirtySession]);
 
-  const cleanupTable = useCallback((tableId: TableId, billTempId?: string) => {
+  const cleanupTable = useCallback((tableId: TableId) => {
     const key = String(tableId);
-    const snap = archiveRef.current;
-    const session: ArchivedSession = {
-      tableId: key,
-      closedAt: new Date().toISOString(),
-      orders: snap.orders[key] ?? [],
-      sentBatches: snap.sentBatches[key] ?? [],
-      gutschein: snap.gutscheinAmounts[key] ?? null,
-      seated: snap.seatedTablesArr.some((id) => String(id) === key),
-      markedBatches: Array.from(snap.markedBatches[key] ?? new Set<MarkedBatchId>()),
-      billTempId,
-    };
-
-    // Archive session before clearing — abort if archiving fails
-    try {
-      saveClosedSession(session);
-      setLastClosedSession(session);
-    } catch (e) {
-      console.error("Failed to archive session:", e);
-      showToast("Failed to close table - try again");
-      return;
-    }
-
     setOrders((prev) => { const n = { ...prev }; delete n[key]; return n; });
     setSeatedTablesArr((prev) => prev.filter((id) => String(id) !== key));
     setSentBatches((prev) => { const n = { ...prev }; delete n[key]; return n; });
     setGutscheinAmounts((prev) => { const n = { ...prev }; delete n[key]; return n; });
     setMarkedBatches((prev) => { const n = { ...prev }; delete n[key]; return n; });
     cancelAndDelete(tableId);
-  }, [cancelAndDelete, showToast]);
-
-  const reopenLastClosed = useCallback(() => {
-    const session = lastClosedSession;
-    if (!session) return;
-    const key = session.tableId;
-    const tableId = parseTableId(key);
-
-    if (session.orders.length) setOrders((prev) => ({ ...prev, [key]: session.orders }));
-    setSeatedTablesArr((prev) => {
-      const without = prev.filter((id) => String(id) !== key);
-      return session.seated ? [...without, tableId] : without;
-    });
-    if (session.sentBatches.length) setSentBatches((prev) => ({ ...prev, [key]: session.sentBatches }));
-    if (session.gutschein != null) setGutscheinAmounts((prev) => ({ ...prev, [key]: session.gutschein! }));
-    if (session.markedBatches.length) {
-      const markIds = new Set(session.markedBatches.map((mark) => {
-        const batch = session.sentBatches.find((b) => batchMarkId(b) === mark || b.timestamp === mark);
-        return batch ? batchMarkId(batch) : mark;
-      }));
-      setMarkedBatches((prev) => ({ ...prev, [key]: markIds }));
-    }
-
-    if (session.billTempId) {
-      cancelBillByTempId(session.billTempId);
-    }
-    clearClosedSession();
-    setLastClosedSession(null);
-    scheduleWrite(tableId);
-    showToast(`Table ${key} reopened`);
-  }, [lastClosedSession, cancelBillByTempId, scheduleWrite, showToast]);
+  }, [cancelAndDelete]);
 
   const removePaidItems = useCallback((tableId: TableId, paidItems: ExpandedItem[]) => {
     setOrders((prev) => {
@@ -495,7 +427,6 @@ export function TableProvider({ children }: { children: ReactNode }) {
     <TableContext.Provider value={{
       orders, seatedTables, sentBatches, gutscheinAmounts, markedBatches, syncError,
       conflicts, resolveConflict,
-      lastClosedSession, reopenLastClosed,
       addItem, addCustomItem, removeItem, removeItemFromBill, addItemToBill,
       sendOrder, addBillEditBatch, removeBillEditItems, seatTable,
       applyGutschein, removeGutschein,

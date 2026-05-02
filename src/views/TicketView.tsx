@@ -30,7 +30,7 @@ export function TicketView() {
     });
 
     app.addPaidBill(bill);
-    table.cleanupTable(tableId, bill.tempId);
+    table.cleanupTable(tableId);
     app.showToast(`Table ${tableId} closed — ${bill.total.toFixed(2)}€`);
     app.setOrderViewTab(null);
     app.setView("tables");

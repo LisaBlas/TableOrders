@@ -91,8 +91,7 @@ src/
 │   ├── migration.ts              # Legacy bill migration (adds posId to pre-Directus bills)
 │   ├── billFactory.ts            # Bill creation factories (createFullTableBill, createEqualSplitTableBill, etc.)
 │   ├── salesAggregation.ts       # POS entry aggregation for Daily Sales view
-│   ├── fetchWithRetry.ts         # Exponential backoff retry helper (used by MenuContext)
-│   └── closedSessionArchive.ts   # localStorage archive for last closed table session (24h TTL)
+│   └── fetchWithRetry.ts         # Exponential backoff retry helper (used by MenuContext)
 ├── styles/
 │   └── appStyles.js              # All inline style definitions (S object) + responsive variants
 └── types/
@@ -209,8 +208,7 @@ src/
 - **Menu loaded from Directus** on app start; retried up to 3x (800ms exponential backoff) before falling back to static constants.js
 - **Table sessions persisted to Directus** — orders, sentBatches, markedBatches, gutschein, seated status all survive refresh and sync across devices
 - **Offline indicator** — amber banner shown at the top of all views when the sessions polling query fails after TanStack Query's default retries (~7s of persistent failure)
-- **Closed session archive** — on every table close, full session state is written to localStorage (`lastClosedSession` key) with a 24h TTL
-- **Reopen last closed** — amber "Reopen T.X" button on the floor view; restores archived orders/batches/gutschein/seated/markedBatches and reschedules Directus write; device-local only
+- **Table close is irreversible in-app** — paid bills remain in Daily Sales/POS workflow; mistaken closes are handled manually by marking the bill as added to POS and recreating the table
 - **Bill edit mode** — mutations are local-only until "Done"; Directus sync fires on exit; Cancel restores snapshot
 - **Item-level POS crossing** — increment/decrement `crossed_qty` for individual items; syncs to Directus via `patchBillItem`
 - **Date picker** — view historical bills by Berlin timezone calendar day
@@ -317,7 +315,7 @@ Table sessions are deleted when table closes (no historical tracking).
 - Table swap uses long-press (500ms threshold, `LONG_PRESS_MS` constant) — `longFiredRef` guards normal taps but is bypassed in swap mode to allow target selection
 - `AppContext` exposes named bill action functions (`addPaidBill`, `markBillAddedToPOS`, `removePaidBillItem`, `restorePaidBillItem`, etc.) — do not manipulate `paidBills` directly
 - Auth credentials stored in localStorage key `authToken` (JWT-like format but no server-side validation)
-- localStorage keys in use: `authToken` (auth), `paidBills` (offline bill fallback), `lastClosedSession` (24h table archive), `table_orders_client_id` (stable sync client id), `table_sessions_cache` (offline table state), `table_sessions_dirty` (dirty upsert/delete records with base/local snapshots), `table_sessions_sync_meta` (last synced base hashes)
+- localStorage keys in use: `authToken` (auth), `paidBills` (offline bill fallback), `table_orders_client_id` (stable sync client id), `table_sessions_cache` (offline table state), `table_sessions_dirty` (dirty upsert/delete records with base/local snapshots), `table_sessions_sync_meta` (last synced base hashes)
 - `syncError` boolean exposed from `TableContext` — sourced from `useDirectusSync` → `useQuery` `isError` on the sessions poll
 - `ErrorBoundary` accepts `inline` prop: when true renders a compact "Something went wrong / Try again" card that resets boundary state instead of a full-page reload screen
 - Berlin timezone handling: `todayBerlinDate()` uses Intl.DateTimeFormat; `berlinDayBoundsUTC()` calculates UTC bounds accounting for DST

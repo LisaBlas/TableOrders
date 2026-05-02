@@ -11,7 +11,7 @@ import { TableCard } from "../components/TableCard";
 import { SwapSheet } from "../components/SwapSheet";
 import { Modal } from "../components/Modal";
 import { S } from "../styles/appStyles";
-import { LogoutIcon, ReopenIcon, SalesIcon } from "../components/icons";
+import { LogoutIcon, SalesIcon } from "../components/icons";
 import type { TableId, TableConfig } from "../types";
 
 const DESTINATION_ORDER = ["bar", "counter", "kitchen"] as const;
@@ -60,7 +60,7 @@ const todayLabel = new Date().toLocaleDateString("en-GB", {
 export function TablesView() {
   const { setView, setActiveTable, showToast } = useApp();
   const { logout } = useAuth();
-  const { orders, seatedTables, seatTable, sentBatches, markedBatches, swapTables, lastClosedSession, reopenLastClosed } = useTable();
+  const { orders, seatedTables, seatTable, sentBatches, markedBatches, swapTables } = useTable();
   const bp = useBreakpoint();
   const styles = resolveGridStyles(bp);
 
@@ -107,28 +107,6 @@ export function TablesView() {
           {todayLabel}
         </span>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          {lastClosedSession && (
-            <button
-              style={{
-                background: "#fef3c7",
-                border: "1.5px solid #f59e0b",
-                borderRadius: 8,
-                fontSize: 14,
-                fontWeight: 600,
-                cursor: "pointer",
-                padding: "7px 10px",
-                lineHeight: 1,
-                color: "#92400e",
-                display: "flex",
-                alignItems: "center",
-                gap: 5,
-              }}
-              onClick={reopenLastClosed}
-            >
-              T.{lastClosedSession.tableId}
-              <ReopenIcon size={15} color="#92400e" />
-            </button>
-          )}
           <button
             style={{
               background: "none",
