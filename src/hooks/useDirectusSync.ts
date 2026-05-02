@@ -545,6 +545,13 @@ export function useDirectusSync(
 
     const tableIdParsed = parseTableId(key);
 
+    clearTimeout(writeTimers.current[key]);
+    pendingWrites.current.delete(key);
+    retryingFailedWrites.current.delete(key);
+    failedWriteKeys.current.delete(key);
+    clearSessionDirty(key);
+    setHasFailedWrites(failedWriteKeys.current.size > 0);
+
     // Apply resolved session to state — refs will be synced by useEffects (lines 40-44)
     setOrders((prev) => {
       const next = { ...prev };
@@ -581,6 +588,15 @@ export function useDirectusSync(
 
     // Remove from conflicts queue
     setConflicts((prev) => prev.filter((c) => c.tableId !== tableId));
+
+    if (resolution === "remote") {
+      writeSessionToCache(key, resolvedSession);
+      lastWriteTime.current[key] = Date.now();
+      return;
+    }
+
+    markSessionDirty(key, resolvedSession, conflict.remote);
+    writeSessionToCache(key, resolvedSession, false);
 
     // Persist after refs are synced (defer until next tick to ensure useEffects have run)
     setTimeout(() => {

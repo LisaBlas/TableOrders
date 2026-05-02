@@ -74,21 +74,28 @@
 
 ---
 
-### Session 2: State Consistency Review ⏳
+### Session 2: State Consistency Review ✅
 **Focus**: [TableContext.tsx](src/contexts/TableContext.tsx) + [AppContext.tsx](src/contexts/AppContext.tsx) + localStorage interactions
 
+**Completed**: 2026-04-29
+
 **Questions**:
-- Are all state transitions atomic?
-- Can localStorage and Directus drift out of sync?
-- What happens if setState is called during debounce window?
-- Are optimistic updates (tempId → directusId) race-safe?
+- ✅ Are all state transitions atomic? **MOSTLY** — React 18 batching saves us; but atomicity depends on that guarantee (P1)
+- ✅ Can localStorage and Directus drift out of sync? **YES, ~16ms window** — acceptable for this use case (P1-5)
+- ✅ What happens if setState is called during debounce window? **No new issues** — already covered in Session 1
+- ✅ Are optimistic updates (tempId → directusId) race-safe? **NO** — editingBillIndex positional race (P0-1), retry-cancel race (P0-3)
 
-**Known Issues to Verify**:
-- ✅ Render-phase side effects in [OrderView.tsx:50-55](src/views/OrderView.tsx#L50-L55)
-- ✅ Seated table state uses both array and Set
-- ⚠️ Bill optimistic updates could race with query invalidation
+**Known Issues Verified**:
+- ✅ Render-phase side effects in [OrderView.tsx:50-55](src/views/OrderView.tsx#L50-L55) — **Already fixed** (commit 9f8ff4f)
+- ✅ Seated table state uses both array and Set — **Confirmed, by design** — correct pattern, no bug
+- ✅ Bill optimistic updates could race with query invalidation — **Confirmed** — 2 P0 races found
 
-**Output**: `session-02-state-consistency.md`
+**Findings**:
+- 3 P0 (critical) issues — positional index race, shallow snapshot, retry-cancel race
+- 5 P1 (high priority) issues — archiveRef staleness, non-atomic cleanup, edit-mode POS sync bypass
+- 4 P2 (technical debt) issues — localStorage pattern, schema validation, dual seatedTables representation
+
+**Output**: [session-02-state-consistency.md](session-02-state-consistency.md)
 
 ---
 
@@ -434,10 +441,11 @@ Each session produces a markdown file with:
    - Offline→online conflict scenarios
    - Batch merge + marked batches verification
    - Table swap during poll
-5. **Session 2: State Consistency** (90 min) — after integration tests pass
-   - localStorage ↔ Directus ↔ React triangle
-   - Optimistic update races
-   - Bill edit mode state isolation
+5. ✅ ~~**Session 2: State Consistency**~~ — COMPLETED (2026-04-29)
+   - Found: 3 P0, 5 P1, 4 P2 issues
+   - Root pattern: positional index handles used across async boundaries
+   - Output: [session-02-state-consistency.md](session-02-state-consistency.md)
+   - Tracker: [SESSION_02_TRACKER.md](SESSION_02_TRACKER.md)
 6. **Fix P0-3: Marked Batches Migration** (3 hours) — schedule separately
    - Directus schema migration (optional, JSON accepts both)
    - Type updates (string[] instead of number[])

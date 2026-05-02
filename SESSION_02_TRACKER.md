@@ -22,11 +22,11 @@
 
 | # | Issue | Approach | Files | Time | Status |
 |---|-------|----------|-------|------|--------|
-| P0-1 | Optimistic bill race | Add serial write queue | [AppContext.tsx:119-164](src/contexts/AppContext.tsx#L119-L164) | 3h | ⏳ TODO |
-| P0-2 | Cancel-during-write race | Guard with pendingCancellations | [AppContext.tsx:166-187](src/contexts/AppContext.tsx#L166-L187) | 1h | ⏳ TODO |
-| P0-3 | Edit-during-poll race | Snapshot refs + dirty flag | [AppContext.tsx:260-284](src/contexts/AppContext.tsx#L260-L284) | 2h | ⏳ TODO |
+| P0-1 | editingBillIndex positional race (wrong bill patched) | Replace index with directusId | [AppContext.tsx:260-284](src/contexts/AppContext.tsx#L260-L284) | 2h | ⏳ TODO |
+| P0-2 | billSnapshot shallow copy (items shared by ref) | Deep clone items on snapshot | [AppContext.tsx:261](src/contexts/AppContext.tsx#L261) | 5 min | ⏳ TODO |
+| P0-3 | Retry-after-cancel race (valid bill silently deleted) | Clear pendingCancellations before retry | [AppContext.tsx:295-300](src/contexts/AppContext.tsx#L295-L300) | 5 min | ⏳ TODO |
 
-**Total**: ~6 hours
+**Total**: ~2.5 hours (P0-2 and P0-3 are quick wins)
 
 ---
 
@@ -34,13 +34,13 @@
 
 | # | Issue | File | Time | Status | Depends On |
 |---|-------|------|------|--------|------------|
-| P1-4 | localStorage write race | Add debounce or version | [useLocalStorage.ts:19-29](src/hooks/useLocalStorage.ts#L19-L29) | 1h | — |
-| P1-5 | useState + useRef desync | Remove manual ref updates | [TableContext.tsx:83-89](src/contexts/TableContext.tsx#L83-L89) | 2h | P0-3 |
-| P1-6 | Split table state updates | Create single update reducer | [TableContext.tsx](src/contexts/TableContext.tsx) | 4h | — |
-| P1-7 | Missing cache invalidation | Add invalidation on error | [AppContext.tsx:152-157](src/contexts/AppContext.tsx#L152-L157) | 1h | P0-1 |
-| P1-8 | Retry race with cancel | Check pendingCancellations in retry | [AppContext.tsx:295-300](src/contexts/AppContext.tsx#L295-L300) | 30min | P0-2 |
+| P1-1 | archiveRef 1-render stale | Expose snapshot reader from sync hook | [TableContext.tsx:82-85](src/contexts/TableContext.tsx#L82-L85) | 1h | — |
+| P1-2 | Non-atomic multi-field cleanup | useReducer with CLOSE_TABLE action | [TableContext.tsx:333-338](src/contexts/TableContext.tsx#L333-L338) | 3h | — |
+| P1-3 | markBillAddedToPOS bypasses exitBillEditMode | Route through exitBillEditMode | [AppContext.tsx:189-202](src/contexts/AppContext.tsx#L189-L202) | 30min | P0-1 |
+| P1-4 | 16ms localStorage write gap | Document invariant (acceptable risk) | [useDirectusSync.ts:134](src/hooks/useDirectusSync.ts#L134) | 10min | — |
+| P1-5 | resolveConflict defer is fragile | Add comment + test coverage | [useDirectusSync.ts:586](src/hooks/useDirectusSync.ts#L586) | 30min | — |
 
-**Total**: ~8.5 hours
+**Total**: ~5 hours
 
 ---
 
