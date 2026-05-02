@@ -1,3 +1,4 @@
+import { useTable } from "../contexts/TableContext";
 import { S } from "../styles/appStyles";
 import type { SessionConflict } from "../utils/conflictDetection";
 
@@ -14,6 +15,7 @@ export function ConflictResolutionModal({
   totalConflicts,
   onResolve,
 }: ConflictResolutionModalProps) {
+  const { resolveTableDisplayId } = useTable();
   const { tableId, local, remote } = conflict;
 
   const localTotal = local.orders.reduce((sum, item) => sum + item.price * item.qty, 0);
@@ -27,7 +29,7 @@ export function ConflictResolutionModal({
         </div>
 
         <div style={{ fontSize: 14, marginBottom: 16, color: "#666" }}>
-          Table {tableId} was modified on multiple devices while offline. Choose which version to keep:
+          Table {resolveTableDisplayId(tableId)} was modified on multiple devices while offline. Choose which version to keep:
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>

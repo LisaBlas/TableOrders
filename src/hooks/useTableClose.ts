@@ -6,6 +6,7 @@ import type { OrderItem, TableId } from "../types";
 export function useTableClose(tableId: TableId, sent: OrderItem[], isLargeScreen: boolean) {
   const app = useApp();
   const table = useTable();
+  const displayId = table.resolveTableDisplayId(tableId);
 
   const [confirmingClose, setConfirmingClose] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState("");
@@ -29,7 +30,7 @@ export function useTableClose(tableId: TableId, sent: OrderItem[], isLargeScreen
 
     app.addPaidBill({
       tempId,
-      tableId,
+      tableId: displayId,
       items: sent.map((o: OrderItem) => ({ ...o })),
       total,
       subtotal: gutschein > 0 ? sentSubtotal : undefined,
@@ -40,7 +41,7 @@ export function useTableClose(tableId: TableId, sent: OrderItem[], isLargeScreen
     });
 
     table.cleanupTable(tableId);
-    app.showToast(`Table ${tableId} closed — ${total.toFixed(2)}€`);
+    app.showToast(`Table ${displayId} closed — ${total.toFixed(2)}€`);
     app.setOrderViewTab(null);
     app.setView("tables");
   };

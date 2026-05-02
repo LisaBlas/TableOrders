@@ -1,3 +1,4 @@
+import { useTable } from "../contexts/TableContext";
 import { S } from "../styles/appStyles";
 import { EditIcon, CheckIcon, VoucherIcon } from "./icons";
 import type { TableId } from "../types";
@@ -10,12 +11,13 @@ interface BillHeaderProps {
 }
 
 export function BillHeader({ tableId, editingBill, onEditToggle, onGutscheinOpen }: BillHeaderProps) {
+  const { resolveTableDisplayId } = useTable();
   return (
     <div style={S.billHeader}>
       <div>
         <div style={S.closeReceiptBrand}>Käserei Camidi</div>
         <div style={S.closeReceiptMeta}>
-          Table {tableId} ·{" "}
+          Table {resolveTableDisplayId(tableId)} ·{" "}
           {new Date().toLocaleString("en-GB", {
             day: "2-digit",
             month: "2-digit",

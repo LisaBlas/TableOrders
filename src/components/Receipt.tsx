@@ -1,3 +1,4 @@
+import { useTable } from "../contexts/TableContext";
 import { S } from "../styles/appStyles";
 import { useMenu } from "../contexts/MenuContext";
 import { consolidateItems } from "../utils/helpers";
@@ -16,6 +17,7 @@ export function Receipt({
   skipHeader = false,
 }: ReceiptProps) {
   const { minQty2Ids } = useMenu();
+  const { resolveTableDisplayId } = useTable();
   const consolidatedItems = consolidateItems(items);
   const subtotal = items.reduce((s, o) => s + o.price * o.qty, 0);
   const total = Math.max(0, subtotal - gutschein);
@@ -26,7 +28,7 @@ export function Receipt({
         <>
           <div style={S.closeReceiptBrand}>{RESTAURANT_NAME}</div>
           <div style={S.closeReceiptMeta}>
-            Table {tableId}
+            Table {resolveTableDisplayId(tableId)}
             {guestNum && ` · Guest ${guestNum}`}
             {' · '}
             {new Date().toLocaleString("en-GB", {

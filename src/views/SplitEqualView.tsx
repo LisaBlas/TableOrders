@@ -21,8 +21,9 @@ export function SplitEqualView() {
   const hasConfirmedPayments = state.equalPayments.some(p => p.confirmed);
 
   const closeSplitTable = () => {
+    const displayId = table.resolveTableDisplayId(tableId);
     const bill = createEqualSplitTableBill({
-      tableId,
+      tableId: displayId,
       orders: table.orders,
       gutschein: table.gutscheinAmounts[tableId] || 0,
       guests: state.equalGuests,
@@ -33,7 +34,7 @@ export function SplitEqualView() {
     app.addPaidBill(bill);
     table.cleanupTable(tableId);
     dispatch({ type: "RESET" });
-    app.showToast(`Table ${tableId} closed — ${bill.total.toFixed(2)}€`);
+    app.showToast(`Table ${displayId} closed — ${bill.total.toFixed(2)}€`);
     app.setOrderViewTab(null);
     app.setView("tables");
   };
@@ -61,7 +62,7 @@ export function SplitEqualView() {
           >
             <BackIcon size={22} />
           </button>
-          <span style={S.headerTitle}>Equal Split — Table {tableId}</span>
+          <span style={S.headerTitle}>Equal Split — Table {table.resolveTableDisplayId(tableId)}</span>
           <span />
         </header>
         <div style={S.equalCard}>
@@ -180,7 +181,7 @@ export function SplitEqualView() {
         >
           <BackIcon size={22} />
         </button>
-        <span style={S.headerTitle}>Equal Split — Table {tableId}</span>
+        <span style={S.headerTitle}>Equal Split — Table {table.resolveTableDisplayId(tableId)}</span>
         <span />
       </header>
 

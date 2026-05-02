@@ -23,15 +23,16 @@ export function TicketView() {
   const [showSplitOptions, setShowSplitOptions] = useState(false);
 
   const confirmClose = () => {
+    const displayId = table.resolveTableDisplayId(tableId);
     const bill = createFullTableBill({
-      tableId,
+      tableId: displayId,
       orders: table.orders,
       gutschein: table.gutscheinAmounts[tableId] || 0,
     });
 
     app.addPaidBill(bill);
     table.cleanupTable(tableId);
-    app.showToast(`Table ${tableId} closed — ${bill.total.toFixed(2)}€`);
+    app.showToast(`Table ${displayId} closed — ${bill.total.toFixed(2)}€`);
     app.setOrderViewTab(null);
     app.setView("tables");
   };
@@ -64,7 +65,7 @@ export function TicketView() {
         }}>
           <BackIcon size={22} />
         </button>
-        <span style={S.headerTitle}>Table {tableId} — Bill</span>
+        <span style={S.headerTitle}>Table {table.resolveTableDisplayId(tableId)} — Bill</span>
         <span />
       </header>
       <div style={ticketStyle}>

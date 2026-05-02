@@ -17,8 +17,9 @@ export function SplitDoneView() {
   const hasConfirmedPayments = state.payments.some((payment) => state.itemPayments[payment.guestNum]?.confirmed);
 
   const closeSplitTable = () => {
+    const displayId = table.resolveTableDisplayId(tableId);
     const bill = createItemSplitTableBill({
-      tableId,
+      tableId: displayId,
       orders: table.orders,
       gutschein: table.gutscheinAmounts[tableId] || 0,
       payments: state.payments,
@@ -28,7 +29,7 @@ export function SplitDoneView() {
     app.addPaidBill(bill);
     table.cleanupTable(tableId);
     dispatch({ type: "RESET" });
-    app.showToast(`Table ${tableId} closed — ${bill.total.toFixed(2)}€`);
+    app.showToast(`Table ${displayId} closed — ${bill.total.toFixed(2)}€`);
     app.setOrderViewTab(null);
     app.setView("tables");
   };
@@ -42,7 +43,7 @@ export function SplitDoneView() {
       <div style={S.page}>
         <header style={headerStyle}>
           <span />
-          <span style={S.headerTitle}>Bill Settled — Table {tableId}</span>
+          <span style={S.headerTitle}>Bill Settled — Table {table.resolveTableDisplayId(tableId)}</span>
           <span />
         </header>
         <div style={S.splitDoneCard}>
@@ -93,7 +94,7 @@ export function SplitDoneView() {
     <div style={S.page}>
       <header style={headerStyle}>
         <span />
-        <span style={S.headerTitle}>Bill Settled — Table {tableId}</span>
+        <span style={S.headerTitle}>Bill Settled — Table {table.resolveTableDisplayId(tableId)}</span>
         <span />
       </header>
 

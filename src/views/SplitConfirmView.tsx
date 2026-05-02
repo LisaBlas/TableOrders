@@ -41,9 +41,10 @@ export function SplitConfirmView() {
     const gutschein = table.gutscheinAmounts[tableId] || 0;
 
     // Create bill record
+    const displayId = table.resolveTableDisplayId(tableId);
     const bill = {
       tempId: crypto.randomUUID(),
-      tableId,
+      tableId: displayId,
       items: paidItems.map(i => ({ ...i })),
       total: paidTotal,
       subtotal: gutschein > 0 ? paidTotal + gutschein : undefined,
@@ -79,9 +80,9 @@ export function SplitConfirmView() {
     // Close table if no items will remain
     if (!willHaveRemainingItems) {
       table.cleanupTable(tableId);
-      app.showToast(`Table ${tableId} closed`);
+      app.showToast(`Table ${table.resolveTableDisplayId(tableId)} closed`);
     } else {
-      app.showToast(`${paidItems.length} item${paidItems.length > 1 ? 's' : ''} paid — Table ${tableId} still open`);
+      app.showToast(`${paidItems.length} item${paidItems.length > 1 ? 's' : ''} paid — Table ${table.resolveTableDisplayId(tableId)} still open`);
     }
 
     // Return to tables view

@@ -47,6 +47,7 @@ interface TableCardHandlers {
 
 interface TableCardProps {
   tableId: TableId;
+  label?: string;
   cfg: StatusConfig;
   swapStatus: SwapStatus;
   destinations: string[];
@@ -56,6 +57,7 @@ interface TableCardProps {
 
 export function TableCard({
   tableId,
+  label,
   cfg,
   swapStatus,
   destinations,
@@ -97,7 +99,7 @@ export function TableCard({
         </span>
       )}
       {swapStatus === "none" && <span style={{ ...S.tableDot, background: cfg.dot }} />}
-      <span style={S.tableNum}>{tableId}</span>
+      <span style={S.tableNum}>{label ?? tableId}</span>
       <span style={{ ...S.tableStatus, color: statusColor }}>{statusLabel}</span>
       {destinations.length > 0 && (
         <span

@@ -18,6 +18,12 @@ export interface TableDivider {
 
 export type TableConfig = TableEntry | TableDivider;
 
+export interface DynamicTable {
+  id: string;
+  label: string;
+  location: "inside" | "outside";
+}
+
 export type TableStatus = "open" | "seated" | "unconfirmed" | "confirmed";
 
 export interface StatusConfig {

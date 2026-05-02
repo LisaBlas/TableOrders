@@ -120,7 +120,7 @@ export function OrderView() {
         }}>
           <BackIcon size={22} />
         </button>
-        <span style={S.headerTitle}>Table {tableId}</span>
+        <span style={S.headerTitle}>Table {table.resolveTableDisplayId(tableId)}</span>
         <button style={S.ticketBtn} onClick={() => app.setOrderViewTab('bill')}>
           <BillIcon size={22} />
         </button>
