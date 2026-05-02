@@ -99,21 +99,28 @@
 
 ---
 
-### Session 3: Payment Flow Integrity ⏳
+### Session 3: Payment Flow Integrity ✅
 **Focus**: [SplitContext.tsx](src/contexts/SplitContext.tsx) + [billFactory.ts](src/utils/billFactory.ts) + [useTableClose.ts](src/hooks/useTableClose.ts)
 
+**Completed**: 2026-05-02
+
 **Questions**:
-- Can split flows create bills with invalid totals?
-- What happens if gutschein exceeds bill total?
-- Are all edge cases validated (zero guests, empty items, negative totals)?
-- Can table close fail silently?
+- ✅ Can split flows create bills with invalid totals? **NO** — math is correct for happy path
+- ✅ What happens if gutschein exceeds bill total? **SAFE** — Math.max(0, ...) clamp in all paths
+- ✅ Are all edge cases validated (zero guests, empty items, negative totals)? **MOSTLY** — zero guests guarded; empty items returns €0 (no crash); gutschein clamped
+- ✅ Can table close fail silently? **PARTIAL RISK** — optimistic update + retry exists; vulnerable to device crash before retry (P1)
 
-**Known Issues to Verify**:
-- ⚠️ Empty order items in bill creation (no validation)
-- ⚠️ Division by zero in equal split (guest count = 0)
-- ⚠️ Gutschein can exceed total (negative bills)
+**Known Issues Verified**:
+- ✅ Empty order items — SAFE, returns €0 bill (no crash); UI should prevent this scenario
+- ✅ Division by zero in equal split — SAFE, Math.max(1, ...) guard; initial value is 2
+- ✅ Gutschein can exceed total — SAFE, Math.max(0, ...) in all close paths
 
-**Output**: `session-03-payment-integrity.md`
+**Findings**:
+- 0 P0 issues — no confirmed immediate data loss under normal operation
+- 3 P1 issues — overcharge bug, race condition, rounding display error
+- 6 P2 issues — NaN guards, guest cap, dead code hazard, UX gaps
+
+**Output**: [session-03-payment-integrity.md](session-03-payment-integrity.md)
 
 ---
 

@@ -106,6 +106,7 @@ export function useDirectusSync(
   const failedWriteKeys = useRef(new Set<string>());
   const retryingFailedWrites = useRef(new Set<string>());
   const [hasFailedWrites, setHasFailedWrites] = useState(false);
+  const [recoveryTick, setRecoveryTick] = useState(0);
   const wasOffline = useRef(false);                          // Track offline→online transition
   const isMounted = useRef(true);                            // Track component mount state
 
@@ -138,7 +139,9 @@ export function useDirectusSync(
       if (!hasDirtySessions && failedWriteKeys.current.size === 0) return;
 
       wasOffline.current = true;
-      void refetchSessions();
+      void refetchSessions().finally(() => {
+        if (isMounted.current) setRecoveryTick((tick) => tick + 1);
+      });
     };
 
     const handleVisibilityChange = () => {
@@ -153,6 +156,24 @@ export function useDirectusSync(
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [refetchSessions]);
+
+  useEffect(() => {
+    if (!hasFailedWrites || conflicts.length > 0) return;
+
+    const retryRecovery = () => {
+      const hasDirtySessions = Object.keys(readDirtySessionRecords()).length > 0;
+      if (!hasDirtySessions && failedWriteKeys.current.size === 0) return;
+
+      wasOffline.current = true;
+      void refetchSessions().finally(() => {
+        if (isMounted.current) setRecoveryTick((tick) => tick + 1);
+      });
+    };
+
+    retryRecovery();
+    const interval = window.setInterval(retryRecovery, POLL_INTERVAL_MS);
+    return () => window.clearInterval(interval);
+  }, [hasFailedWrites, conflicts.length, refetchSessions]);
 
   useEffect(() => {
     const existingCache = readSessionCache();
@@ -437,7 +458,7 @@ export function useDirectusSync(
         }
       });
     });
-  }, [remoteSessions, syncError, setOrders, setSeatedTablesArr, setSentBatches, setGutscheinAmounts, setMarkedBatches]);
+  }, [remoteSessions, syncError, recoveryTick, setOrders, setSeatedTablesArr, setSentBatches, setGutscheinAmounts, setMarkedBatches]);
 
   // ── Debounced write: batches rapid state changes into one Directus call ───
   // ── Also writes to localStorage immediately for offline resilience ─────────
