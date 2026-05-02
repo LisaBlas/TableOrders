@@ -43,9 +43,8 @@ Notes:
 ## Deployment Rules
 - Before source changes, pull latest `main`:
   `git pull origin main`.
-- Current release decision: do not release Session 1 independently. Production
-  soak/deploy is deferred until Session 1, Session 2, and Session 3 hardening
-  measures are implemented as one combined release candidate.
+- Sessions 1–3 hardening RC deployed to GitHub Pages on 2026-05-03. This is
+  now the production baseline.
 - Ask before committing, pushing, or deploying.
 - After an approved commit and push to `main`, run `npm run deploy`.
 - Do not touch secrets, credentials, auth files, or production data without
@@ -146,10 +145,9 @@ src/
 ## Testing And Verification
 - Primary verification is `npm run build`.
 - Type-check with `npm.cmd exec tsc -- --noEmit`.
-- Session 1 targeted manual sync verification passed on 2026-05-03:
-  offline conflict recovery, table swap while polling, marked batch stability,
-  rapid writes, and write failure during grace period. The 24h soak/deploy gate
-  remains deferred until the combined Sessions 1-3 hardening release candidate.
+- Sessions 1–3 RC manually verified 2026-05-03 and deployed. Unit tests run
+  via `npm test` (vitest); covers billFactory, sessionStorage, conflictDetection,
+  batchMarks, TableContext, and useDirectusSync.
 - For UI behavior changes, run `npm run dev` and manually check the affected
   flow at mobile and tablet/desktop widths.
 - For sync, bill creation, POS crossing, clearing sales, or split payments,
@@ -157,9 +155,7 @@ src/
 - For offline conflict work, inspect localStorage keys `table_sessions_dirty`,
   `table_sessions_cache`, and `table_sessions_sync_meta` on the reconnecting
   device.
-- Existing Python helper tests/scripts are present (`test_ds.py`,
-  `test_swap.py`), but the project does not currently have a standard JS test
-  command.
+- Run `npm test` for the unit test suite (vitest, ~68 tests, ~1s).
 
 ## Known Limitations
 - Static credentials; no roles or true server-side auth validation.

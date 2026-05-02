@@ -2,11 +2,11 @@
 
 Hard rules that must not be violated. Discovered through bugs and design decisions.
 
-## SI-1: Manually sync refs before calling `scheduleWrite` after `setState`
+## SI-1: Ensure refs are current before `scheduleWrite` fires
 
 `scheduleWrite` reads refs at call time. Refs are updated by `useEffect` hooks, which run after render — not synchronously after `setState`. If `scheduleWrite` is called in the same synchronous block as a batch of `setState` calls (and no further `scheduleWrite` call is expected to correct the data), the snapshot will be stale and the wrong data will be persisted.
 
-**Required**: update all affected refs (`ordersRef`, `seatedTablesArrRef`, `sentBatchesRef`, `gutscheinRef`, `markedBatchesRef`) manually and synchronously before calling `scheduleWrite` in any such context. `resolveConflict` is the canonical example.
+**Required**: either defer the `scheduleWrite` call via `setTimeout(0)` so that ref-syncing effects run first, or manually sync all affected refs before calling it. `resolveConflict` uses the defer approach (`setTimeout(0)`) — do not revert it to a direct call.
 
 ## SI-2: Conflict detection must only run on offline→online transition
 

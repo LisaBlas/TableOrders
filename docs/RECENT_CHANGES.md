@@ -2,6 +2,14 @@
 
 Entries older than 7 days are pruned automatically.
 
+## 2026-05-03 — Sessions 1–3 RC deployed
+
+Combined hardening release candidate shipped to GitHub Pages:
+- **Session 1**: sync fixes (stale-ref debounce, conflict-detection gating, stable batch IDs, swap race guard, write-failure recovery)
+- **Session 2**: state consistency (bill edit by directusId, deep snapshot clone, atomic table cleanup)
+- **Session 3**: payment integrity (sentQty in close/split, equal-split rounding, non-dismissible retry modal)
+- Unit test suite added (vitest, 68 tests): billFactory, sessionStorage, conflictDetection, batchMarks, TableContext, useDirectusSync
+
 ## 2026-04-28 — useDirectusSync.ts: 8-bug sweep
 
 - **False-positive conflict detection** (bug): `detectConflicts` ran every 2s poll comparing localStorage (written immediately) against Directus (written after 500ms debounce). This triggered the conflict UI during normal single-device use. Fixed: conflict check now only runs on offline→online transition, and excludes locally-owned tables.

@@ -18,6 +18,11 @@
 - `package.json` → `homepage` field — remove or update (GitHub Pages URL won't apply)
 - `.env` / `VITE_DIRECTUS_URL` — point to the client's new Directus instance URL
 
+### Security: scope the Directus token
+- Current setup: a single static token with full read/write access is baked into the JS bundle (`VITE_DIRECTUS_TOKEN`) — visible to anyone in DevTools
+- Before client deploy: create a **read-only token** for `menu_items`, `categories`, `menu_item_variants` (public menu data) and a **write token** that lives server-side only — either via a thin proxy (Express/Hono, ~2–3h) or by using Directus's built-in role/permission scoping
+- Minimum viable fix: in Directus, create a restricted role that only allows reads on menu collections and reads/writes on `bills`, `bill_items`, `table_sessions` — no admin access — and issue a token scoped to that role
+
 ### Keep everything in `src/` — no changes needed there
 
 ---

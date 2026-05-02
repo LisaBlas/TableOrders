@@ -9,9 +9,9 @@ This is safe in the normal user-interaction flow because:
 2. By the time the timer fires (500ms later), all renders + effects have completed and refs are current for retry paths.
 3. localStorage is written immediately with the slightly-stale snapshot, which is corrected on the next `scheduleWrite` call.
 
-**Exception — `resolveConflict`**: this is the one place where `scheduleWrite` is called after `setState` with no expectation of a subsequent call. The stale snapshot would be written to localStorage and Directus, and after the ownership grace period expires, the next remote poll would undo the conflict resolution. Fix: manually sync all refs before calling `scheduleWrite` in `resolveConflict`.
+**Exception — `resolveConflict`**: this is the one place where `scheduleWrite` is called after `setState` with no expectation of a subsequent call. Fix applied: `scheduleWrite` is deferred via `setTimeout(0)` so the ref-syncing `useEffect`s fire first. Do not revert this to a direct call.
 
-**Rule: any code path that calls `scheduleWrite` immediately after `setState` and does NOT expect a subsequent `scheduleWrite` to correct the data must manually sync the refs first.**
+**Rule: any code path that calls `scheduleWrite` immediately after `setState` and does NOT expect a subsequent `scheduleWrite` to correct the data must defer the call (e.g. `setTimeout(0)`) or manually sync the relevant refs first.**
 
 ## Conflict detection: scope and gating
 

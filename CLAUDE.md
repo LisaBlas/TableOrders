@@ -249,6 +249,7 @@ npm run build      # Production build
 npm.cmd run build  # Windows PowerShell fallback when npm.ps1 is blocked
 npm.cmd exec tsc -- --noEmit  # Type-check without building
 npm run preview    # Preview production build
+npm test           # Run unit tests (vitest)
 ```
 
 ## Environment Setup
@@ -267,7 +268,7 @@ To get a Directus token:
 
 ## Agent Rules
 - **Always `git pull origin main` before making any code changes**, regardless of whether the request comes from the terminal or Slack. Never skip this step.
-- Current release decision: do not release Session 1 independently. Production soak/deploy is deferred until Session 1, Session 2, and Session 3 hardening measures are implemented as one combined release candidate.
+- Sessions 1–3 hardening RC deployed to GitHub Pages on 2026-05-03. This is now the production baseline.
 - After changes are committed and pushed, always run `npm run deploy` to publish to GitHub Pages.
 
 ## Deployment Workflow (GitHub Pages)
@@ -326,4 +327,4 @@ Table sessions are deleted when table closes (no historical tracking).
 - Optimistic updates use `tempId` prefix to distinguish from `directusId` (replaced on successful write)
 - Table state conflict resolution: `lastWriteTime` tracked per table; 3-second grace period before accepting remote overwrites
 - Offline-sync debugging lesson: when refresh loses local orders, first verify cached session validation. Numeric item IDs previously caused valid-looking localStorage sessions to be rejected on read.
-- Session 1 targeted manual sync verification passed on 2026-05-03: offline conflict recovery, table swap while polling, marked batch stability, rapid writes, and write failure during grace period. The 24h soak/deploy gate remains deferred until the combined Sessions 1-3 hardening release candidate.
+- Sessions 1–3 combined RC: all sync, state-consistency, and payment-integrity hardening implemented, manually verified 2026-05-03, and deployed to production 2026-05-03. Unit test suite (vitest) covers billFactory, sessionStorage, conflictDetection, batchMarks, TableContext, and useDirectusSync.

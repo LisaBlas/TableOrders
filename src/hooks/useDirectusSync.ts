@@ -351,7 +351,6 @@ export function useDirectusSync(
       });
       const detectedConflicts = detectDirtySessionConflicts(dirtyCandidates, activeRemoteSessions);
       if (detectedConflicts.length > 0) {
-        console.log(`Detected ${detectedConflicts.length} sync conflict(s)`);
         setConflicts(detectedConflicts);
         syncPaused.current = true;
         return;
@@ -668,7 +667,6 @@ export function useDirectusSync(
   useEffect(() => {
     if (conflicts.length === 0 && syncPaused.current) {
       syncPaused.current = false;
-      console.log("All conflicts resolved, resuming sync");
     }
   }, [conflicts]);
 
