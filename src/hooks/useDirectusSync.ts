@@ -107,6 +107,7 @@ export function useDirectusSync(
   const retryingFailedWrites = useRef(new Set<string>());
   const [hasFailedWrites, setHasFailedWrites] = useState(false);
   const [recoveryTick, setRecoveryTick] = useState(0);
+  const [recoverySessions, setRecoverySessions] = useState<TableSession[] | null>(null);
   const wasOffline = useRef(false);                          // Track offline→online transition
   const isMounted = useRef(true);                            // Track component mount state
 
@@ -133,15 +134,26 @@ export function useDirectusSync(
 
   useEffect(() => { remoteSessionsRef.current = remoteSessions; }, [remoteSessions]);
 
+  const runRecoveryFetch = useCallback(async () => {
+    const hasDirtySessions = Object.keys(readDirtySessionRecords()).length > 0;
+    if (!hasDirtySessions && failedWriteKeys.current.size === 0) return;
+
+    try {
+      const freshSessions = await fetchAllSessions();
+      remoteSessionsRef.current = freshSessions;
+      freshSessions.forEach((s) => { sessionIdMap.current[s.table_id] = s.id; });
+      wasOffline.current = true;
+      if (isMounted.current) setRecoverySessions(freshSessions);
+      if (isMounted.current) setRecoveryTick((tick) => tick + 1);
+      void refetchSessions();
+    } catch {
+      wasOffline.current = true;
+    }
+  }, [refetchSessions]);
+
   useEffect(() => {
     const triggerReconnectSync = () => {
-      const hasDirtySessions = Object.keys(readDirtySessionRecords()).length > 0;
-      if (!hasDirtySessions && failedWriteKeys.current.size === 0) return;
-
-      wasOffline.current = true;
-      void refetchSessions().finally(() => {
-        if (isMounted.current) setRecoveryTick((tick) => tick + 1);
-      });
+      void runRecoveryFetch();
     };
 
     const handleVisibilityChange = () => {
@@ -155,25 +167,19 @@ export function useDirectusSync(
       window.removeEventListener("online", triggerReconnectSync);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [refetchSessions]);
+  }, [runRecoveryFetch]);
 
   useEffect(() => {
     if (!hasFailedWrites || conflicts.length > 0) return;
 
     const retryRecovery = () => {
-      const hasDirtySessions = Object.keys(readDirtySessionRecords()).length > 0;
-      if (!hasDirtySessions && failedWriteKeys.current.size === 0) return;
-
-      wasOffline.current = true;
-      void refetchSessions().finally(() => {
-        if (isMounted.current) setRecoveryTick((tick) => tick + 1);
-      });
+      void runRecoveryFetch();
     };
 
     retryRecovery();
     const interval = window.setInterval(retryRecovery, POLL_INTERVAL_MS);
     return () => window.clearInterval(interval);
-  }, [hasFailedWrites, conflicts.length, refetchSessions]);
+  }, [hasFailedWrites, conflicts.length, runRecoveryFetch]);
 
   useEffect(() => {
     const existingCache = readSessionCache();
@@ -218,11 +224,12 @@ export function useDirectusSync(
   // ── Detects conflicts when transitioning from offline to online ────────────
   useEffect(() => {
     const now = Date.now();
+    const activeRemoteSessions = recoverySessions ?? remoteSessions;
 
     // If Directus failed, load from localStorage once on the transition to offline.
     // This runs before the data check because TanStack Query can retain stale
     // data from a previous successful poll after a later refetch fails.
-    if (syncError) {
+    if (syncError && !recoverySessions) {
       if (!wasOffline.current) {
         wasOffline.current = true;
 
@@ -276,7 +283,7 @@ export function useDirectusSync(
 
     // While the first query is still loading, do nothing. Treating initial
     // undefined data as offline makes every reload look like a reconnect.
-    if (!remoteSessions) {
+    if (!activeRemoteSessions) {
       return;
     }
 
@@ -284,9 +291,9 @@ export function useDirectusSync(
     if (syncPaused.current) return;
 
     // Normal path: merge remote Directus data
-    const remoteMap = new Map(remoteSessions.map((s) => [s.table_id, s]));
+    const remoteMap = new Map(activeRemoteSessions.map((s) => [s.table_id, s]));
 
-    remoteSessions.forEach((s) => { sessionIdMap.current[s.table_id] = s.id; });
+    activeRemoteSessions.forEach((s) => { sessionIdMap.current[s.table_id] = s.id; });
 
     const dirtyRecords = readDirtySessionRecords();
     const durableDirtyKeys = new Set(Object.keys(dirtyRecords));
@@ -338,7 +345,7 @@ export function useDirectusSync(
           client_id: "runtime",
         };
       });
-      const detectedConflicts = detectDirtySessionConflicts(dirtyCandidates, remoteSessions);
+      const detectedConflicts = detectDirtySessionConflicts(dirtyCandidates, activeRemoteSessions);
       if (detectedConflicts.length > 0) {
         console.log(`Detected ${detectedConflicts.length} sync conflict(s)`);
         setConflicts(detectedConflicts);
@@ -458,7 +465,8 @@ export function useDirectusSync(
         }
       });
     });
-  }, [remoteSessions, syncError, recoveryTick, setOrders, setSeatedTablesArr, setSentBatches, setGutscheinAmounts, setMarkedBatches]);
+    if (recoverySessions) setRecoverySessions(null);
+  }, [remoteSessions, recoverySessions, syncError, recoveryTick, setOrders, setSeatedTablesArr, setSentBatches, setGutscheinAmounts, setMarkedBatches]);
 
   // ── Debounced write: batches rapid state changes into one Directus call ───
   // ── Also writes to localStorage immediately for offline resilience ─────────
