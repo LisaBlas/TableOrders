@@ -131,7 +131,8 @@ const menu = await directus.request(
   tip: decimal,           // Tip amount (nullable)
   timestamp: datetime,    // UTC timestamp (filtered by Berlin day bounds)
   payment_mode: string,   // "full", "equal", "item"
-  split_data: json,       // { guests: number } for equal splits
+  split_data: json,       // { guests: number } or { payments: SplitPayment[] }
+  split_guests: number,   // Durable guest count for equal and item splits
   added_to_pos: boolean,  // Bill marked as entered into POS
   date_created: datetime,
   date_updated: datetime

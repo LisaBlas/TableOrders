@@ -158,7 +158,7 @@ src/
   tip?: number,
   timestamp: ISO string,   // UTC timestamp (Berlin day bounds used for filtering)
   paymentMode: "full" | "equal" | "item",
-  splitData?: { guests: number },
+  splitData?: { guests: number } | { payments: SplitPayment[] },
   addedToPOS?: boolean,    // Bill marked as added to POS system
   items: [...]             // Populated via O2M from bill_items
 }
@@ -196,6 +196,7 @@ src/
 - **Conflict resolution** — Dirty local table sessions store a last-synced base snapshot/hash; reconnect uses three-way comparison (base/local/remote) before prompting
 - **Conflict prompts are recovery-only** — Normal online table edits may create short-lived dirty local records for refresh safety, but conflict detection should only prompt during offline→online recovery or failed-write retry paths
 - **Optimistic bill creation** — Bills added to cache immediately with `tempId`; replaced with `directusId` on successful Directus write
+- **Split bill metadata** — Persisted in `bills.split_data` for both equal splits (`{ guests }`) and item splits (`{ payments }`); `split_guests` stores the durable guest count for both split modes
 - **Unsent items** can be modified (qty +/-)
 - **Sent items** are locked, shown in batch history
 - **Table swap** — long-press (500ms) activates swap mode; tap destination table; all state swapped bidirectionally (orders, sentBatches, markedBatches, gutscheinAmounts, seated status)

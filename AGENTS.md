@@ -96,6 +96,9 @@ src/
   for hashing/comparison, not by rejecting numeric cached sessions.
 - Bills are optimistic: temporary client IDs are replaced by Directus IDs after
   writes succeed.
+- Split bill metadata is persisted in `bills.split_data` for both equal
+  (`{ guests }`) and item splits (`{ payments }`). `split_guests` stores the
+  durable guest count for both split modes.
 - Marked batches are stored as stable string batch IDs, not positional array
   indices. Legacy numeric marks are migrated on read by mapping index to batch.
 - Paid bills should be modified through named `AppContext` actions, not by

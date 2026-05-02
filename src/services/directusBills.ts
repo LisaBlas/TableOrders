@@ -1,4 +1,4 @@
-import type { Bill, OrderItem } from "../types";
+import type { Bill, EqualSplitData, ItemSplitData, OrderItem } from "../types";
 
 const DIRECTUS_URL = import.meta.env.VITE_DIRECTUS_URL ?? "https://cms.blasalviz.com";
 const DIRECTUS_TOKEN = import.meta.env.VITE_DIRECTUS_TOKEN ?? "";
@@ -13,6 +13,45 @@ function getHeaders(): HeadersInit {
     headers["Authorization"] = `Bearer ${DIRECTUS_TOKEN}`;
   }
   return headers;
+}
+
+function parseJsonField(value: unknown): unknown {
+  if (typeof value !== "string") return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return undefined;
+  }
+}
+
+function positiveInt(value: unknown): number | null {
+  const numberValue = typeof value === "number" ? value : typeof value === "string" ? Number(value) : NaN;
+  if (!Number.isFinite(numberValue) || numberValue <= 0) return null;
+  return Math.trunc(numberValue);
+}
+
+function readSplitData(d: any): EqualSplitData | ItemSplitData | undefined {
+  const splitData = parseJsonField(d.split_data);
+  if (splitData && typeof splitData === "object") {
+    if ("payments" in splitData && Array.isArray(splitData.payments)) {
+      return { payments: splitData.payments };
+    }
+    if ("guests" in splitData) {
+      const guests = positiveInt(splitData.guests);
+      if (guests !== null) return { guests };
+    }
+  }
+
+  const guests = positiveInt(d.split_guests);
+  if (guests !== null) return { guests };
+
+  return undefined;
+}
+
+function splitGuestCount(splitData: Bill["splitData"]): number | null {
+  if (!splitData) return null;
+  if ("guests" in splitData) return splitData.guests;
+  return splitData.payments.length;
 }
 
 export function todayBerlinDate(): string {
@@ -43,7 +82,7 @@ function billFromDirectus(d: any): Bill {
     timestamp: d.timestamp,
     paymentMode: d.payment_mode,
     addedToPOS: d.added_to_pos ?? false,
-    splitData: d.split_guests ? { guests: d.split_guests } : undefined,
+    splitData: readSplitData(d),
     items: (d.items ?? []).map((item: any) => ({
       directusId: item.id,
       id: item.item_id ?? item.id,
@@ -93,9 +132,8 @@ export async function createBillInDirectus(bill: Bill): Promise<Bill> {
       payment_mode: bill.paymentMode,
       timestamp: bill.timestamp,
       added_to_pos: false,
-      split_guests: bill.splitData && "guests" in bill.splitData
-        ? bill.splitData.guests
-        : null,
+      split_data: bill.splitData ?? null,
+      split_guests: splitGuestCount(bill.splitData),
     }),
   });
   if (!billRes.ok) throw new Error(`Create bill failed: ${billRes.status}`);

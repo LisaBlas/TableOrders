@@ -25,6 +25,12 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
     ? { ...S.billCard, background: "#e8f4fc", border: "1px solid #c2dcf5" }
     : S.billCard;
 
+  const splitGuestCount = bill.splitData
+    ? "payments" in bill.splitData
+      ? bill.splitData.payments.length
+      : bill.splitData.guests
+    : null;
+
   return (
     <div style={cardStyle}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -44,8 +50,10 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
                 ? <span style={{ color: "#2d7a3a", fontWeight: 600 }}>Full payment (Voucher: {bill.gutschein.toFixed(2)}€)</span>
                 : "Full payment"
               : bill.paymentMode === "equal"
-              ? `Split ${bill.splitData && "guests" in bill.splitData ? bill.splitData.guests : 0} ways`
-              : `Split by item (${bill.splitData && "payments" in bill.splitData ? bill.splitData.payments.length : 0} guest${bill.splitData && "payments" in bill.splitData && bill.splitData.payments.length > 1 ? 's' : ''})`}
+              ? `Split ${splitGuestCount ?? 0} ways`
+              : splitGuestCount === null
+              ? "Split by item"
+              : `Split by item (${splitGuestCount} guest${splitGuestCount > 1 ? 's' : ''})`}
             {bill.paymentMode !== "full" && bill.gutschein && bill.gutschein > 0 && (
               <div style={{ color: "#2d7a3a", fontWeight: 600 }}>
                 Voucher: -{bill.gutschein.toFixed(2)}€
