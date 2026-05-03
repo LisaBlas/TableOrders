@@ -83,7 +83,17 @@ export function DailySalesView() {
             <span style={{ display: "block", fontSize: compact ? 10 : 12, fontWeight: 400, color: "#999" }}>{item.items[0]}</span>
           )}
         </span>
-        <span style={{ fontSize: compact ? 16 : 26, fontWeight: 900, color }}>×{item.qty}</span>
+        <span style={{
+          fontSize: compact ? 13 : 15,
+          fontWeight: 800,
+          color: color === "#e07b5a" ? "#e07b5a" : "#fff",
+          background: color === "#e07b5a" ? "#fdeee8" : "#1a1a1a",
+          borderRadius: 20,
+          padding: compact ? "2px 8px" : "4px 12px",
+          minWidth: compact ? 28 : 36,
+          textAlign: "center",
+          flexShrink: 0,
+        }}>×{item.qty}</span>
       </div>
     );
 
@@ -104,15 +114,9 @@ export function DailySalesView() {
 
     const isWideScreen = isDesktop || isTabletLandscape || isTablet;
 
-    // Sales items grid style - multiple columns on larger screens
-    const salesGridStyle = isWideScreen ? {
+    const salesGridStyle = {
       display: "grid",
       gridTemplateColumns: isDesktop ? "repeat(3, 1fr)" : "repeat(2, 1fr)",
-      gap: 12,
-      marginBottom: 16
-    } : {
-      display: "flex",
-      flexDirection: "column" as const,
       gap: 12,
       marginBottom: 16
     };
@@ -151,7 +155,7 @@ export function DailySalesView() {
               Sales
             </div>
             <div style={salesGridStyle}>
-              {withPosId.map((item) => (
+              {[...withPosId].sort((a, b) => b.qty - a.qty).map((item) => (
                 <div key={`${item.posId}-${item.posName}-${item.items.join(',')}`} style={{ ...S.billCard, padding: "12px 16px" }}>
                   {renderPosRow(item, "#1a1a1a")}
                 </div>
