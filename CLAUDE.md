@@ -23,7 +23,7 @@ Built for speed and simplicity — optimized for multi-device, front-of-house us
 
 ## Tech Stack
 - **React 18** with TypeScript (Vite)
-- **Inline styles** — pure JS objects via `S` object in `appStyles.js`, no CSS-in-JS library
+- **Inline styles** — `S` object in `appStyles.js`; design tokens (colors, radii) in `tokens.ts`
 - **State** — React Context (AuthContext + AppContext + TableContext + MenuContext + SplitContext), TanStack Query for server state
 - **Directus CMS** — headless CMS for menu data, paid bills, and table sessions (SQLite, REST API)
   - **Authentication** — Static token in `.env` file (VITE_DIRECTUS_TOKEN)
@@ -36,11 +36,13 @@ src/
 ├── main.jsx                      # Entry point
 ├── index.css                     # Global reset
 ├── App.tsx                       # Root: auth guard + view routing + QueryClientProvider + context providers
+├── config/
+│   └── appConfig.ts              # Central runtime constants (LONG_PRESS_MS, DEBOUNCE_DELAY_MS, POLL_INTERVAL_MS, OWNERSHIP_GRACE_MS, MAX_RETRIES, RESTAURANT_NAME, TIMEZONE)
 ├── contexts/
 │   ├── AuthContext.tsx           # Authentication state + token management
 │   ├── AppContext.tsx            # Global UI state + all paid-bill actions (syncs to Directus)
-│   ├── TableContext.tsx          # All table/order state and actions (syncs to Directus table_sessions)
-│   ├── MenuContext.tsx           # Live menu from Directus, falls back to constants.js
+│   ├── TableContext.tsx          # All table/order state and actions (syncs to Directus table_sessions); exposes dynamicTables + addDynamicTable + resolveTableDisplayId
+│   ├── MenuContext.tsx           # Live menu from Directus, falls back to constants.ts; exposes menu + minQty2Ids
 │   └── SplitContext.tsx          # Split payment state machine
 ├── hooks/
 │   ├── useTableOrder.ts          # Derived order state for a specific table
@@ -68,14 +70,23 @@ src/
 │   ├── SplitConfirmView.tsx      # Guest payment confirmation
 │   └── SplitDoneView.tsx         # Final split summary
 ├── components/
+│   ├── TableCard.tsx             # Individual table card (status, swap highlighting, destination dot)
 │   ├── OrderBar.tsx              # Collapsible bottom slider (unsent items / sent batches)
 │   ├── SentBatchCard.tsx         # Sent batch list (used in bill view)
 │   ├── BillView.tsx              # Full bill breakdown
+│   ├── BillHeader.tsx            # Bill header: brand, date, edit toggle, gutschein button
 │   ├── BillCard.tsx              # Per-bill card in daily sales (supports edit mode + item crossing)
 │   ├── BillTab.tsx               # Bill tab controls
 │   ├── Modal.tsx                 # Generic confirm modal
 │   ├── Toast.tsx                 # Auto-dismiss notification
 │   ├── ErrorBoundary.tsx         # Error boundary — full-page (default) or inline card (inline prop)
+│   ├── ConflictResolutionModal.tsx # 3-way conflict UI (local / remote / merge)
+│   ├── RetryModal.tsx            # Non-dismissible retry modal for write failures
+│   ├── SwapSheet.tsx             # Swap confirmation bottom sheet
+│   ├── CustomItemModal.tsx       # Freeform custom item creation (name, price, qty)
+│   ├── GutscheinModal.tsx        # Voucher amount input modal
+│   ├── PaymentPanel.tsx          # Payment amount input with tip display
+│   ├── SplitOptions.tsx          # Split mode selector buttons (equal / by item)
 │   ├── MenuItemCard.tsx          # Menu grid item
 │   ├── MenuItemRow.tsx           # Menu list item
 │   ├── MenuGrid.tsx              # Responsive menu grid component (subcategory grouping)
@@ -85,109 +96,44 @@ src/
 │   ├── SalesSummary.tsx          # Daily sales summary stats
 │   └── icons.tsx                 # SVG icon components (BackIcon, BillIcon, SalesIcon)
 ├── data/
-│   └── constants.js              # Tables config, static menu fallback, STATUS_CONFIG
+│   └── constants.ts              # Tables config (TABLES), static menu (MENU), STATUS_CONFIG, subcategory lists, MIN_QTY_2_IDS
 ├── utils/
-│   ├── helpers.js                # getTableStatus, getItemDestination, formatting
+│   ├── helpers.ts                # getTableStatus, getItemDestination, expandItems, consolidateItems
+│   ├── batchGrouping.ts          # groupByDestination — splits order items into bar/counter/kitchen groups
+│   ├── batchMarks.ts             # createBatchId, batchMarkId, normalizeMarkedBatchIds (legacy number→string migration)
+│   ├── conflictDetection.ts      # detectDirtySessionConflicts, mergeSessions (3-way merge)
+│   ├── sessionStorage.ts         # Full localStorage session layer: cache, dirty records, sync meta, sessionHash
 │   ├── migration.ts              # Legacy bill migration (adds posId to pre-Directus bills)
 │   ├── billFactory.ts            # Bill creation factories (createFullTableBill, createEqualSplitTableBill, etc.)
 │   ├── salesAggregation.ts       # POS entry aggregation for Daily Sales view
 │   └── fetchWithRetry.ts         # Exponential backoff retry helper (used by MenuContext)
 ├── styles/
-│   └── appStyles.js              # All inline style definitions (S object) + responsive variants
+│   ├── appStyles.js              # All inline style definitions (S object) + responsive variants
+│   └── tokens.ts                 # Design tokens: colors palette + border radii
 └── types/
-    └── index.ts                  # Shared TypeScript types (Bill, OrderItem, TableSession, etc.)
+    └── index.ts                  # Shared TypeScript types (Bill, OrderItem, TableSession, DynamicTable, Destination, etc.)
 ```
 
 ## Data Model
+→ Full schemas, query patterns, and integrity rules: [`docs/DIRECTUS_SCHEMA.md`](docs/DIRECTUS_SCHEMA.md)
 
-### Table Sessions (persisted in Directus — `table_sessions` collection)
-```js
-{
-  id: number,               // Auto-increment ID
-  table_id: string,         // e.g., "1", "2", ..., "11"
-  seated: boolean,          // Is table seated?
-  gutschein: number | null, // Gutschein amount
-  orders: OrderItem[],      // Full order state (unsent + sent)
-  sent_batches: Batch[],    // Sent order batches with stable ids + timestamps
-  marked_batches: string[]  // Array of stable batch ids marked as delivered
-}
-```
-
-### Orders (state — synced to table_sessions every 500ms)
-```js
-{
-  [tableId]: [
-    {
-      id: string,           // Menu item UUID
-      name: string,
-      price: number,
-      qty: number,          // Total quantity ordered
-      sentQty: number,      // Quantity sent to kitchen
-      posId?: string,       // POS system ID
-      posName?: string,     // POS display name
-      category?: string,
-      subcategory?: string,
-      destination?: string, // bar/counter/kitchen
-      baseId?: string,      // Variant parent ID
-      variantType?: string, // Variant type
-      note?: string
-    }
-  ]
-}
-```
-
-### Split Payment (state)
-```js
-{
-  splitRemaining: [{ ...item, _uid, qty: 1 }], // expanded items
-  splitSelected: Set<uid>,
-  splitPayments: [{ guestNum, items, total }],
-  splitMode: "equal" | "item"
-}
-```
-
-### Paid Bills (persisted in Directus — `bills` + `bill_items` collections)
-```js
-// bills
-{
-  directusId: UUID,        // Directus record ID
-  tempId?: string,         // Client-only optimistic ID (not persisted)
-  tableId: number,
-  total: number,
-  gutschein?: number,
-  tip?: number,
-  timestamp: ISO string,   // UTC timestamp (Berlin day bounds used for filtering)
-  paymentMode: "full" | "equal" | "item",
-  splitData?: { guests: number } | { payments: SplitPayment[] },
-  addedToPOS?: boolean,    // Bill marked as added to POS system
-  items: [...]             // Populated via O2M from bill_items
-}
-
-// bill_items
-{
-  directusId: UUID,
-  bill_id: UUID,           // FK → bills
-  item_id: string,         // Original menu item UUID
-  item_name: string,
-  pos_id?: string,
-  pos_name?: string,
-  price: number,
-  qty: number,
-  category?: string,
-  subcategory?: string,
-  crossed_qty: number      // Items entered into POS (0 by default; incremented via UI)
-}
-```
+Key shapes:
+- **`table_sessions`** — active table state (orders, sentBatches, markedBatches, gutschein, seated); deleted on close
+- **`bills` + `bill_items`** — one record per payment, never deleted; `bill_items.crossed_qty` tracks POS entries
+- **`OrderItem`** — `qty` (total ordered) / `sentQty` (sent to kitchen); unsent = `qty - sentQty > 0`; `destination` field routes to bar/counter/kitchen
+- **`Batch.id`** — stable string ID, never positional; `markedBatches` keyed by these
+- **Split Payment** — `splitRemaining` expands qty > 1 into individual units; `splitPayments` records per-guest totals
+- **`tempId`** — optimistic bill prefix (client-only); replaced with `directusId` on Directus write
+- **`appConfig.ts`** — single source of truth for all timing/retry constants; change here, not inline
 
 ## Views (State Machine)
 - `login` — Authentication form (blocks app until logged in)
 - `tables` — Floor overview, table grid, daily sales button
 - `order` — Menu selection, order building, send to kitchen
-- `ticket` — Bill view, split options, close table
+- `ticket` — Bill view, split options, close table (close confirmation is a Modal inside this view, not a separate route)
 - `split` — Equal or item-based split flow
 - `splitConfirm` — Guest payment confirmation (item split only)
 - `splitDone` — Final split summary
-- `close` — Destructive table close confirmation
 - `dailySales` — Revenue summary, list of all paid bills, aggregated POS view, date picker
 
 ## Key Behaviors
@@ -199,6 +145,10 @@ src/
 - **Split bill metadata** — Persisted in `bills.split_data` for both equal splits (`{ guests }`) and item splits (`{ payments }`); `split_guests` stores the durable guest count for both split modes
 - **Unsent items** can be modified (qty +/-)
 - **Sent items** are locked, shown in batch history
+- **Custom items** — staff can add freeform items (name, price, qty) via `addCustomItem`; IDs prefixed `custom-{timestamp}`, never clash with menu IDs
+- **Order destination routing** — `getItemDestination` auto-assigns each item to bar / counter / kitchen based on category/subcategory/id prefix; shown as emoji on `TableCard`; used in clipboard export grouping
+- **MIN_QTY_2_IDS** — Cheese Plate, Raclette, Fondue, Fondue Alkoholfrei enforce a minimum qty of 2 per order; set is exported from `constants.ts` and passed through `MenuContext.minQty2Ids`
+- **Dynamic tables** — `addDynamicTable(label, location)` creates ad-hoc tables beyond the hardcoded list; persisted to localStorage key `dynamic_tables`; `resolveTableDisplayId` resolves display names for both static and dynamic tables
 - **Table swap** — long-press (500ms) activates swap mode; tap destination table; all state swapped bidirectionally (orders, sentBatches, markedBatches, gutscheinAmounts, seated status)
 - **Batch colour coding** — sent batch sections show a red left-border accent when pending delivery, green when marked; the collapsed slider shows a matching status dot
 - **Marked batches** are keyed by stable `Batch.id` strings, with legacy timestamp fallback; never store positional batch indices
@@ -206,8 +156,7 @@ src/
 - **Clipboard integration** for order/ticket export (no kitchen backend)
 - **Toast notifications** (2s auto-dismiss) for user feedback
 - **Paid bills saved** to Directus automatically when table closes — cross-device, persistent
-- **Menu loaded from Directus** on app start; retried up to 3x (800ms exponential backoff) before falling back to static constants.js
-- **Table sessions persisted to Directus** — orders, sentBatches, markedBatches, gutschein, seated status all survive refresh and sync across devices
+- **Menu loaded from Directus** on app start; retried up to 3x (800ms exponential backoff) before falling back to static constants.ts
 - **Offline indicator** — amber banner shown at the top of all views when the sessions polling query fails after TanStack Query's default retries (~7s of persistent failure)
 - **Table close is irreversible in-app** — paid bills remain in Daily Sales/POS workflow; mistaken closes are handled manually by marking the bill as added to POS and recreating the table
 - **Bill edit mode** — mutations are local-only until "Done"; Directus sync fires on exit; Cancel restores snapshot
@@ -268,8 +217,8 @@ To get a Directus token:
 
 ## Agent Rules
 - **Always `git pull origin main` before making any code changes**, regardless of whether the request comes from the terminal or Slack. Never skip this step.
-- Sessions 1–3 hardening RC deployed to GitHub Pages on 2026-05-03. This is now the production baseline.
 - After changes are committed and pushed, always run `npm run deploy` to publish to GitHub Pages.
+- Hard system rules (ref snapshot timing, conflict detection gating, table cleanup) → [`docs/SYSTEM_INVARIANTS.md`](docs/SYSTEM_INVARIANTS.md)
 
 ## Deployment Workflow (GitHub Pages)
 ```bash
@@ -293,38 +242,30 @@ npm run deploy
 - **Speed over flexibility** — Inline styles, hardcoded config for fast iteration
 - **Clarity over cleverness** — Direct state updates, explicit view switching
 - **Reversible actions** — Confirm destructive operations (close table)
-- **Copy > integrate** — Clipboard export for rapid prototyping
 - **Real-time sync** — Multi-device coordination via polling (eventual consistency model)
 
-## Directus Collections
-| Collection | Purpose |
-|---|---|
-| `categories` | Menu categories (name, sort_order) |
-| `menu_items` | Menu items with M2O to categories |
-| `menu_item_variants` | Size/type variants (small, large, bottle here, bottle to go) |
-| `bills` | One record per payment — analytics source of truth |
-| `bill_items` | One record per line item (FK → bills) |
-| `table_sessions` | Real-time table state (orders, batches, gutschein, seated) — one record per active table |
+## Directus Schema
+→ Full schemas: [`docs/DIRECTUS_SCHEMA.md`](docs/DIRECTUS_SCHEMA.md)
 
-Bills are never deleted — persistent record for accounting and analytics.
-Table sessions are deleted when table closes (no historical tracking).
+Collections: `categories`, `menu_items`, `menu_item_variants`, `bills`, `bill_items`, `table_sessions`
+- Bills: **never deleted** — persistent record for accounting and analytics
+- Table sessions: **deleted on close** — no historical tracking
 
 ## Notes
-- Restaurant name ("Käserei Camidi") hardcoded in ticket view (`BillTab.tsx`)
-- 11 tables hardcoded (easy to change in constants.js)
+- Restaurant name ("Käserei Camidi") is defined in two places: hardcoded directly in `BillHeader.tsx`; imported from `appConfig.ts` (`RESTAURANT_NAME`) in `Receipt.tsx`. Both must be updated if the name changes — `BillTab.tsx` itself contains neither (it renders `BillHeader`)
+- Tables defined in `constants.ts` (`TABLES` array): Inside — 1, 2, 3, 4, MUT, 10–15, ToGo (13 slots); Outside — A, B, C, Left, Mid, Right (6 slots); plus user-created dynamic tables via `addDynamicTable`
 - Euro currency symbol hardcoded (€)
-- Menu categories: Food, Drinks, Wines, Shop (driven by Directus `categories` collection)
-- Status colors defined in `STATUS_CONFIG` (constants.js): open=blue, seated=yellow, unconfirmed=red, confirmed=green — reused in batch colouring and swap mode highlights
-- Table swap uses long-press (500ms threshold, `LONG_PRESS_MS` constant) — `longFiredRef` guards normal taps but is bypassed in swap mode to allow target selection
+- Menu categories: Food, Drinks, Wines, Shop — "Wines" view combines wines by glass (from `Drinks` key, filtered by `bottleSubcategory`) and static bottles (from `Wines` key); `useMenuItems` handles the merge
+- Status colors defined in `STATUS_CONFIG` (`constants.ts`): open=blue, seated=yellow, unconfirmed=red, confirmed=green — reused in batch colouring and swap mode highlights
+- Table swap uses long-press (500ms threshold, `LONG_PRESS_MS` in `appConfig.ts`) — `longFiredRef` guards normal taps but is bypassed in swap mode to allow target selection
 - `AppContext` exposes named bill action functions (`addPaidBill`, `markBillAddedToPOS`, `removePaidBillItem`, `restorePaidBillItem`, etc.) — do not manipulate `paidBills` directly
 - Auth credentials stored in localStorage key `authToken` (JWT-like format but no server-side validation)
-- localStorage keys in use: `authToken` (auth), `paidBills` (offline bill fallback), `table_orders_client_id` (stable sync client id), `table_sessions_cache` (offline table state), `table_sessions_dirty` (dirty upsert/delete records with base/local snapshots), `table_sessions_sync_meta` (last synced base hashes)
+- localStorage keys in use: `authToken` (auth), `paidBills` (offline bill fallback), `table_orders_client_id` (stable sync client id), `table_sessions_cache` (offline table state), `table_sessions_dirty` (dirty upsert/delete records with base/local snapshots), `table_sessions_sync_meta` (last synced base hashes), `dynamic_tables` (user-created table slots)
 - `syncError` boolean exposed from `TableContext` — sourced from `useDirectusSync` → `useQuery` `isError` on the sessions poll
 - `ErrorBoundary` accepts `inline` prop: when true renders a compact "Something went wrong / Try again" card that resets boundary state instead of a full-page reload screen
-- Berlin timezone handling: `todayBerlinDate()` uses Intl.DateTimeFormat; `berlinDayBoundsUTC()` calculates UTC bounds accounting for DST
+- Berlin timezone: `todayBerlinDate()` + `berlinDayBoundsUTC()` (DST-aware); bills filtered by Berlin calendar day, not UTC
 - Responsive breakpoints defined in `useBreakpoint()`: mobile < 768px, tablet 768-1023px, tabletLandscape 1024-1439px, desktop >= 1440px
-- POS crossing tracked via `crossed_qty` field (incremented when item entered into POS, decremented if restored)
-- Optimistic updates use `tempId` prefix to distinguish from `directusId` (replaced on successful write)
-- Table state conflict resolution: `lastWriteTime` tracked per table; 3-second grace period before accepting remote overwrites
-- Offline-sync debugging lesson: when refresh loses local orders, first verify cached session validation. Numeric item IDs previously caused valid-looking localStorage sessions to be rejected on read.
-- Sessions 1–3 combined RC: all sync, state-consistency, and payment-integrity hardening implemented, manually verified 2026-05-03, and deployed to production 2026-05-03. Unit test suite (vitest) covers billFactory, sessionStorage, conflictDetection, batchMarks, TableContext, and useDirectusSync.
+- Offline-sync: when refresh loses local orders, verify cached session validation — numeric item IDs can cause valid-looking localStorage sessions to be silently rejected
+- Implementation rules (ref snapshot timing, conflict detection gates, table cleanup) → [`docs/SYSTEM_INVARIANTS.md`](docs/SYSTEM_INVARIANTS.md)
+- Sync architecture decisions and edge cases → [`docs/MEMORY.md`](docs/MEMORY.md)
+- Recent changes log → [`docs/RECENT_CHANGES.md`](docs/RECENT_CHANGES.md)

@@ -2,6 +2,20 @@
 
 Entries older than 7 days are pruned automatically.
 
+## 2026-05-03 — CLAUDE.md documentation audit
+
+Full codebase analysis vs docs. Updated CLAUDE.md:
+- Added `config/appConfig.ts` to project structure (central runtime constants)
+- Added 9 undocumented components: TableCard, BillHeader, ConflictResolutionModal, RetryModal, SwapSheet, CustomItemModal, GutscheinModal, PaymentPanel, SplitOptions
+- Added 4 undocumented utils: batchGrouping, batchMarks, conflictDetection, sessionStorage
+- Added `tokens.ts` to styles
+- Corrected `constants.js` / `helpers.js` → `constants.ts` / `helpers.ts`
+- Corrected table count (was "11 hardcoded", now accurate: 13 inside + 6 outside + dynamic)
+- Added Key Behaviors: custom items, order destination routing, MIN_QTY_2_IDS, dynamic tables
+- Added `dynamic_tables` to localStorage keys list
+- Updated MenuContext description to include `minQty2Ids`
+- Added `appConfig.ts` and `destination` field to Data Model section
+
 ## 2026-05-03 — Sessions 1–3 RC deployed
 
 Combined hardening release candidate shipped to GitHub Pages:
