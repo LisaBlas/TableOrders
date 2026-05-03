@@ -140,26 +140,6 @@ export function TablesView() {
               lineHeight: 1,
               display: "flex",
               alignItems: "center",
-              gap: 4,
-              color: "#555",
-            }}
-            onClick={() => { setNewTableName(""); setNewTableLocation("inside"); setShowNewTableModal(true); }}
-          >
-            <span style={{ fontSize: 16, lineHeight: 1, marginTop: -1 }}>+</span>
-            Table
-          </button>
-          <button
-            style={{
-              background: "none",
-              border: "1.5px solid #ddd",
-              borderRadius: 8,
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: "pointer",
-              padding: "7px 10px",
-              lineHeight: 1,
-              display: "flex",
-              alignItems: "center",
               gap: 5,
               color: "#555",
             }}
@@ -192,11 +172,33 @@ export function TablesView() {
           let cardIndex = 0;
           return allTables.map((t) => {
             if (t.isDivider) {
+              const loc = t.label.toLowerCase() as "inside" | "outside";
               return (
                 <div key={t.label} style={{ ...S.sentDivider, gridColumn: "1 / -1", margin: "8px 0 4px" }}>
                   <div style={S.sentDividerLine} />
                   <span style={S.sentDividerText}>{t.label}</span>
                   <div style={S.sentDividerLine} />
+                  <button
+                    onClick={() => { setNewTableName(""); setNewTableLocation(loc); setShowNewTableModal(true); }}
+                    style={{
+                      background: "none",
+                      border: "1.5px solid #ccc",
+                      borderRadius: 6,
+                      width: 22,
+                      height: 22,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                      color: "#999",
+                      fontSize: 16,
+                      lineHeight: 1,
+                      padding: 0,
+                      flexShrink: 0,
+                    }}
+                  >
+                    +
+                  </button>
                 </div>
               );
             }
@@ -248,7 +250,6 @@ export function TablesView() {
           }}
           confirmText="Add Table"
         >
-          <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 8 }}>
             <input
               autoFocus
               type="text"
@@ -270,32 +271,9 @@ export function TablesView() {
                 outline: "none",
                 fontFamily: "inherit",
                 boxSizing: "border-box",
+                marginBottom: 8,
               }}
             />
-            <div style={{ display: "flex", gap: 8 }}>
-              {(["inside", "outside"] as const).map((loc) => (
-                <button
-                  key={loc}
-                  onClick={() => setNewTableLocation(loc)}
-                  style={{
-                    flex: 1,
-                    padding: "8px 0",
-                    fontSize: 14,
-                    fontWeight: 600,
-                    fontFamily: "inherit",
-                    cursor: "pointer",
-                    borderRadius: 8,
-                    border: newTableLocation === loc ? "2px solid #333" : "1.5px solid #ddd",
-                    background: newTableLocation === loc ? "#333" : "none",
-                    color: newTableLocation === loc ? "#fff" : "#555",
-                    textTransform: "capitalize",
-                  }}
-                >
-                  {loc}
-                </button>
-              ))}
-            </div>
-          </div>
         </Modal>
       )}
 
