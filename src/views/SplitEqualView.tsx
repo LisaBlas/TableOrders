@@ -136,7 +136,10 @@ export function SplitEqualView() {
                       const amount = !Number.isNaN(parsedAmount) && parsedAmount > 0 ? parsedAmount : defaultShare;
                       const updated = [...state.equalPayments];
                       updated[idx] = { amount: amount.toString(), confirmed: true };
-                      dispatch({ type: "ADD_EQUAL_PAYMENT", payments: [...updated, { amount: "", confirmed: false }] });
+                      const next = idx < state.equalGuests - 1
+                        ? [...updated, { amount: "", confirmed: false }]
+                        : updated;
+                      dispatch({ type: "ADD_EQUAL_PAYMENT", payments: next });
                     }
                   }}
                   disabled={payment.confirmed}
@@ -272,7 +275,10 @@ export function SplitEqualView() {
                         const amount = !Number.isNaN(parsedAmount) && parsedAmount > 0 ? parsedAmount : defaultShare;
                         const updated = [...state.equalPayments];
                         updated[idx] = { amount: amount.toString(), confirmed: true };
-                        dispatch({ type: "ADD_EQUAL_PAYMENT", payments: [...updated, { amount: "", confirmed: false }] });
+                        const next = idx < state.equalGuests - 1
+                          ? [...updated, { amount: "", confirmed: false }]
+                          : updated;
+                        dispatch({ type: "ADD_EQUAL_PAYMENT", payments: next });
                       }
                     }}
                     disabled={payment.confirmed}
