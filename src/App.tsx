@@ -1,4 +1,5 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+import logoImg from "./assets/camidi_logo.jpg";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { MenuProvider, useMenu } from "./contexts/MenuContext";
@@ -20,6 +21,54 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ConflictResolutionModal } from "./components/ConflictResolutionModal";
 import { useTable } from "./contexts/TableContext";
 import { S } from "./styles/appStyles";
+
+function SplashScreen() {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        height: "100vh",
+        background: "#f5f4f0",
+        gap: "20px",
+      }}
+    >
+      <style>{`
+        @keyframes splashFadeIn {
+          from { opacity: 0; transform: translateY(8px); }
+          to   { opacity: 1; transform: translateY(0);   }
+        }
+      `}</style>
+      <img
+        src={logoImg}
+        alt="Camidi logo"
+        style={{
+          width: 120,
+          height: 120,
+          borderRadius: "50%",
+          objectFit: "cover",
+          animation: "splashFadeIn 0.7s ease-out 0.1s forwards",
+          opacity: 0,
+        }}
+      />
+      <p
+        style={{
+          fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
+          fontSize: 20,
+          fontWeight: 500,
+          color: "#222",
+          letterSpacing: "0.01em",
+          animation: "splashFadeIn 0.7s ease-out 0.7s forwards",
+          opacity: 0,
+        }}
+      >
+        Camidi – TableOrders
+      </p>
+    </div>
+  );
+}
 
 function LoadingScreen() {
   const { isTabletLandscape, isTablet, isDesktop } = useBreakpoint();
@@ -65,12 +114,26 @@ function Router() {
   const { syncError, conflicts, resolveConflict } = useTable();
   const { isTabletLandscape, isTablet, isDesktop } = useBreakpoint();
 
+  const [splashDone, setSplashDone] = useState(false);
+  const splashStartedRef = useRef(false);
+
   useEffect(() => { window.scrollTo(0, 0); }, [view]);
+
+  useEffect(() => {
+    if (!menuLoading && !isAuthenticated && !splashStartedRef.current) {
+      splashStartedRef.current = true;
+      const timer = setTimeout(() => setSplashDone(true), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [menuLoading, isAuthenticated]);
 
   if (menuLoading) return <LoadingScreen />;
 
-  // Auth guard: show login if not authenticated
-  if (!isAuthenticated) return <LoginView />;
+  // Auth guard: show splash then login if not authenticated
+  if (!isAuthenticated) {
+    if (!splashDone) return <SplashScreen />;
+    return <LoginView />;
+  }
 
   const rootStyle = isDesktop || isTabletLandscape ? S.rootTabletLandscape : isTablet ? S.rootTablet : S.root;
 
