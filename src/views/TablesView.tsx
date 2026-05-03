@@ -175,6 +175,7 @@ export function TablesView() {
               const loc = t.label.toLowerCase() as "inside" | "outside";
               return (
                 <div key={t.label} style={{ ...S.sentDivider, gridColumn: "1 / -1", margin: "8px 0 4px" }}>
+                  <div style={{ width: 22, flexShrink: 0 }} />
                   <div style={S.sentDividerLine} />
                   <span style={S.sentDividerText}>{t.label}</span>
                   <div style={S.sentDividerLine} />
@@ -240,7 +241,7 @@ export function TablesView() {
 
       {showNewTableModal && (
         <Modal
-          title="New Table"
+          title={`New ${newTableLocation} table`}
           onClose={() => setShowNewTableModal(false)}
           onConfirm={() => {
             const name = newTableName.trim();
