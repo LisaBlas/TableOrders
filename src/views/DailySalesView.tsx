@@ -114,9 +114,14 @@ export function DailySalesView() {
 
     const isWideScreen = isDesktop || isTabletLandscape || isTablet;
 
-    const salesGridStyle = {
+    const salesGridStyle = isWideScreen ? {
       display: "grid",
       gridTemplateColumns: isDesktop ? "repeat(3, 1fr)" : "repeat(2, 1fr)",
+      gap: 12,
+      marginBottom: 16
+    } : {
+      display: "flex",
+      flexDirection: "column" as const,
       gap: 12,
       marginBottom: 16
     };
