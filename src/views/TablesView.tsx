@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import camidiLogo from "../assets/camidi_logo.jpg";
 import { TABLES, STATUS_CONFIG } from "../data/constants";
 import { getTableStatus, getItemDestination } from "../utils/helpers";
 import { useApp } from "../contexts/AppContext";
@@ -120,9 +121,12 @@ export function TablesView() {
   return (
     <div style={S.page}>
       <header style={styles.header}>
-        <span style={{ fontWeight: 700, fontSize: 18, letterSpacing: "-0.3px" }}>
-          {todayLabel}
-        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <img src={camidiLogo} alt="Käserei Camidi" style={{ height: 42, objectFit: "contain", borderRadius: 4 }} />
+          <span style={{ fontWeight: 700, fontSize: 18, letterSpacing: "-0.3px" }}>
+            {todayLabel}
+          </span>
+        </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <button
             style={{
