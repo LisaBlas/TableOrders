@@ -181,7 +181,7 @@ export function DailySalesView() {
   };
 
   return (
-    <div style={S.page}>
+    <div style={{ ...S.page, height: "100dvh", minHeight: 0, overflow: "hidden" }}>
       <header style={headerStyle}>
         <button style={S.back} onClick={() => app.setView("tables")}>
           <BackIcon size={22} />
