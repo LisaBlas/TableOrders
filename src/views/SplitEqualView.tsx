@@ -29,7 +29,7 @@ export function SplitEqualView() {
   const closeSplitTable = () => {
     const displayId = table.resolveTableDisplayId(tableId);
     const bill = createEqualSplitTableBill({
-      tableId: displayId,
+      tableId,
       orders: table.orders,
       gutschein: table.gutscheinAmounts[tableId] || 0,
       guests: state.equalGuests,
@@ -37,7 +37,7 @@ export function SplitEqualView() {
       equalShare: equalShareRounded,
     });
 
-    app.addPaidBill(bill);
+    app.addPaidBill({ ...bill, tableId: displayId });
     table.cleanupTable(tableId);
     dispatch({ type: "RESET" });
     app.showToast(`Table ${displayId} closed — ${bill.total.toFixed(2)}€`);
