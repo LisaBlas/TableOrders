@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import { IS_DEMO_MODE } from "../demo";
 
 // Hardcoded credentials (configurable)
 const AUTH_CONFIG = {
@@ -17,10 +18,11 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(IS_DEMO_MODE);
 
   // Check localStorage on mount
   useEffect(() => {
+    if (IS_DEMO_MODE) return;
     const token = localStorage.getItem(AUTH_TOKEN_KEY);
     if (token === "true") {
       setIsAuthenticated(true);
@@ -28,6 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = (username: string, password: string): boolean => {
+    if (IS_DEMO_MODE) return true;
     if (username === AUTH_CONFIG.username && password === AUTH_CONFIG.password) {
       localStorage.setItem(AUTH_TOKEN_KEY, "true");
       setIsAuthenticated(true);
@@ -37,6 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
+    if (IS_DEMO_MODE) return;
     localStorage.removeItem(AUTH_TOKEN_KEY);
     setIsAuthenticated(false);
   };

@@ -215,7 +215,7 @@ Demo builds use `.env.demo`:
 ```env
 VITE_DEMO_MODE=true
 ```
-When `VITE_DEMO_MODE=true`, Directus service modules use `src/demo/demoServices.ts` localStorage-backed mocks instead of HTTP calls, seed state through `initDemoState()`, and show `DemoBanner`.
+When `VITE_DEMO_MODE=true`, Directus service modules use `src/demo/demoServices.ts` localStorage-backed mocks instead of HTTP calls, seed state through `initDemoState()`, bypass login in `AuthContext`, and show `DemoBanner`.
 Deploy the demo to GitHub Pages with `npm run deploy:demo`; `predeploy:demo` rebuilds `dist-demo`, then publishes it to the `demo/` subfolder so production remains at `/TableOrders/` and demo runs at `/TableOrders/demo/`.
 
 To get a Directus token:
