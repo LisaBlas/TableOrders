@@ -1,6 +1,7 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
+  readonly VITE_DEMO_MODE?: string;
   readonly VITE_DIRECTUS_URL?: string;
   readonly VITE_DIRECTUS_TOKEN?: string;
 }

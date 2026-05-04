@@ -1,5 +1,7 @@
 import type { TableId, OrderItem, Batch } from "../types";
 import { normalizeMarkedBatchIds, type RawMarkedBatchId } from "../utils/batchMarks";
+import { IS_DEMO_MODE } from "../demo";
+import * as demo from "../demo/demoServices";
 
 const DIRECTUS_URL = import.meta.env.VITE_DIRECTUS_URL ?? "https://cms.blasalviz.com";
 
@@ -23,6 +25,7 @@ export function parseTableId(id: string): TableId {
 }
 
 export async function fetchAllSessions(): Promise<TableSession[]> {
+  if (IS_DEMO_MODE) return demo.fetchAllSessions();
   const res = await fetch(`${DIRECTUS_URL}/items/table_sessions?limit=-1`);
   if (!res.ok) throw new Error(`sessions fetch ${res.status}`);
   const { data } = await res.json();
@@ -38,6 +41,7 @@ export async function upsertSession(
   directusId: number | null,
   data: Omit<TableSession, "id">
 ): Promise<number> {
+  if (IS_DEMO_MODE) return demo.upsertSession(directusId, data);
   let resolvedId = directusId;
 
   if (!resolvedId) {
@@ -68,6 +72,7 @@ export async function upsertSession(
 }
 
 export async function deleteSession(directusId: number): Promise<{ success: boolean; error?: string }> {
+  if (IS_DEMO_MODE) return demo.deleteSession(directusId);
   try {
     const response = await fetch(`${DIRECTUS_URL}/items/table_sessions/${directusId}`, {
       method: "DELETE",

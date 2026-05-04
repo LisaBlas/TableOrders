@@ -91,12 +91,12 @@ A self-contained demo build for the portfolio landing page. No Directus connecti
 - Table 12: ready to bill (all items sent, bill open)
 
 ### Build + deploy
-- [ ] Implement demo mode service layer (~4–6h)
-- [ ] Create seed data + auto-reset timer
-- [ ] Add demo banner component
-- [ ] Build: `VITE_DEMO_MODE=true npm run build`
-- [ ] Deploy static output to landing page subdomain (e.g. `demo.tableorders.com`) or embed as iframe
-- [ ] Test full flow on mobile: seat → order → send → bill → split
+- [x] Implement demo mode service layer
+- [x] Create seed data + auto-reset timer
+- [x] Add demo banner component
+- [x] Add GitHub Pages demo build: `npm run build:demo` outputs `dist-demo` with `/TableOrders/demo/` asset base
+- [ ] Deploy static output to GitHub Pages demo path: `npm run deploy:demo`
+- [ ] Test full flow on mobile: seat -> order -> send -> bill -> split
 
 ### Notes
 - No VPS or Directus instance needed — purely static

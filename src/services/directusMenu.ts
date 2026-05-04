@@ -1,3 +1,6 @@
+import { IS_DEMO_MODE } from "../demo";
+import * as demo from "../demo/demoServices";
+
 const DIRECTUS_URL = import.meta.env.VITE_DIRECTUS_URL ?? "https://cms.blasalviz.com";
 const DIRECTUS_TOKEN = import.meta.env.VITE_DIRECTUS_TOKEN ?? "";
 
@@ -33,6 +36,7 @@ function transformItem(item: any, categoryName: string) {
 }
 
 export async function fetchMenu(): Promise<{ menu: Record<string, any[]>; minQty2Ids: Set<string> }> {
+  if (IS_DEMO_MODE) return demo.fetchMenu() as Promise<{ menu: Record<string, any[]>; minQty2Ids: Set<string> }>;
   const url = `${DIRECTUS_URL}/items/menu_items?fields=*,variants.*,category.name&filter[available][_eq]=true&limit=-1&sort=category.sort_order,id`;
   const headers: HeadersInit = DIRECTUS_TOKEN ? { Authorization: `Bearer ${DIRECTUS_TOKEN}` } : {};
   const res = await fetch(url, { headers });

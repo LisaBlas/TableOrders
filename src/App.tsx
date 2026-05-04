@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import logoImg from "./assets/camidi_logo.jpg";
+import { IS_DEMO_MODE, initDemoState } from "./demo";
+import { DemoBanner } from "./components/DemoBanner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { MenuProvider, useMenu } from "./contexts/MenuContext";
@@ -139,7 +141,8 @@ function Router() {
 
   return (
     <div style={rootStyle}>
-      {syncError && (
+      {IS_DEMO_MODE && <DemoBanner />}
+      {syncError && !IS_DEMO_MODE && (
         <div
           style={{
             background: "#b45309",
@@ -192,6 +195,10 @@ function SplitRouter() {
 const queryClient = new QueryClient();
 
 export default function App() {
+  useEffect(() => {
+    if (IS_DEMO_MODE) initDemoState();
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
     <ErrorBoundary>
