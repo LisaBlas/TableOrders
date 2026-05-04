@@ -73,6 +73,38 @@
 
 ---
 
+## Demo Mode (Landing Page / Portfolio)
+
+A self-contained demo build for the portfolio landing page. No Directus connection — all data is seeded into localStorage, writes stay local, resets automatically.
+
+### How it works
+- `VITE_DEMO_MODE=true` env var activates demo mode
+- All Directus service calls (`directusSessions.ts`, `directusBills.ts`, `directusMenu.ts`) return mock data instead of making HTTP requests
+- Writes go to localStorage only
+- On load (and every 10–15 min), localStorage is reset to a pre-seeded scenario
+- A visible demo banner tells visitors it's a demo environment
+
+### Seed scenario (realistic, shows the full flow)
+- Table 2: open, no orders
+- Table 4: seated, 2 items ordered, not yet sent
+- Table 10: active, 1 sent batch (partially delivered), 1 unsent item
+- Table 12: ready to bill (all items sent, bill open)
+
+### Build + deploy
+- [ ] Implement demo mode service layer (~4–6h)
+- [ ] Create seed data + auto-reset timer
+- [ ] Add demo banner component
+- [ ] Build: `VITE_DEMO_MODE=true npm run build`
+- [ ] Deploy static output to landing page subdomain (e.g. `demo.tableorders.com`) or embed as iframe
+- [ ] Test full flow on mobile: seat → order → send → bill → split
+
+### Notes
+- No VPS or Directus instance needed — purely static
+- Visitors can't corrupt each other's demo (localStorage is per-browser)
+- Reset timer ensures a clean state for every new visitor session
+
+---
+
 ## Notes
 - Keep personal VPS Directus (`cms.blasalviz.com`) running as the test/dev environment
 - Never use personal VPS as the client's production instance

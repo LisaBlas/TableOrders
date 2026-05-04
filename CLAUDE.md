@@ -4,6 +4,8 @@
 Mobile-first React app for restaurant table management, order taking, and bill processing.
 Built for speed and simplicity — optimized for multi-device, front-of-house use with real-time synchronization.
 
+**Architectural role:** This app is an order coordination layer, not a fiscal POS. It sits between waitstaff and an external POS system (e.g. a scale-integrated cheese POS). Staff use it to take orders and track tables during service; at end of shift they manually enter daily sales into the real POS, which handles tax calculation and legal receipts. The app's "receipts" are internal working documents for staff, not fiscal documents issued to customers. This means VAT calculation, legal receipt formatting, and fiscal compliance are out of scope.
+
 ## Core Features
 1. **Authentication** — Token-based login (hardcoded credentials: `camidi` / `fonduefortwo`)
 2. **Floor Management** — Visual table grid with real-time status (Open, Seated, Ordered, Confirmed)
