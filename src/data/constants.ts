@@ -632,7 +632,7 @@ export const MENU: Record<string, MenuItem[]> = {
       variants: [
         { type: "small", price: 1.5, label: "0,2", posId: "50-1", posName: "Sprudel klein" },
         { type: "large", price: 2.8, label: "0,4", posId: "51-1", posName: "Sprudel groß" },
-        { type: "bottle", price: 5.5, label: "Fl.", posId: "52", posName: "Sprudel Fl." }
+        { type: "bottle", price: 5.5, label: "Fl.", posId: "52", posName: "Sprudel Fl.", isDefault: true }
       ]
     },
     {

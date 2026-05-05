@@ -46,6 +46,7 @@ export interface MenuItemVariant {
   posId?: string;
   posName?: string;
   bottleSubcategory?: string;
+  isDefault?: boolean;
 }
 
 export interface MenuItem {

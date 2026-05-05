@@ -48,8 +48,10 @@ export function OrderView() {
 
   const handleCardTap = (item: MenuItem) => {
     if (item.variants && item.variants.length > 0) {
-      // Tap: add the default "large" (0,2L) variant directly
-      const defaultVariant = item.variants.find((v) => v.type === "large") ?? item.variants[0];
+      const defaultVariant =
+        item.variants.find((v) => v.isDefault) ??
+        item.variants.find((v) => v.type === "large") ??
+        item.variants[0];
       handleAddItem(item, defaultVariant);
     } else {
       handleAddItem(item, null);
