@@ -56,6 +56,7 @@ interface TableContextValue {
   sendOrder: (tableId: TableId) => void;
   addBillEditBatch: (tableId: TableId, batchItems: OrderItem[]) => void;
   removeBillEditItems: (tableId: TableId, decrements: { id: string; qty: number }[]) => void;
+  restoreBillOrders: (tableId: TableId, snapshot: OrderItem[]) => void;
   seatTable: (tableId: TableId) => void;
   applyGutschein: (tableId: TableId, amount: number) => void;
   removeGutschein: (tableId: TableId) => void;
@@ -269,6 +270,12 @@ export function TableProvider({ children }: { children: ReactNode }) {
     scheduleWrite(tableId);
   }, [scheduleWrite]);
 
+  const restoreBillOrders = useCallback((tableId: TableId, snapshot: OrderItem[]) => {
+    setOrders((prev) => ({ ...prev, [String(tableId)]: snapshot.map((o) => ({ ...o })) }));
+    scheduleWrite(tableId);
+    persistDirtySession(tableId, { orders: snapshot });
+  }, [scheduleWrite, persistDirtySession]);
+
   const sendOrder = useCallback((tableId: TableId) => {
     const key = String(tableId);
     let nextBatch: Batch | null = null;
@@ -455,7 +462,7 @@ export function TableProvider({ children }: { children: ReactNode }) {
       orders, seatedTables, sentBatches, gutscheinAmounts, markedBatches, syncError,
       conflicts, resolveConflict,
       addItem, addCustomItem, removeItem, removeItemFromBill, addItemToBill,
-      sendOrder, addBillEditBatch, removeBillEditItems, seatTable,
+      sendOrder, addBillEditBatch, removeBillEditItems, restoreBillOrders, seatTable,
       applyGutschein, removeGutschein,
       cleanupTable, removePaidItems, toggleMarkBatch, swapTables,
       dynamicTables, addDynamicTable, resolveTableDisplayId,

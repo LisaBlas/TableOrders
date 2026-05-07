@@ -26,7 +26,7 @@ export function BillTab({ tableId, sent }: BillTabProps) {
   const isLargeScreen = isTablet || isTabletLandscape || isDesktop;
 
   const [showGutscheinModal, setShowGutscheinModal] = useState(false);
-  const { editingBill, startBillEdit, confirmBillEdit } = useBillEdit(tableId);
+  const { editingBill, startBillEdit, confirmBillEdit, cancelBillEdit } = useBillEdit(tableId);
   const {
     confirmingClose,
     paymentAmount,
@@ -93,27 +93,40 @@ export function BillTab({ tableId, sent }: BillTabProps) {
         )}
 
         <div style={S.ticketActions}>
-          {confirmingClose && (
-            <div style={S.paymentSection}>
-              <PaymentPanel
-                total={total}
-                paymentAmount={paymentAmount}
-                paymentConfirmed={paymentConfirmed}
-                onChange={setPaymentAmount}
-                onConfirm={handleConfirmPayment}
-              />
+          {editingBill ? (
+            <div style={S.editActionsRow}>
+              <button style={S.billSecondaryAction} onClick={cancelBillEdit}>
+                Cancel
+              </button>
+              <button style={S.closeBtn} onClick={confirmBillEdit}>
+                Confirm
+              </button>
             </div>
+          ) : (
+            <>
+              {confirmingClose && (
+                <div style={S.paymentSection}>
+                  <PaymentPanel
+                    total={total}
+                    paymentAmount={paymentAmount}
+                    paymentConfirmed={paymentConfirmed}
+                    onChange={setPaymentAmount}
+                    onConfirm={handleConfirmPayment}
+                  />
+                </div>
+              )}
+              <button
+                style={{
+                  ...(confirmingClose ? S.confirmCloseBtn : S.closeBtn),
+                  ...(isCloseDisabled ? { opacity: 0.5, cursor: "not-allowed" } : {}),
+                }}
+                onClick={handleCloseClick}
+                disabled={isCloseDisabled}
+              >
+                {confirmingClose ? "Confirm close" : "Close table"}
+              </button>
+            </>
           )}
-          <button
-            style={{
-              ...(confirmingClose ? S.confirmCloseBtn : S.closeBtn),
-              ...(isCloseDisabled ? { opacity: 0.5, cursor: "not-allowed" } : {}),
-            }}
-            onClick={handleCloseClick}
-            disabled={isCloseDisabled}
-          >
-            {confirmingClose ? "Confirm close" : "Close table"}
-          </button>
         </div>
 
         {gutscheinModal}
@@ -155,16 +168,27 @@ export function BillTab({ tableId, sent }: BillTabProps) {
           </div>
         )}
 
-        <button
-          style={{
-            ...(confirmingClose ? S.billPrimaryActionConfirm : S.billPrimaryAction),
-            ...(isCloseDisabled ? { opacity: 0.5, cursor: "not-allowed" } : {}),
-          }}
-          onClick={handleCloseClick}
-          disabled={isCloseDisabled}
-        >
-          {confirmingClose ? "Confirm close" : "Close table"}
-        </button>
+        {editingBill ? (
+          <div style={S.editActionsRow}>
+            <button style={S.billSecondaryAction} onClick={cancelBillEdit}>
+              Cancel
+            </button>
+            <button style={S.billPrimaryAction} onClick={confirmBillEdit}>
+              Confirm
+            </button>
+          </div>
+        ) : (
+          <button
+            style={{
+              ...(confirmingClose ? S.billPrimaryActionConfirm : S.billPrimaryAction),
+              ...(isCloseDisabled ? { opacity: 0.5, cursor: "not-allowed" } : {}),
+            }}
+            onClick={handleCloseClick}
+            disabled={isCloseDisabled}
+          >
+            {confirmingClose ? "Confirm close" : "Close table"}
+          </button>
+        )}
       </div>
 
       {gutscheinModal}

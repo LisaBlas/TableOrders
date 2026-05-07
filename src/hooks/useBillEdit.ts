@@ -41,5 +41,11 @@ export function useBillEdit(tableId: TableId) {
     setBillEditSnapshot(null);
   };
 
-  return { editingBill, startBillEdit, confirmBillEdit };
+  const cancelBillEdit = () => {
+    if (billEditSnapshot) table.restoreBillOrders(tableId, billEditSnapshot);
+    setEditingBill(false);
+    setBillEditSnapshot(null);
+  };
+
+  return { editingBill, startBillEdit, confirmBillEdit, cancelBillEdit };
 }

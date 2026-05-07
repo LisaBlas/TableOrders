@@ -1768,6 +1768,22 @@ export const S = {
     width: "100%",
     transition: "background 0.2s ease-out",
   },
+  billSecondaryAction: {
+    padding: "14px",
+    borderRadius: radii.md,
+    border: `1.5px solid ${colors.fg}`,
+    background: "transparent",
+    color: colors.fg,
+    fontSize: 15,
+    fontWeight: 700,
+    cursor: "pointer",
+    width: "100%",
+    transition: "opacity 0.2s ease-out",
+  },
+  editActionsRow: {
+    display: "flex",
+    gap: 10,
+  },
   billPrimaryActionConfirm: {
     padding: "14px",
     borderRadius: radii.md,
