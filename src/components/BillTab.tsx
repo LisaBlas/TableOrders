@@ -39,7 +39,7 @@ export function BillTab({ tableId, sent }: BillTabProps) {
     isCloseDisabled,
   } = useTableClose(tableId, sent, isLargeScreen);
 
-  const handleEditToggle = () => (editingBill ? confirmBillEdit() : startBillEdit());
+  const handleEditToggle = () => startBillEdit();
 
   const handleSplitEqual = () => {
     app.setTicketTable(tableId);
@@ -173,7 +173,7 @@ export function BillTab({ tableId, sent }: BillTabProps) {
             <button style={S.billSecondaryAction} onClick={cancelBillEdit}>
               Cancel
             </button>
-            <button style={S.billPrimaryAction} onClick={confirmBillEdit}>
+            <button style={{ ...S.billPrimaryAction, flex: 1 }} onClick={confirmBillEdit}>
               Confirm
             </button>
           </div>

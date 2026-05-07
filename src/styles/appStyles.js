@@ -1777,7 +1777,7 @@ export const S = {
     fontSize: 15,
     fontWeight: 700,
     cursor: "pointer",
-    width: "100%",
+    flex: 1,
     transition: "opacity 0.2s ease-out",
   },
   editActionsRow: {
