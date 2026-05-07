@@ -11,6 +11,7 @@
     "preview": "vite preview",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
+    "postdeploy": "npm run build:demo && gh-pages -d dist-demo --dest demo",
     "predeploy:demo": "npm run build:demo",
     "deploy:demo": "gh-pages -d dist-demo --dest demo",
     "test": "vitest run",
