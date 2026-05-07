@@ -99,7 +99,7 @@ export function Receipt({
       )}
 
       <div style={S.closeTotalRow}>
-        <span>Total</span>
+        <span>Total (excl. tip)</span>
         <span>{total.toFixed(2)}€</span>
       </div>
     </>
