@@ -29,6 +29,10 @@ npm run dev
 npm run build
 npm run preview
 npm run deploy
+npm run build:demo
+npm run deploy:demo
+npm run build:demo-v2
+npm run deploy:demo-v2
 npm.cmd run build
 npm.cmd exec tsc -- --noEmit
 ```
@@ -37,6 +41,10 @@ Notes:
 - Dev server defaults to Vite, currently `localhost:3000` via
   `vite.config.js`.
 - `npm run deploy` builds via `predeploy` and publishes `dist` to GitHub Pages.
+- `npm run deploy:demo` publishes the localStorage-backed demo to
+  `/TableOrders/demo/`.
+- `npm run deploy:demo-v2` publishes the same demo mode to the separate
+  `LisaBlas/TableOrders-v2` GitHub Pages repo at `/TableOrders-v2/`.
 - Run `npm run build` before considering code changes complete unless the task
   is docs-only.
 - On Windows PowerShell, use `npm.cmd` when `npm.ps1` is blocked by execution

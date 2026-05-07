@@ -198,6 +198,7 @@ npm install        # Install dependencies
 npm run dev        # Start dev server (localhost:3000)
 npm run build      # Production build
 npm run build:demo # Static demo build using .env.demo / VITE_DEMO_MODE=true; outputs dist-demo with /TableOrders/demo/ base
+npm run build:demo-v2 # Static demo build using .env.demo-v2 / VITE_DEMO_MODE=true; outputs dist-demo-v2 with /TableOrders-v2/ base
 npm.cmd run build  # Windows PowerShell fallback when npm.ps1 is blocked
 npm.cmd exec tsc -- --noEmit  # Type-check without building
 npm run preview    # Preview production build
@@ -217,6 +218,7 @@ VITE_DEMO_MODE=true
 ```
 When `VITE_DEMO_MODE=true`, Directus service modules use `src/demo/demoServices.ts` localStorage-backed mocks instead of HTTP calls, seed state through `initDemoState()`, bypass login in `AuthContext`, and show `DemoBanner`.
 Deploy the demo to GitHub Pages with `npm run deploy:demo`; `predeploy:demo` rebuilds `dist-demo`, then publishes it to the `demo/` subfolder so production remains at `/TableOrders/` and demo runs at `/TableOrders/demo/`.
+Deploy the experimental demo to the separate GitHub Pages repo with `npm run deploy:demo-v2`; `predeploy:demo-v2` rebuilds `dist-demo-v2`, then publishes it to `LisaBlas/TableOrders-v2` so it runs at `/TableOrders-v2/`.
 
 To get a Directus token:
 1. Log into Directus admin panel
