@@ -28,6 +28,7 @@ function transformItem(item: any, categoryName: string) {
         posId: v.pos_id,
         posName: item.short_name,
         bottleSubcategory: v.bottle_subcategory,
+        ...(v.is_default ? { isDefault: true } : {}),
       })),
     };
   }
