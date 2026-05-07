@@ -31,13 +31,13 @@ export function BillHeader({ tableId, editingBill, onEditToggle, onGutscheinOpen
         {editingBill ? (
           <div
             style={{
-              ...S.billIconBtnActive,
+              ...S.billIconBtn,
               width: "auto",
               padding: "0 10px",
               fontSize: 12,
-              fontWeight: 700,
+              fontWeight: 600,
               cursor: "default",
-              letterSpacing: "0.01em",
+              color: "#888",
             }}
           >
             Editing...

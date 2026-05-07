@@ -98,7 +98,7 @@ export function BillTab({ tableId, sent }: BillTabProps) {
               <button style={S.billSecondaryAction} onClick={cancelBillEdit}>
                 Cancel
               </button>
-              <button style={S.closeBtn} onClick={confirmBillEdit}>
+              <button style={{ ...S.closeBtn, background: "#2d5a35" }} onClick={confirmBillEdit}>
                 Confirm
               </button>
             </div>
@@ -173,7 +173,7 @@ export function BillTab({ tableId, sent }: BillTabProps) {
             <button style={S.billSecondaryAction} onClick={cancelBillEdit}>
               Cancel
             </button>
-            <button style={{ ...S.billPrimaryAction, flex: 1 }} onClick={confirmBillEdit}>
+            <button style={{ ...S.billPrimaryAction, flex: 1, background: "#2d5a35" }} onClick={confirmBillEdit}>
               Confirm
             </button>
           </div>
