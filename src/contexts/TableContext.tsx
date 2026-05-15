@@ -246,8 +246,10 @@ export function TableProvider({ children }: { children: ReactNode }) {
         [String(tableId)]: current
           .map((o: OrderItem) => {
             if (o.id === itemId && (o.sentQty || 0) > 0) {
-              if (o.qty <= 2 && minQty2Ids.has(o.id)) return o;
-              return { ...o, qty: o.qty - 1, sentQty: (o.sentQty || 0) - 1 };
+              const nextQty = o.qty - 1;
+              // Skip qty=1 for min-qty-2 items: jump straight to 0 (remove entirely)
+              if (nextQty === 1 && minQty2Ids.has(o.id)) return { ...o, qty: 0, sentQty: 0 };
+              return { ...o, qty: nextQty, sentQty: (o.sentQty || 0) - 1 };
             }
             return o;
           })

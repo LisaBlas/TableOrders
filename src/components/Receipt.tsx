@@ -50,7 +50,7 @@ export function Receipt({
               style={S.closeRemoveBtn}
               onClick={() => onRemoveItem(o.id)}
               title="Remove one"
-              disabled={o.qty <= 2 && minQty2Ids.has(o.id)}
+              disabled={o.qty <= 0}
             >
               −
             </button>

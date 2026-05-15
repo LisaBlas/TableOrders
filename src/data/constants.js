@@ -534,10 +534,10 @@ export const MENU = {
       shortName: "C. Galets",
       subcategory: "wine",
       variants: [
-        { type: "small", price: 4.5, label: "0,1", posId: "280-1", posName: "CuvGal 0,1" },
-        { type: "large", price: 9, label: "0,2", posId: "280-2", posName: "CuvGal 0,2" },
-        { type: "here", price: 27, label: "Fl.", posId: "280", posName: "CuvGal Fl.", bottleSubcategory: "natural" },
-        { type: "togo", price: 17, label: "Fl. To Go", posId: "280", posName: "CuvGal Fl. To Go", bottleSubcategory: "natural" }
+        { type: "small", price: 4.5, label: "0,1", posId: "247-1", posName: "CuvGal 0,1" },
+        { type: "large", price: 9, label: "0,2", posId: "247-2", posName: "CuvGal 0,2" },
+        { type: "here", price: 27, label: "Fl.", posId: "247", posName: "CuvGal Fl.", bottleSubcategory: "natural" },
+        { type: "togo", price: 17, label: "Fl. To Go", posId: "247-0", posName: "CuvGal Fl. To Go", bottleSubcategory: "natural" }
       ]
     },
     {
