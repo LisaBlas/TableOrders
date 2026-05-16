@@ -17,6 +17,7 @@ import { SplitItemView } from "./views/SplitItemView";
 import { SplitConfirmView } from "./views/SplitConfirmView";
 import { SplitDoneView } from "./views/SplitDoneView";
 import { DailySalesView } from "./views/DailySalesView";
+import { AdminView } from "./views/AdminView";
 import LoginView from "./views/LoginView";
 import { Toast } from "./components/Toast";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -178,6 +179,7 @@ function Router() {
           <DailySalesView />
         </ErrorBoundary>
       )}
+      {view === "admin" && <AdminView />}
     </div>
   );
 }

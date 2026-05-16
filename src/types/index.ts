@@ -166,7 +166,8 @@ export type View =
   | "split"
   | "splitConfirm"
   | "splitDone"
-  | "dailySales";
+  | "dailySales"
+  | "admin";
 
 export type DailySalesTab = "chronological" | "total";
 export type OrderTab = "order" | "bill";

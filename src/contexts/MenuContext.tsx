@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
 import { MENU, MIN_QTY_2_IDS } from "../data/constants";
 import { fetchMenu } from "../services/directusMenu";
 import { withRetry } from "../utils/fetchWithRetry";
@@ -8,6 +8,7 @@ interface MenuContextValue {
   menu: Record<string, MenuItem[]>;
   minQty2Ids: Set<string>;
   menuLoading: boolean;
+  reloadMenu: () => void;
 }
 
 const MenuContext = createContext<MenuContextValue | null>(null);
@@ -17,7 +18,7 @@ export function MenuProvider({ children }: { children: ReactNode }) {
   const [minQty2Ids, setMinQty2Ids] = useState<Set<string>>(MIN_QTY_2_IDS as Set<string>);
   const [menuLoading, setMenuLoading] = useState(true);
 
-  useEffect(() => {
+  const loadMenu = useCallback(() => {
     withRetry(() => fetchMenu(), 3, 800)
       .then(({ menu, minQty2Ids }) => {
         setMenu(menu);
@@ -29,8 +30,12 @@ export function MenuProvider({ children }: { children: ReactNode }) {
       .finally(() => setMenuLoading(false));
   }, []);
 
+  useEffect(() => {
+    loadMenu();
+  }, [loadMenu]);
+
   return (
-    <MenuContext.Provider value={{ menu, minQty2Ids, menuLoading }}>
+    <MenuContext.Provider value={{ menu, minQty2Ids, menuLoading, reloadMenu: loadMenu }}>
       {children}
     </MenuContext.Provider>
   );

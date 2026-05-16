@@ -60,7 +60,7 @@ const todayLabel = new Date().toLocaleDateString("en-GB", {
 
 export function TablesView() {
   const { setView, setActiveTable, showToast } = useApp();
-  const { logout } = useAuth();
+  const { logout, isAdmin } = useAuth();
   const { orders, seatedTables, seatTable, sentBatches, markedBatches, swapTables, dynamicTables, addDynamicTable, resolveTableDisplayId } = useTable();
   const bp = useBreakpoint();
   const styles = resolveGridStyles(bp);
@@ -128,6 +128,24 @@ export function TablesView() {
           </span>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          {isAdmin && (
+            <button
+              style={{
+                background: "none",
+                border: "1.5px solid #ddd",
+                borderRadius: 8,
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: "pointer",
+                padding: "7px 10px",
+                lineHeight: 1,
+                color: "#555",
+              }}
+              onClick={() => setView("admin")}
+            >
+              Menu
+            </button>
+          )}
           <button
             style={{
               background: "none",
