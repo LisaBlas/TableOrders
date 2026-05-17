@@ -2,9 +2,9 @@
 
 ## Project Summary
 TableOrders is a mobile-first React restaurant order management app for table
-status, order taking, bill splitting, daily sales, and POS-crossing workflows.
-It is optimized for fast front-of-house use across multiple devices with
-Directus-backed polling sync.
+status, order taking, bill splitting, daily sales, POS-crossing workflows, and
+admin-only menu maintenance. It is optimized for fast front-of-house use across
+multiple devices with Directus-backed polling sync.
 
 Keep changes practical, inspectable, and low-ceremony. This is an operational
 tool, so preserve speed, clarity, and reliability over speculative abstraction.
@@ -20,7 +20,8 @@ tool, so preserve speed, clarity, and reliability over speculative abstraction.
 - TanStack Query handles Directus server state and polling.
 - Styling is inline JS objects in `src/styles/appStyles.js` via the `S` object.
   Do not introduce CSS-in-JS libraries or broad CSS rewrites.
-- Directus stores menu items, paid bills, bill items, and table sessions.
+- Directus stores menu items, menu item variants, paid bills, bill items, and
+  table sessions.
 
 ## Commands
 ```bash
@@ -65,6 +66,7 @@ src/
     SplitContext.tsx       Split payment state machine
   services/
     directusMenu.ts        Menu reads
+    directusAdmin.ts       Admin menu CRUD for menu_items/menu_item_variants
     directusBills.ts       Bills and bill item reads/writes
     directusSessions.ts    Table session reads/writes
   views/                   Route-like app screens
@@ -83,6 +85,7 @@ src/
 - `ticket`: bill review, split options, close table.
 - `split`, `splitConfirm`, `splitDone`: equal and item-based payment flows.
 - `dailySales`: historical bills, revenue summary, POS aggregation, clear day.
+- `admin`: admin-only in-app Directus menu editor.
 
 ## Data And Sync Rules
 - Table sessions live in Directus `table_sessions`.
@@ -112,9 +115,16 @@ src/
 - Table sessions are deleted when a table closes, and table close is not
   reversible in-app.
 - Berlin timezone is intentionally hardcoded for day boundaries.
+- Admin menu edits write directly to Directus `menu_items` and
+  `menu_item_variants` through `directusAdmin.ts`. When leaving `AdminView`,
+  dirty menu edits call `MenuContext.reloadMenu()` so the order flow sees the
+  updated menu.
 
 ## Important Domain Behaviors
-- Credentials are hardcoded: `camidi` / `fonduefortwo`.
+- Credentials are hardcoded: staff `camidi` / `tartine`, admin `admin` /
+  `camidiadmin`. `authToken` stores `"true"` for staff and `"admin"` for admin.
+- `TablesView` shows the Menu admin entry only when `AuthContext.isAdmin` is
+  true; `AdminView` itself is routed as `view === "admin"`.
 - Restaurant name is hardcoded in `BillTab.tsx`.
 - There are 11 hardcoded tables in `constants.js`.
 - Currency is hardcoded as EUR display text.
@@ -126,6 +136,12 @@ src/
 - Item split expands quantities into individual units for granular payment.
 - Clipboard export is the current kitchen/payment integration.
 - POS crossing uses `crossed_qty` on bill items.
+- `AdminView` groups menu items as Food, Wines, Drinks, Shop; supports search,
+  section collapse, optimistic availability toggles with rollback, item edits,
+  variant price edits/additions/deletions, and new item creation. Simple items
+  store `price` on `menu_items`; variant items create rows in
+  `menu_item_variants`. New items default to `available: true` and
+  `sort_order: 99`.
 
 ## Implementation Guidelines
 - Keep the app mobile-first and touch-friendly.
@@ -143,6 +159,8 @@ src/
 - Be careful with Directus field names. They mirror production collections:
   `categories`, `menu_items`, `menu_item_variants`, `bills`, `bill_items`,
   `table_sessions`.
+- For menu admin changes, preserve the existing `directusAdmin.ts` service
+  boundary and the local optimistic/rollback behavior in `AdminView`.
 
 ## Testing And Verification
 - Primary verification is `npm run build`.

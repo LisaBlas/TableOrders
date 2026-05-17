@@ -7,7 +7,7 @@ Built for speed and simplicity — optimized for multi-device, front-of-house us
 **Architectural role:** This app is an order coordination layer, not a fiscal POS. It sits between waitstaff and an external POS system (e.g. a scale-integrated cheese POS). Staff use it to take orders and track tables during service; at end of shift they manually enter daily sales into the real POS, which handles tax calculation and legal receipts. The app's "receipts" are internal working documents for staff, not fiscal documents issued to customers. This means VAT calculation, legal receipt formatting, and fiscal compliance are out of scope.
 
 ## Core Features
-1. **Authentication** — Token-based login (hardcoded credentials: `camidi` / `fonduefortwo`)
+1. **Authentication** — Token-based login with hardcoded staff credentials (`camidi` / `tartine`) and admin credentials (`admin` / `camidiadmin`)
 2. **Floor Management** — Visual table grid with real-time status (Open, Seated, Ordered, Confirmed)
 3. **Table Swap** — Long-press any table to enter swap mode; tap a second table to exchange all state (orders, batches, gutschein, seated status) between both tables
 4. **Order Taking** — Category-based menu with qty controls, unsent/sent order tracking
@@ -22,12 +22,13 @@ Built for speed and simplicity — optimized for multi-device, front-of-house us
 11. **Historical Date Picker** — View sales for any past date, not just today
 12. **Responsive Design** — Adaptive layouts for mobile, tablet portrait, tablet landscape, desktop
 13. **Multi-Device Sync** — Real-time table state synchronization across devices via Directus polling
+14. **In-App Menu Admin** — Admin-only menu editor for availability, item details, variants, and new item creation
 
 ## Tech Stack
 - **React 18** with TypeScript (Vite)
 - **Inline styles** — `S` object in `appStyles.js`; design tokens (colors, radii) in `tokens.ts`
 - **State** — React Context (AuthContext + AppContext + TableContext + MenuContext + SplitContext), TanStack Query for server state
-- **Directus CMS** — headless CMS for menu data, paid bills, and table sessions (SQLite, REST API)
+- **Directus CMS** — headless CMS for menu data, menu admin writes, paid bills, and table sessions (SQLite, REST API)
   - **Authentication** — Static token in `.env` file (VITE_DIRECTUS_TOKEN)
 - **Real-time Sync** — 2-second polling for table sessions, 5-second polling for bills (today only)
 - **DM Sans** font (Google Fonts)
@@ -59,11 +60,13 @@ src/
 │   └── useSubcategoryState.ts    # Subcategory expand/collapse state for menu
 ├── services/
 │   ├── directusMenu.ts           # fetchMenu() — GET menu_items from Directus
+│   ├── directusAdmin.ts          # In-app admin menu CRUD for menu_items and menu_item_variants
 │   ├── directusBills.ts          # fetchBillsByDate, createBillInDirectus, patchBill/Item
 │   └── directusSessions.ts       # fetchTableSessions, upsertSession, deleteSession (real-time table state)
 ├── views/
 │   ├── LoginView.tsx             # Authentication form
 │   ├── TablesView.tsx            # Floor grid, table swap (long-press), status legend
+│   ├── AdminView.tsx             # Admin-only in-app menu editor backed by Directus
 │   ├── OrderView.tsx             # Menu + order bar + sent batches
 │   ├── TicketView.tsx            # Bill view
 │   ├── DailySalesView.tsx        # Revenue summary (reads from Directus bills collection) + POS aggregation view
@@ -137,9 +140,11 @@ Key shapes:
 - `splitConfirm` — Guest payment confirmation (item split only)
 - `splitDone` — Final split summary
 - `dailySales` — Revenue summary, list of all paid bills, aggregated POS view, date picker
+- `admin` — Admin-only in-app menu editor for Directus `menu_items` and `menu_item_variants`
 
 ## Key Behaviors
 - **Authentication required** — App blocked until login with valid credentials
+- **Admin role** — `AuthContext.isAdmin` is set only for `admin` / `camidiadmin`; `TablesView` shows the Menu button only for admins, and `AdminView` is routed as `view === "admin"`
 - **Real-time multi-device sync** — Table state (orders, batches, gutschein, seated) synced to Directus every 500ms (debounced); fetched every 2 seconds
 - **Conflict resolution** — Dirty local table sessions store a last-synced base snapshot/hash; reconnect uses three-way comparison (base/local/remote) before prompting
 - **Conflict prompts are recovery-only** — Normal online table edits may create short-lived dirty local records for refresh safety, but conflict detection should only prompt during offline→online recovery or failed-write retry paths
@@ -159,6 +164,10 @@ Key shapes:
 - **Toast notifications** (2s auto-dismiss) for user feedback
 - **Paid bills saved** to Directus automatically when table closes — cross-device, persistent
 - **Menu loaded from Directus** on app start; retried up to 3x (800ms exponential backoff) before falling back to static constants.ts
+- **In-app menu admin** — `AdminView` fetches all `menu_items` with nested variants/category, groups them as Food/Wines/Drinks/Shop, supports search and collapsible sections, and writes through `directusAdmin.ts`
+- **Admin menu writes** — availability toggles are optimistic with rollback on failure; edit modal patches item fields (`name`, `short_name`, `subcategory`, `pos_id`, `min_qty`, simple `price`) and variant prices, can delete variants, and can add variants
+- **New admin items** — new menu items are created available by default with `sort_order: 99`; simple items store `price` on `menu_items`, variant items create rows in `menu_item_variants`; Drinks default to 0,2/0,4 variants and Wines support bottle-only or glass-option variant sets
+- **Menu cache refresh after admin edits** — `AdminView` tracks a dirty flag and calls `MenuContext.reloadMenu()` when leaving back to tables so order-taking uses the edited Directus menu
 - **Offline indicator** — amber banner shown at the top of all views when the sessions polling query fails after TanStack Query's default retries (~7s of persistent failure)
 - **Table close is irreversible in-app** — paid bills remain in Daily Sales/POS workflow; mistaken closes are handled manually by marking the bill as added to POS and recreating the table
 - **Bill edit mode** — mutations are local-only until "Done"; Directus sync fires on exit; Cancel restores snapshot
@@ -178,7 +187,7 @@ Key shapes:
 
 ## Future Improvements (if productionizing)
 1. ~~**Persistence**~~ — ✅ Done via Directus (bills + menu + table sessions)
-2. ~~**Menu editor**~~ — ✅ Done via Directus admin UI
+2. ~~**Menu editor**~~ — ✅ Done via in-app `AdminView` backed by Directus
 3. ~~**Auth**~~ — ✅ Done (basic token auth; could add roles/permissions)
 4. ~~**Responsive design**~~ — ✅ Done (mobile/tablet/desktop breakpoints)
 5. **Analytics dashboard** — Data is in Directus (`bills` + `bill_items`); build a read-only dashboard querying by date range, category, item
@@ -221,7 +230,7 @@ Deploy the demo to GitHub Pages with `npm run deploy:demo`; `predeploy:demo` reb
 To get a Directus token:
 1. Log into Directus admin panel
 2. Go to Settings → Access Tokens
-3. Create a new static token with read/write permissions for `bills`, `bill_items`, `menu_items`, `categories`, and `table_sessions` collections
+3. Create a new static token with read/write permissions for `bills`, `bill_items`, `menu_items`, `menu_item_variants`, `categories`, and `table_sessions` collections
 4. Copy the token to `.env`
 5. Restart the dev server
 
@@ -269,7 +278,7 @@ Collections: `categories`, `menu_items`, `menu_item_variants`, `bills`, `bill_it
 - Status colors defined in `STATUS_CONFIG` (`constants.ts`): open=blue, seated=yellow, unconfirmed=red, confirmed=green — reused in batch colouring and swap mode highlights
 - Table swap uses long-press (500ms threshold, `LONG_PRESS_MS` in `appConfig.ts`) — `longFiredRef` guards normal taps but is bypassed in swap mode to allow target selection
 - `AppContext` exposes named bill action functions (`addPaidBill`, `markBillAddedToPOS`, `removePaidBillItem`, `restorePaidBillItem`, etc.) — do not manipulate `paidBills` directly
-- Auth credentials stored in localStorage key `authToken` (JWT-like format but no server-side validation)
+- Auth credentials are hardcoded in `AuthContext.tsx`; localStorage key `authToken` stores `"true"` for staff and `"admin"` for admin (JWT-like format but no server-side validation)
 - localStorage keys in use: `authToken` (auth), `paidBills` (offline bill fallback), `table_orders_client_id` (stable sync client id), `table_sessions_cache` (offline table state), `table_sessions_dirty` (dirty upsert/delete records with base/local snapshots), `table_sessions_sync_meta` (last synced base hashes), `dynamic_tables` (user-created table slots)
 - `syncError` boolean exposed from `TableContext` — sourced from `useDirectusSync` → `useQuery` `isError` on the sessions poll
 - `ErrorBoundary` accepts `inline` prop: when true renders a compact "Something went wrong / Try again" card that resets boundary state instead of a full-page reload screen

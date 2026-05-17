@@ -111,16 +111,60 @@ function LoadingScreen() {
 }
 
 function Router() {
-  const { view, toast } = useApp();
+  const { view, toast, setView } = useApp();
   const { menuLoading } = useMenu();
   const { isAuthenticated } = useAuth();
   const { syncError, conflicts, resolveConflict } = useTable();
   const { isTabletLandscape, isTablet, isDesktop } = useBreakpoint();
+  const { state: splitState, dispatch: splitDispatch } = useSplit();
 
   const [splashDone, setSplashDone] = useState(false);
   const splashStartedRef = useRef(false);
 
+  // Refs so the popstate handler always sees current values without re-registering
+  const viewRef = useRef(view);
+  const splitStateRef = useRef(splitState);
+  useEffect(() => { viewRef.current = view; }, [view]);
+  useEffect(() => { splitStateRef.current = splitState; }, [splitState]);
+
   useEffect(() => { window.scrollTo(0, 0); }, [view]);
+
+  // Hardware/browser back button interception
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    history.pushState(null, '', window.location.href);
+
+    const handlePopState = () => {
+      history.pushState(null, '', window.location.href);
+
+      const v = viewRef.current;
+      const ss = splitStateRef.current;
+
+      if (v === 'order') {
+        setView('tables');
+      } else if (v === 'ticket') {
+        setView('order');
+      } else if (v === 'dailySales') {
+        setView('tables');
+      } else if (v === 'admin') {
+        setView('tables');
+      } else if (v === 'split') {
+        if (ss.mode === 'equal') {
+          splitDispatch({ type: 'RESET' });
+          setView('ticket');
+        } else if (ss.mode === 'item' && ss.payments.length === 0) {
+          splitDispatch({ type: 'RESET' });
+          setView('ticket');
+        }
+        // item split with payments in progress — back is blocked
+      }
+      // 'tables', 'splitConfirm', 'splitDone' — no navigation
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [isAuthenticated, setView, splitDispatch]);
 
   useEffect(() => {
     if (!menuLoading && !isAuthenticated && !splashStartedRef.current) {
