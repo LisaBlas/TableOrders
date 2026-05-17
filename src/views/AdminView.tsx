@@ -290,10 +290,12 @@ function EditItemModal({
   item,
   onClose,
   onSaved,
+  mode = "sheet",
 }: {
   item: AdminMenuItem;
   onClose: () => void;
   onSaved: (patch: Partial<AdminMenuItem>) => void;
+  mode?: "sheet" | "panel";
 }) {
   const derivedPosId =
     item.pos_id ??
@@ -418,33 +420,25 @@ function EditItemModal({
     }
   };
 
-  return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: colors.overlay,
-        display: "flex",
-        alignItems: "flex-end",
-        zIndex: 200,
-      }}
-      onClick={onClose}
-    >
+  const formBody = (
       <div
         style={{
           background: colors.surface,
-          borderRadius: `${radii.xl}px ${radii.xl}px 0 0`,
+          ...(mode === "sheet"
+            ? { borderRadius: `${radii.xl}px ${radii.xl}px 0 0`, maxHeight: "85vh", width: "100%" }
+            : { height: "100%" }),
           padding: "24px 20px 36px",
-          width: "100%",
-          maxHeight: "85vh",
           overflowY: "auto",
           boxSizing: "border-box",
           fontFamily: "'DM Sans', sans-serif",
         }}
-        onClick={(e) => e.stopPropagation()}
+        onClick={mode === "sheet" ? (e) => e.stopPropagation() : undefined}
       >
-        <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 20 }}>
-          Edit: {item.name}
+        <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 20, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span>Edit: {item.name}</span>
+          {mode === "panel" && (
+            <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 22, color: colors.muted, lineHeight: 1, padding: "0 2px", fontFamily: "inherit" }}>×</button>
+          )}
         </div>
 
         <FieldInput
@@ -644,6 +638,23 @@ function EditItemModal({
           </button>
         </div>
       </div>
+  );
+
+  if (mode === "panel") return formBody;
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: colors.overlay,
+        display: "flex",
+        alignItems: "flex-end",
+        zIndex: 200,
+      }}
+      onClick={onClose}
+    >
+      {formBody}
     </div>
   );
 }
@@ -790,6 +801,314 @@ function VariantRowInput({
         ×
       </button>
     </div>
+  );
+}
+
+// ── FilterBar ──────────────────────────────────────────────────────────────
+
+type AvailFilter = "all" | "available" | "unavailable";
+type VariantFilter = "all" | "variants" | "simple";
+
+function FilterPills<T extends string>({
+  options,
+  value,
+  onChange,
+}: {
+  options: { value: T; label: string }[];
+  value: T;
+  onChange: (v: T) => void;
+}) {
+  return (
+    <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+      {options.map((o) => (
+        <button
+          key={o.value}
+          onClick={() => onChange(o.value)}
+          style={{
+            padding: "5px 10px",
+            fontSize: 12,
+            fontWeight: 600,
+            borderRadius: 20,
+            border: `1.5px solid ${value === o.value ? colors.fg : colors.border}`,
+            background: value === o.value ? colors.fg : "none",
+            color: value === o.value ? "#fff" : colors.secondary,
+            cursor: "pointer",
+            fontFamily: "inherit",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function FilterBar({
+  query,
+  onQuery,
+  categoryFilter,
+  onCategoryFilter,
+  availFilter,
+  onAvailFilter,
+  variantFilter,
+  onVariantFilter,
+  categoryNames,
+  onAddItem,
+  isTableView,
+}: {
+  query: string;
+  onQuery: (q: string) => void;
+  categoryFilter: string;
+  onCategoryFilter: (c: string) => void;
+  availFilter: AvailFilter;
+  onAvailFilter: (f: AvailFilter) => void;
+  variantFilter: VariantFilter;
+  onVariantFilter: (f: VariantFilter) => void;
+  categoryNames: string[];
+  onAddItem: () => void;
+  isTableView: boolean;
+}) {
+  const catOptions = [
+    { value: "all", label: "All" },
+    ...categoryNames.map((n) => ({ value: n, label: n })),
+  ];
+  const availOptions: { value: AvailFilter; label: string }[] = [
+    { value: "all", label: "All" },
+    { value: "available", label: "On" },
+    { value: "unavailable", label: "Off" },
+  ];
+  const variantOptions: { value: VariantFilter; label: string }[] = [
+    { value: "all", label: "All" },
+    { value: "variants", label: "Variants" },
+    { value: "simple", label: "Fixed price" },
+  ];
+
+  return (
+    <div
+      style={{
+        padding: isTableView ? "8px 16px" : "10px 16px",
+        borderBottom: `1px solid ${colors.border}`,
+        background: colors.surface,
+        display: "flex",
+        flexDirection: isTableView ? "row" : "column",
+        gap: 8,
+        alignItems: isTableView ? "center" : "stretch",
+        flexShrink: 0,
+      }}
+    >
+      <div style={{ display: "flex", gap: 8, alignItems: "center", flex: isTableView ? "none" : 1 }}>
+        <div style={{ position: "relative", flex: 1, minWidth: isTableView ? 200 : 0 }}>
+          <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: colors.muted, fontSize: 14, pointerEvents: "none", lineHeight: 1 }}>⌕</span>
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => onQuery(e.target.value)}
+            placeholder="Search items…"
+            style={{ ...inputStyle, paddingLeft: 28, paddingTop: 7, paddingBottom: 7, fontSize: 13 }}
+          />
+          {query && (
+            <button onClick={() => onQuery("")} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: colors.muted, fontSize: 16, lineHeight: 1, padding: 0 }}>×</button>
+          )}
+        </div>
+        {isTableView && (
+          <button
+            onClick={onAddItem}
+            style={{ padding: "7px 14px", fontSize: 13, fontWeight: 700, background: colors.fg, color: "#fff", border: "none", borderRadius: radii.md, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap", flexShrink: 0 }}
+          >
+            + Add item
+          </button>
+        )}
+      </div>
+      <div style={{ display: "flex", gap: isTableView ? 10 : 8, alignItems: "center", flexWrap: "wrap" }}>
+        <FilterPills options={catOptions} value={categoryFilter} onChange={onCategoryFilter} />
+        {isTableView && <span style={{ width: 1, height: 18, background: colors.border, flexShrink: 0 }} />}
+        <FilterPills options={availOptions} value={availFilter} onChange={onAvailFilter} />
+        {isTableView && <span style={{ width: 1, height: 18, background: colors.border, flexShrink: 0 }} />}
+        <FilterPills options={variantOptions} value={variantFilter} onChange={onVariantFilter} />
+      </div>
+    </div>
+  );
+}
+
+// ── SortableHeader + MenuTable ─────────────────────────────────────────────
+
+function SortableHeader({
+  label,
+  sortKey,
+  currentKey,
+  currentDir,
+  onSort,
+  style,
+}: {
+  label: string;
+  sortKey: string;
+  currentKey: string;
+  currentDir: "asc" | "desc";
+  onSort: (key: string) => void;
+  style?: CSSProperties;
+}) {
+  const active = currentKey === sortKey;
+  return (
+    <th
+      onClick={() => onSort(sortKey)}
+      style={{
+        padding: "8px 10px",
+        textAlign: "left",
+        fontSize: 11,
+        fontWeight: 700,
+        color: active ? colors.fg : colors.muted,
+        textTransform: "uppercase",
+        letterSpacing: "0.06em",
+        cursor: "pointer",
+        userSelect: "none",
+        whiteSpace: "nowrap",
+        background: colors.bg,
+        borderBottom: `2px solid ${active ? colors.fg : colors.border}`,
+        position: "sticky",
+        top: 0,
+        zIndex: 2,
+        ...style,
+      }}
+    >
+      {label}{active ? (currentDir === "asc" ? " ↑" : " ↓") : ""}
+    </th>
+  );
+}
+
+function MenuTable({
+  items,
+  toggling,
+  onToggle,
+  onEdit,
+  selectedId,
+  sortKey,
+  sortDir,
+  onSort,
+}: {
+  items: AdminMenuItem[];
+  toggling: Set<string>;
+  onToggle: (item: AdminMenuItem) => void;
+  onEdit: (item: AdminMenuItem) => void;
+  selectedId: string | null;
+  sortKey: string;
+  sortDir: "asc" | "desc";
+  onSort: (key: string) => void;
+}) {
+  const sh = (label: string, key: string, extraStyle?: CSSProperties) => (
+    <SortableHeader label={label} sortKey={key} currentKey={sortKey} currentDir={sortDir} onSort={onSort} style={extraStyle} />
+  );
+
+  const cellBase: CSSProperties = {
+    padding: "8px 10px",
+    fontSize: 13,
+    borderBottom: `1px solid ${colors.border}`,
+    verticalAlign: "middle",
+    maxWidth: 160,
+    overflow: "hidden",
+  };
+
+  const truncate: CSSProperties = {
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+    display: "block",
+  };
+
+  return (
+    <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+      <colgroup>
+        <col style={{ width: 52 }} />
+        <col />
+        <col style={{ width: 82 }} />
+        <col style={{ width: 100 }} />
+        <col style={{ width: 110 }} />
+        <col style={{ width: 80 }} />
+        <col style={{ width: 72 }} />
+        <col style={{ width: 52 }} />
+        <col style={{ width: 48 }} />
+        <col style={{ width: 72 }} />
+      </colgroup>
+      <thead>
+        <tr>
+          <th style={{ background: colors.bg, borderBottom: `2px solid ${colors.border}`, position: "sticky", top: 0, zIndex: 2 }} />
+          {sh("Name", "name")}
+          {sh("Category", "category")}
+          {sh("Subcategory", "subcategory")}
+          {sh("Price / Variants", "price")}
+          {sh("POS ID", "pos_id")}
+          {sh("Dest.", "destination")}
+          {sh("Min", "min_qty")}
+          {sh("Sort", "sort_order")}
+          <th style={{ background: colors.bg, borderBottom: `2px solid ${colors.border}`, position: "sticky", top: 0, zIndex: 2 }} />
+        </tr>
+      </thead>
+      <tbody>
+        {items.length === 0 && (
+          <tr>
+            <td colSpan={10} style={{ padding: "48px 20px", textAlign: "center", color: colors.muted, fontSize: 14 }}>
+              No items match the current filters.
+            </td>
+          </tr>
+        )}
+        {items.map((item) => {
+          const isSelected = item.id === selectedId;
+          const priceLabel = (item.variants?.length ?? 0) > 0
+            ? `${item.variants.length} variant${item.variants.length !== 1 ? "s" : ""}`
+            : item.price != null ? `€${Number(item.price).toFixed(2)}` : "—";
+          const rowBg = isSelected ? colors.chipBg : colors.surface;
+          const textColor = item.available ? colors.fg : colors.dimmed;
+          const cell: CSSProperties = { ...cellBase, background: rowBg, color: textColor };
+
+          return (
+            <tr key={item.id}>
+              <td style={{ ...cell, textAlign: "center", maxWidth: "none" }}>
+                <AvailabilityToggle
+                  available={item.available}
+                  disabled={toggling.has(item.id)}
+                  onToggle={() => onToggle(item)}
+                />
+              </td>
+              <td style={cell}>
+                <span style={{ ...truncate, fontWeight: 600 }}>{item.name}</span>
+                {item.short_name && item.short_name !== item.name && (
+                  <span style={{ ...truncate, fontSize: 11, color: colors.muted, marginTop: 1 }}>{item.short_name}</span>
+                )}
+              </td>
+              <td style={cell}>
+                <span style={{ ...truncate, fontSize: 11, background: colors.chipBg, borderRadius: 4, padding: "2px 6px", display: "inline-block" }}>
+                  {item.category?.name ?? "—"}
+                </span>
+              </td>
+              <td style={cell}><span style={truncate}>{item.subcategory ?? "—"}</span></td>
+              <td style={cell}><span style={truncate}>{priceLabel}</span></td>
+              <td style={cell}><span style={{ ...truncate, fontFamily: "monospace", fontSize: 12 }}>{item.pos_id ?? "—"}</span></td>
+              <td style={cell}><span style={truncate}>{item.destination ?? "—"}</span></td>
+              <td style={{ ...cell, textAlign: "center" }}>{item.min_qty ?? 1}</td>
+              <td style={{ ...cell, textAlign: "center", color: colors.muted }}>{item.sort_order}</td>
+              <td style={{ ...cell, maxWidth: "none" }}>
+                <button
+                  onClick={() => onEdit(item)}
+                  style={{
+                    background: isSelected ? colors.fg : "none",
+                    color: isSelected ? "#fff" : colors.secondary,
+                    border: `1.5px solid ${isSelected ? colors.fg : colors.border}`,
+                    borderRadius: radii.sm,
+                    padding: "4px 10px",
+                    fontSize: 12,
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {isSelected ? "Editing" : "Edit"}
+                </button>
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
   );
 }
 
@@ -1097,6 +1416,7 @@ export function AdminView() {
   const { setView, showToast } = useApp();
   const { reloadMenu } = useMenu();
   const { isMobile, isTablet } = useBreakpoint();
+  const isTableView = !isMobile && !isTablet;
 
   const [items, setItems] = useState<AdminMenuItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1107,8 +1427,10 @@ export function AdminView() {
   const [showNewItemModal, setShowNewItemModal] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [query, setQuery] = useState("");
-  const [searchOpen, setSearchOpen] = useState(false);
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [availabilityFilter, setAvailabilityFilter] = useState<AvailFilter>("all");
+  const [variantFilter, setVariantFilter] = useState<VariantFilter>("all");
 
   useEffect(() => {
     fetchAllMenuItems()
@@ -1128,17 +1450,8 @@ export function AdminView() {
     return Array.from(seen.values());
   }, [items]);
 
-  const searchResults = useMemo(() => {
-    if (!query.trim()) return [];
-    const q = query.toLowerCase();
-    return items
-      .filter(
-        (i) =>
-          i.name.toLowerCase().includes(q) ||
-          (i.short_name ?? "").toLowerCase().includes(q)
-      )
-      .slice(0, 10);
-  }, [query, items]);
+  const [sortKey, setSortKey] = useState("sort_order");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   const groups = useMemo(() => groupByCategory(items), [items]);
   const sectionMap = useMemo(
@@ -1155,7 +1468,50 @@ export function AdminView() {
     [sectionMap]
   );
 
-  const gridCols = isMobile ? 1 : isTablet ? 2 : 3;
+  const filteredSorted = useMemo(() => {
+    let result = items;
+    if (query.trim()) {
+      const q = query.toLowerCase();
+      result = result.filter((i) => i.name.toLowerCase().includes(q) || (i.short_name ?? "").toLowerCase().includes(q));
+    }
+    if (categoryFilter !== "all") result = result.filter((i) => i.category?.name === categoryFilter);
+    if (availabilityFilter !== "all") result = result.filter((i) => availabilityFilter === "available" ? i.available : !i.available);
+    if (variantFilter !== "all") result = result.filter((i) => variantFilter === "variants" ? (i.variants?.length ?? 0) > 0 : (i.variants?.length ?? 0) === 0);
+    return [...result].sort((a, b) => {
+      let av: string | number = 0, bv: string | number = 0;
+      switch (sortKey) {
+        case "name": av = a.name; bv = b.name; break;
+        case "category": av = a.category?.name ?? ""; bv = b.category?.name ?? ""; break;
+        case "subcategory": av = a.subcategory ?? ""; bv = b.subcategory ?? ""; break;
+        case "price": av = a.price ?? (a.variants?.length ?? 0); bv = b.price ?? (b.variants?.length ?? 0); break;
+        case "pos_id": av = a.pos_id ?? ""; bv = b.pos_id ?? ""; break;
+        case "destination": av = a.destination ?? ""; bv = b.destination ?? ""; break;
+        case "min_qty": av = a.min_qty ?? 1; bv = b.min_qty ?? 1; break;
+        case "sort_order": av = a.sort_order; bv = b.sort_order; break;
+        default: av = a.sort_order; bv = b.sort_order;
+      }
+      if (av < bv) return sortDir === "asc" ? -1 : 1;
+      if (av > bv) return sortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [items, query, categoryFilter, availabilityFilter, variantFilter, sortKey, sortDir]);
+
+  const mobileSections = useMemo(() => {
+    const q = query.toLowerCase();
+    return sections
+      .map((s) => ({
+        ...s,
+        sectionItems: s.sectionItems.filter((item) => {
+          const matchSearch = !query.trim() || item.name.toLowerCase().includes(q) || (item.short_name ?? "").toLowerCase().includes(q);
+          const matchAvail = availabilityFilter === "all" || (availabilityFilter === "available" ? item.available : !item.available);
+          const matchVariant = variantFilter === "all" || (variantFilter === "variants" ? (item.variants?.length ?? 0) > 0 : (item.variants?.length ?? 0) === 0);
+          return matchSearch && matchAvail && matchVariant;
+        }),
+      }))
+      .filter((s) => categoryFilter === "all" || s.name === categoryFilter);
+  }, [sections, query, categoryFilter, availabilityFilter, variantFilter]);
+
+  const gridCols = isMobile ? 1 : 2;
 
   const handleBack = () => {
     if (dirty) reloadMenu();
@@ -1207,25 +1563,25 @@ export function AdminView() {
     [showToast]
   );
 
-  const handleSearchSelect = (item: AdminMenuItem) => {
-    setEditItem(item);
-    setQuery("");
-    setSearchOpen(false);
+  const handleSort = (key: string) => {
+    if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSortKey(key); setSortDir("asc"); }
   };
 
   return (
     <div
       style={{
-        minHeight: "100vh",
         background: colors.bg,
         fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
+        ...(isTableView
+          ? { height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden" }
+          : { minHeight: "100vh" }),
       }}
     >
       {/* ── Header ── */}
       <header
         style={{
-          position: "sticky",
-          top: 0,
+          flexShrink: 0,
           zIndex: 10,
           background: colors.surface,
           borderBottom: `1px solid ${colors.border}`,
@@ -1236,197 +1592,77 @@ export function AdminView() {
           gap: 12,
         }}
       >
-        <button
-          onClick={handleBack}
-          style={{
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            padding: 4,
-            display: "flex",
-            color: colors.fg,
-          }}
-        >
+        <button onClick={handleBack} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "flex", color: colors.fg }}>
           <BackIcon size={22} />
         </button>
         <span style={{ fontWeight: 700, fontSize: 17, flex: 1 }}>Menu</span>
         <span style={{ fontSize: 12, color: colors.muted, fontWeight: 500 }}>Admin</span>
       </header>
 
-      {/* ── Search bar ── */}
+      {/* ── Filter bar ── */}
       {!loading && !loadError && (
-        <div style={{ padding: "12px 16px 0", position: "relative" }}>
-          <div style={{ position: "relative" }}>
-            <span
-              style={{
-                position: "absolute",
-                left: 12,
-                top: "50%",
-                transform: "translateY(-50%)",
-                color: colors.muted,
-                fontSize: 16,
-                pointerEvents: "none",
-                lineHeight: 1,
-              }}
-            >
-              ⌕
-            </span>
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => {
-                setQuery(e.target.value);
-                setSearchOpen(true);
-              }}
-              onFocus={() => setSearchOpen(true)}
-              onBlur={() => setTimeout(() => setSearchOpen(false), 150)}
-              placeholder="Search items…"
-              style={{
-                ...inputStyle,
-                paddingLeft: 34,
-              }}
-            />
-            {query && (
-              <button
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => { setQuery(""); setSearchOpen(false); }}
-                style={{
-                  position: "absolute",
-                  right: 10,
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  color: colors.muted,
-                  fontSize: 18,
-                  lineHeight: 1,
-                  padding: 2,
-                }}
-              >
-                ×
-              </button>
-            )}
-          </div>
+        <FilterBar
+          query={query}
+          onQuery={setQuery}
+          categoryFilter={categoryFilter}
+          onCategoryFilter={setCategoryFilter}
+          availFilter={availabilityFilter}
+          onAvailFilter={setAvailabilityFilter}
+          variantFilter={variantFilter}
+          onVariantFilter={setVariantFilter}
+          categoryNames={categories.map((c) => c.name)}
+          onAddItem={() => { setNewItemCategoryId(null); setShowNewItemModal(true); }}
+          isTableView={isTableView}
+        />
+      )}
 
-          {/* Search results dropdown */}
-          {searchOpen && searchResults.length > 0 && (
-            <div
-              style={{
-                position: "absolute",
-                top: "calc(100% - 2px)",
-                left: 16,
-                right: 16,
-                background: colors.surface,
-                border: `1.5px solid ${colors.border}`,
-                borderRadius: radii.md,
-                zIndex: 50,
-                boxShadow: "0 6px 20px rgba(0,0,0,0.1)",
-                overflow: "hidden",
-              }}
-            >
-              {searchResults.map((item) => {
-                const priceLabel = item.variants?.length
-                  ? `${item.variants.length}v`
-                  : item.price != null
-                  ? `€${Number(item.price).toFixed(2)}`
-                  : "—";
-                return (
-                  <button
-                    key={item.id}
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => handleSearchSelect(item)}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 10,
-                      width: "100%",
-                      padding: "11px 14px",
-                      background: "none",
-                      border: "none",
-                      borderBottom: `1px solid ${colors.border}`,
-                      cursor: "pointer",
-                      textAlign: "left",
-                      fontFamily: "inherit",
-                    }}
-                  >
-                    <span
-                      style={{
-                        flex: 1,
-                        fontSize: 14,
-                        fontWeight: 500,
-                        color: colors.fg,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {item.name}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: 11,
-                        color: colors.muted,
-                        background: colors.chipBg,
-                        borderRadius: 4,
-                        padding: "2px 6px",
-                        flexShrink: 0,
-                      }}
-                    >
-                      {item.category?.name ?? "?"}
-                    </span>
-                    <span style={{ fontSize: 13, color: colors.secondary, flexShrink: 0 }}>
-                      {priceLabel}
-                    </span>
-                  </button>
-                );
-              })}
+      {/* ── Loading / Error ── */}
+      {loading && (
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: 200, color: colors.muted, fontSize: 15 }}>
+          Loading…
+        </div>
+      )}
+      {loadError && (
+        <div style={{ padding: 16, background: colors.dangerBg, color: colors.danger, fontSize: 14 }}>
+          Failed to load: {loadError}
+        </div>
+      )}
+
+      {/* ── Desktop: sortable table + side panel ── */}
+      {!loading && !loadError && isTableView && (
+        <div style={{ flex: 1, overflow: "hidden", display: "flex" }}>
+          <div style={{ flex: 1, overflowY: "auto", overflowX: "auto", minWidth: 0 }}>
+            <MenuTable
+              items={filteredSorted}
+              toggling={toggling}
+              onToggle={handleToggle}
+              onEdit={setEditItem}
+              selectedId={editItem?.id ?? null}
+              sortKey={sortKey}
+              sortDir={sortDir}
+              onSort={handleSort}
+            />
+          </div>
+          {editItem && (
+            <div style={{ width: 420, borderLeft: `1px solid ${colors.border}`, overflowY: "auto", flexShrink: 0 }}>
+              <EditItemModal
+                item={editItem}
+                mode="panel"
+                onClose={() => setEditItem(null)}
+                onSaved={(patch) => {
+                  handleSaved(editItem.id, patch);
+                  setEditItem(null);
+                }}
+              />
             </div>
           )}
         </div>
       )}
 
-      {/* ── Loading / Error ── */}
-      {loading && (
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            height: 200,
-            color: colors.muted,
-            fontSize: 15,
-          }}
-        >
-          Loading…
-        </div>
-      )}
-
-      {loadError && (
-        <div
-          style={{
-            padding: 16,
-            background: colors.dangerBg,
-            color: colors.danger,
-            fontSize: 14,
-          }}
-        >
-          Failed to load: {loadError}
-        </div>
-      )}
-
-      {/* ── Sections grid ── */}
-      {!loading && !loadError && (
-        <div
-          style={{
-            padding: 16,
-            display: "grid",
-            gridTemplateColumns: `repeat(${gridCols}, 1fr)`,
-            gap: 16,
-            alignItems: "start",
-          }}
-        >
-          {sections.map(({ name, catId, sectionItems }) => {
+      {/* ── Mobile: category sections ── */}
+      {!loading && !loadError && !isTableView && (
+        <div style={{ padding: 16, display: "grid", gridTemplateColumns: `repeat(${gridCols}, 1fr)`, gap: 16, alignItems: "start" }}>
+          {mobileSections.map(({ name, catId, sectionItems }) => {
             const collapsed = collapsedSections.has(name);
             const toggleCollapse = () =>
               setCollapsedSections((prev) => {
@@ -1435,119 +1671,30 @@ export function AdminView() {
                 return next;
               });
             return (
-              <div
-                key={name}
-                style={{
-                  background: colors.surface,
-                  borderRadius: radii.lg,
-                  border: `1px solid ${colors.border}`,
-                  overflow: "hidden",
-                }}
-              >
-                {/* Section header */}
-                <div
-                  style={{
-                    padding: "11px 14px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    borderBottom: collapsed ? "none" : `1px solid ${colors.border}`,
-                    background: colors.bg,
-                  }}
-                >
+              <div key={name} style={{ background: colors.surface, borderRadius: radii.lg, border: `1px solid ${colors.border}`, overflow: "hidden" }}>
+                <div style={{ padding: "11px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: collapsed ? "none" : `1px solid ${colors.border}`, background: colors.bg }}>
                   <button
                     onClick={toggleCollapse}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      padding: 0,
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 6,
-                      flex: 1,
-                      textAlign: "left",
-                      fontFamily: "inherit",
-                    }}
+                    style={{ background: "none", border: "none", padding: 0, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, flex: 1, textAlign: "left", fontFamily: "inherit" }}
                   >
-                    <span
-                      style={{
-                        fontSize: 10,
-                        color: colors.dimmed,
-                        transition: "transform 0.18s",
-                        transform: collapsed ? "rotate(-90deg)" : "rotate(0deg)",
-                        display: "inline-block",
-                        lineHeight: 1,
-                      }}
-                    >
-                      ▾
-                    </span>
-                    <span
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 700,
-                        color: colors.muted,
-                        textTransform: "uppercase",
-                        letterSpacing: "0.08em",
-                      }}
-                    >
+                    <span style={{ fontSize: 10, color: colors.dimmed, transition: "transform 0.18s", transform: collapsed ? "rotate(-90deg)" : "rotate(0deg)", display: "inline-block", lineHeight: 1 }}>▾</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: colors.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>
                       {name}
-                      <span style={{ marginLeft: 6, fontWeight: 400, color: colors.dimmed }}>
-                        {sectionItems.length}
-                      </span>
+                      <span style={{ marginLeft: 6, fontWeight: 400, color: colors.dimmed }}>{sectionItems.length}</span>
                     </span>
                   </button>
                   <button
-                    onClick={() => {
-                      setNewItemCategoryId(catId);
-                      setShowNewItemModal(true);
-                    }}
-                    style={{
-                      background: "none",
-                      border: `1.5px solid ${colors.border}`,
-                      borderRadius: 6,
-                      width: 26,
-                      height: 26,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      cursor: "pointer",
-                      color: colors.secondary,
-                      fontSize: 18,
-                      lineHeight: 1,
-                      padding: 0,
-                      fontFamily: "inherit",
-                    }}
+                    onClick={() => { setNewItemCategoryId(catId); setShowNewItemModal(true); }}
+                    style={{ background: "none", border: `1.5px solid ${colors.border}`, borderRadius: 6, width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: colors.secondary, fontSize: 18, lineHeight: 1, padding: 0, fontFamily: "inherit" }}
                     title={`Add item to ${name}`}
-                  >
-                    +
-                  </button>
+                  >+</button>
                 </div>
-
-                {/* Items list */}
                 {!collapsed && (
-                  sectionItems.length === 0 ? (
-                    <div
-                      style={{
-                        padding: "20px 16px",
-                        color: colors.dimmed,
-                        fontSize: 13,
-                        textAlign: "center",
-                      }}
-                    >
-                      No items
-                    </div>
-                  ) : (
-                    sectionItems.map((item) => (
-                      <ItemRow
-                        key={item.id}
-                        item={item}
-                        toggling={toggling.has(item.id)}
-                        onToggle={() => handleToggle(item)}
-                        onEdit={() => setEditItem(item)}
-                      />
-                    ))
-                  )
+                  sectionItems.length === 0
+                    ? <div style={{ padding: "20px 16px", color: colors.dimmed, fontSize: 13, textAlign: "center" }}>No items</div>
+                    : sectionItems.map((item) => (
+                        <ItemRow key={item.id} item={item} toggling={toggling.has(item.id)} onToggle={() => handleToggle(item)} onEdit={() => setEditItem(item)} />
+                      ))
                 )}
               </div>
             );
@@ -1555,7 +1702,8 @@ export function AdminView() {
         </div>
       )}
 
-      {editItem && (
+      {/* ── Mobile edit sheet ── */}
+      {!isTableView && editItem && (
         <EditItemModal
           item={editItem}
           onClose={() => setEditItem(null)}
