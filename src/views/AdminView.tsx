@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback, type CSSProperties } from "react";
+import { useState, useEffect, useCallback, useMemo, type CSSProperties } from "react";
 import { useApp } from "../contexts/AppContext";
 import { useMenu } from "../contexts/MenuContext";
 import { BackIcon } from "../components/icons";
+import { useBreakpoint } from "../hooks/useBreakpoint";
 import {
   fetchAllMenuItems,
   patchMenuItem,
@@ -13,17 +14,35 @@ import {
   type AdminCategory,
 } from "../services/directusAdmin";
 import { colors, radii } from "../styles/tokens";
+import {
+  FOOD_SUBCATEGORIES,
+  DRINKS_SUBCATEGORIES,
+  SHOP_SUBCATEGORIES,
+} from "../data/constants";
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
+const WINE_TYPES = ["white", "rosé", "red", "sparkling", "natural"];
+
 const SUBCATEGORY_OPTIONS: Record<string, string[]> = {
-  Food: ["cheese", "warm", "salads", "snacks", "extras"],
-  Drinks: ["wine"],
-  Wines: ["white", "rosé", "red", "sparkling", "natural"],
-  Shop: [],
+  Food: FOOD_SUBCATEGORIES.map((s) => s.id),
+  Drinks: DRINKS_SUBCATEGORIES.map((s) => s.id),
+  Wines: WINE_TYPES,
+  Shop: SHOP_SUBCATEGORIES.map((s) => s.id),
 };
 
-const WINE_TYPES = ["white", "rosé", "red", "sparkling", "natural"];
+const VARIANT_OPTIONS: Record<string, { label: string; posIdSuffix: string }[]> = {
+  Wines: [
+    { label: "Here",      posIdSuffix: "" },
+    { label: "Fl. To Go", posIdSuffix: "0" },
+    { label: "0,1",       posIdSuffix: "1" },
+    { label: "0,2",       posIdSuffix: "2" },
+  ],
+  Drinks: [
+    { label: "0,2", posIdSuffix: "1" },
+    { label: "0,4", posIdSuffix: "2" },
+  ],
+};
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -32,7 +51,7 @@ function groupByCategory(
 ): { cat: string; catId: number; items: AdminMenuItem[] }[] {
   const map = new Map<number, { cat: string; catId: number; items: AdminMenuItem[] }>();
   for (const item of items) {
-    const catId = item.category_id ?? 0;
+    const catId = item.category?.id ?? 0;
     const catName = item.category?.name ?? "Other";
     if (!map.has(catId)) map.set(catId, { cat: catName, catId, items: [] });
     map.get(catId)!.items.push(item);
@@ -258,6 +277,7 @@ interface EditForm {
   name: string;
   shortName: string;
   subcategory: string;
+  posId: string;
   price: string;
   minQty: string;
   variantPrices: Record<number, string>;
@@ -278,6 +298,7 @@ function EditItemModal({
     name: item.name,
     shortName: item.short_name ?? "",
     subcategory: item.subcategory ?? "",
+    posId: item.pos_id ?? "",
     price: item.price != null ? String(item.price) : "",
     minQty: String(item.min_qty ?? 1),
     variantPrices: Object.fromEntries(
@@ -297,6 +318,7 @@ function EditItemModal({
         name: form.name.trim(),
         short_name: form.shortName.trim() || null,
         subcategory: form.subcategory.trim() || null,
+        pos_id: form.posId.trim() || null,
         min_qty: parseInt(form.minQty) || 1,
       };
       if (!(item.variants?.length) && form.price !== "") {
@@ -315,7 +337,7 @@ function EditItemModal({
         }
       }
 
-      const validNewRows = form.newVariantRows.filter((r) => r.label.trim() && r.price !== "");
+      const validNewRows = form.newVariantRows.filter((r) => r.price !== "");
       const createdVariants = await Promise.all(
         validNewRows.map((row) =>
           createVariant({
@@ -335,6 +357,7 @@ function EditItemModal({
         name: form.name.trim(),
         short_name: form.shortName.trim() || null,
         subcategory: form.subcategory.trim() || null,
+        pos_id: form.posId.trim() || null,
         min_qty: parseInt(form.minQty) || 1,
         ...(!(item.variants?.length) && form.price !== ""
           ? { price: parseFloat(form.price) }
@@ -400,6 +423,12 @@ function EditItemModal({
           value={form.subcategory}
           onChange={(v) => setForm((f) => ({ ...f, subcategory: v }))}
         />
+        <FieldInput
+          label="POS ID"
+          value={form.posId}
+          onChange={(v) => setForm((f) => ({ ...f, posId: v }))}
+          placeholder="Optional"
+        />
         {!(item.variants?.length) && (
           <FieldInput
             label="Price (€)"
@@ -415,7 +444,20 @@ function EditItemModal({
           type="number"
         />
 
-        {(item.variants ?? []).length > 0 && (
+        {item.category?.name === "Wines" && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+            <span style={{ fontSize: 12, color: colors.muted, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>Serving</span>
+            <span style={{
+              fontSize: 12, fontWeight: 600, padding: "3px 10px",
+              borderRadius: 20, border: `1.5px solid ${colors.border}`,
+              color: colors.secondary, background: colors.bg,
+            }}>
+              {item.variants?.some((v) => v.bottle_subcategory) ? "Has glass options" : "Bottle only"}
+            </span>
+          </div>
+        )}
+
+        {item.category?.name !== "Food" && (item.variants ?? []).length > 0 && (
           <div style={{ marginTop: 4, marginBottom: 14 }}>
             <div style={{ ...labelStyle, marginBottom: 10 }}>Variants</div>
             {/* Existing variants — price editable, deletable */}
@@ -472,8 +514,8 @@ function EditItemModal({
             {/* New variant rows */}
             {form.newVariantRows.length > 0 && (
               <div style={{ borderTop: `1px solid ${colors.border}`, paddingTop: 10, marginTop: 6 }}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 80px 100px auto", gap: 8, fontSize: 11, color: colors.muted, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>
-                  <span>Label</span><span>Price</span><span>Wine type</span><span />
+                <div style={{ display: "grid", gridTemplateColumns: item.category?.name === "Wines" ? "1fr 80px 100px auto" : "1fr 80px auto", gap: 8, fontSize: 11, color: colors.muted, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>
+                  <span>Label</span><span>Price</span>{item.category?.name === "Wines" && <span>Wine type</span>}<span />
                 </div>
                 {form.newVariantRows.map((row, i) => (
                   <VariantRowInput
@@ -481,6 +523,7 @@ function EditItemModal({
                     row={row}
                     index={i}
                     canRemove={true}
+                    categoryName={item.category?.name ?? ""}
                     onChange={(patch) =>
                       setForm((f) => ({
                         ...f,
@@ -494,25 +537,29 @@ function EditItemModal({
                 ))}
               </div>
             )}
-            <button
-              onClick={() =>
-                setForm((f) => ({ ...f, newVariantRows: [...f.newVariantRows, { label: "", price: "", bottleSubcategory: "" }] }))
-              }
-              style={{
-                background: "none",
-                border: `1.5px dashed ${colors.border}`,
-                borderRadius: radii.sm,
-                padding: "8px",
-                width: "100%",
-                fontSize: 14,
-                color: colors.muted,
-                cursor: "pointer",
-                fontFamily: "inherit",
-                marginTop: 4,
-              }}
-            >
-              + Add variant
-            </button>
+            {!VARIANT_OPTIONS[item.category?.name ?? ""] && (
+              <button
+                onClick={() => {
+                  const catName = item.category?.name ?? "";
+                  const defaultLabel = VARIANT_OPTIONS[catName]?.[0]?.label ?? "";
+                  setForm((f) => ({ ...f, newVariantRows: [...f.newVariantRows, { label: defaultLabel, price: "", bottleSubcategory: "" }] }));
+                }}
+                style={{
+                  background: "none",
+                  border: `1.5px dashed ${colors.border}`,
+                  borderRadius: radii.sm,
+                  padding: "8px",
+                  width: "100%",
+                  fontSize: 14,
+                  color: colors.muted,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  marginTop: 4,
+                }}
+              >
+                + Add variant
+              </button>
+            )}
           </div>
         )}
 
@@ -547,14 +594,15 @@ function SubcategoryField({
   onChange: (v: string) => void;
 }) {
   const options = SUBCATEGORY_OPTIONS[categoryName] ?? [];
+  const fieldLabel = categoryName === "Wines" ? "Wine type" : "Subcategory";
   if (options.length === 0) {
     return (
-      <FieldInput label="Subcategory" value={value} onChange={onChange} placeholder="Optional" />
+      <FieldInput label={fieldLabel} value={value} onChange={onChange} placeholder="Optional" />
     );
   }
   return (
     <div style={{ marginBottom: 14 }}>
-      <label style={labelStyle}>Subcategory</label>
+      <label style={labelStyle}>{fieldLabel}</label>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -581,32 +629,41 @@ function VariantRowInput({
   row,
   index,
   canRemove,
+  categoryName,
   onChange,
   onRemove,
 }: {
   row: VariantRowData;
   index: number;
   canRemove: boolean;
+  categoryName: string;
   onChange: (patch: Partial<VariantRowData>) => void;
   onRemove: () => void;
 }) {
+  const variantOpts = VARIANT_OPTIONS[categoryName];
+  const showWineType = categoryName === "Wines";
+  const cols = showWineType ? "1fr 80px 100px auto" : "1fr 80px auto";
   return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "1fr 80px 100px auto",
-        gap: 8,
-        alignItems: "center",
-        marginBottom: 10,
-      }}
-    >
-      <input
-        type="text"
-        value={row.label}
-        onChange={(e) => onChange({ label: e.target.value })}
-        placeholder="Label (e.g. 0.1L)"
-        style={{ ...inputStyle, fontSize: 14 }}
-      />
+    <div style={{ display: "grid", gridTemplateColumns: cols, gap: 8, alignItems: "center", marginBottom: 10 }}>
+      {variantOpts ? (
+        <select
+          value={row.label}
+          onChange={(e) => onChange({ label: e.target.value })}
+          style={{ ...inputStyle, fontSize: 14, appearance: "auto" }}
+        >
+          {variantOpts.map((o) => (
+            <option key={o.label} value={o.label}>{o.label}</option>
+          ))}
+        </select>
+      ) : (
+        <input
+          type="text"
+          value={row.label}
+          onChange={(e) => onChange({ label: e.target.value })}
+          placeholder="Label"
+          style={{ ...inputStyle, fontSize: 14 }}
+        />
+      )}
       <input
         type="number"
         value={row.price}
@@ -615,16 +672,18 @@ function VariantRowInput({
         step="0.01"
         style={{ ...inputStyle, fontSize: 14 }}
       />
-      <select
-        value={row.bottleSubcategory}
-        onChange={(e) => onChange({ bottleSubcategory: e.target.value })}
-        style={{ ...inputStyle, fontSize: 13, appearance: "auto" }}
-      >
-        <option value="">—</option>
-        {WINE_TYPES.map((t) => (
-          <option key={t} value={t}>{t}</option>
-        ))}
-      </select>
+      {showWineType && (
+        <select
+          value={row.bottleSubcategory}
+          onChange={(e) => onChange({ bottleSubcategory: e.target.value })}
+          style={{ ...inputStyle, fontSize: 13, appearance: "auto" }}
+        >
+          <option value="">—</option>
+          {WINE_TYPES.map((t) => (
+            <option key={t} value={t}>{t}</option>
+          ))}
+        </select>
+      )}
       <button
         onClick={onRemove}
         disabled={!canRemove}
@@ -670,9 +729,11 @@ function NewItemModal({
   const [shortName, setShortName] = useState("");
   const [subcategory, setSubcategory] = useState("");
   const [mode, setMode] = useState<"simple" | "variants">("simple");
+  const [wineServing, setWineServing] = useState<"glass" | "bottle">("bottle");
   const [price, setPrice] = useState("");
+  const [basePosId, setBasePosId] = useState("");
   const [variantRows, setVariantRows] = useState<VariantRowData[]>([
-    { label: "", price: "", bottleSubcategory: "" },
+    { label: "Bottle", price: "", bottleSubcategory: "" },
   ]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -681,7 +742,37 @@ function NewItemModal({
 
   const handleCategoryChange = (id: number) => {
     setCategoryId(id);
-    setSubcategory(""); // reset subcategory when category changes
+    setSubcategory("");
+    setWineServing("bottle");
+    setMode("simple");
+  };
+
+  const handleWineServingChange = (serving: "glass" | "bottle") => {
+    setWineServing(serving);
+    setMode("variants");
+    if (serving === "glass") {
+      setVariantRows([
+        { label: "Here",      price: "", bottleSubcategory: "" },
+        { label: "Fl. To Go", price: "", bottleSubcategory: "" },
+        { label: "0,1",       price: "", bottleSubcategory: "" },
+        { label: "0,2",       price: "", bottleSubcategory: "" },
+      ]);
+    } else {
+      setVariantRows([
+        { label: "Here",      price: "", bottleSubcategory: "" },
+        { label: "Fl. To Go", price: "", bottleSubcategory: "" },
+      ]);
+    }
+  };
+
+  const handleModeChange = (m: "simple" | "variants") => {
+    setMode(m);
+    if (m === "variants" && categoryName === "Drinks") {
+      setVariantRows([
+        { label: "0,2", price: "", bottleSubcategory: "" },
+        { label: "0,4", price: "", bottleSubcategory: "" },
+      ]);
+    }
   };
 
   const updateVariantRow = (i: number, patch: Partial<VariantRowData>) => {
@@ -702,7 +793,7 @@ function NewItemModal({
         short_name: shortName.trim() || null,
         price: mode === "simple" && price !== "" ? parseFloat(price) : null,
         subcategory: subcategory || null,
-        pos_id: null,
+        pos_id: basePosId.trim() || null,
         destination: null,
         min_qty: 1,
         available: true,
@@ -711,14 +802,16 @@ function NewItemModal({
       });
 
       if (mode === "variants") {
-        const validRows = variantRows.filter((r) => r.label.trim() && r.price !== "");
+        const validRows = variantRows.filter((r) => r.price !== "");
         for (const row of validRows) {
+          const suffix = (VARIANT_OPTIONS[categoryName] ?? []).find((o) => o.label === row.label)?.posIdSuffix ?? "";
+          const posId = basePosId.trim() ? `${basePosId.trim()}${suffix}` : null;
           await createVariant({
             item_id: created.id,
-            label: row.label.trim(),
+            label: row.label,
             price: parseFloat(row.price),
             type: "",
-            pos_id: null,
+            pos_id: posId,
             pos_name: null,
             bottle_subcategory: row.bottleSubcategory || null,
             is_default: false,
@@ -742,7 +835,7 @@ function NewItemModal({
   };
 
   const canSubmit = name.trim() &&
-    (mode === "simple" || variantRows.some((r) => r.label.trim() && r.price !== ""));
+    (mode === "simple" || variantRows.some((r) => r.price !== ""));
 
   return (
     <div
@@ -771,29 +864,52 @@ function NewItemModal({
       >
         <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 20 }}>New Item</div>
 
-        {/* Mode toggle */}
-        <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
-          {(["simple", "variants"] as const).map((m) => (
-            <button
-              key={m}
-              onClick={() => setMode(m)}
-              style={{
-                flex: 1,
-                padding: "9px",
-                fontSize: 14,
-                fontWeight: 600,
-                borderRadius: radii.md,
-                border: `1.5px solid ${mode === m ? colors.fg : colors.border}`,
-                background: mode === m ? colors.fg : "none",
-                color: mode === m ? "#fff" : colors.secondary,
-                cursor: "pointer",
-                fontFamily: "inherit",
-              }}
-            >
-              {m === "simple" ? "Fixed price" : "With variants"}
-            </button>
-          ))}
-        </div>
+        {/* Mode toggle — hidden for Food, wine serving for Wines, generic for others */}
+        {categoryName !== "Food" && <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+          {categoryName === "Wines" ? (
+            (["bottle", "glass"] as const).map((s) => (
+              <button
+                key={s}
+                onClick={() => handleWineServingChange(s)}
+                style={{
+                  flex: 1,
+                  padding: "9px",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  borderRadius: radii.md,
+                  border: `1.5px solid ${wineServing === s ? colors.fg : colors.border}`,
+                  background: wineServing === s ? colors.fg : "none",
+                  color: wineServing === s ? "#fff" : colors.secondary,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                }}
+              >
+                {s === "bottle" ? "Bottle only" : "Has glass options"}
+              </button>
+            ))
+          ) : (
+            (["simple", "variants"] as const).map((m) => (
+              <button
+                key={m}
+                onClick={() => handleModeChange(m)}
+                style={{
+                  flex: 1,
+                  padding: "9px",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  borderRadius: radii.md,
+                  border: `1.5px solid ${mode === m ? colors.fg : colors.border}`,
+                  background: mode === m ? colors.fg : "none",
+                  color: mode === m ? "#fff" : colors.secondary,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                }}
+              >
+                {m === "simple" ? "Fixed price" : "With variants"}
+              </button>
+            ))
+          )}
+        </div>}
 
         {/* Category */}
         <div style={{ marginBottom: 14 }}>
@@ -812,6 +928,12 @@ function NewItemModal({
         <SubcategoryField categoryName={categoryName} value={subcategory} onChange={setSubcategory} />
         <FieldInput label="Name" value={name} onChange={setName} autoFocus />
         <FieldInput label="Short name" value={shortName} onChange={setShortName} placeholder="Optional" />
+        <FieldInput
+          label={mode === "variants" ? "Base POS ID" : "POS ID"}
+          value={basePosId}
+          onChange={setBasePosId}
+          placeholder={mode === "variants" ? "e.g. 1234 — suffixes appended per variant" : "Optional"}
+        />
 
         {mode === "simple" && (
           <FieldInput label="Price (€)" value={price} onChange={setPrice} type="number" />
@@ -821,10 +943,10 @@ function NewItemModal({
           <div style={{ marginBottom: 14 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
               <label style={{ ...labelStyle, marginBottom: 0 }}>Variants</label>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 80px 100px 32px", gap: 8, fontSize: 11, color: colors.muted, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              <div style={{ display: "grid", gridTemplateColumns: categoryName === "Wines" ? "1fr 80px 100px 32px" : "1fr 80px 32px", gap: 8, fontSize: 11, color: colors.muted, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
                 <span>Label</span>
                 <span>Price</span>
-                <span>Wine type</span>
+                {categoryName === "Wines" && <span>Wine type</span>}
                 <span />
               </div>
             </div>
@@ -834,27 +956,33 @@ function NewItemModal({
                 row={row}
                 index={i}
                 canRemove={variantRows.length > 1}
+                categoryName={categoryName}
                 onChange={(patch) => updateVariantRow(i, patch)}
                 onRemove={() => removeVariantRow(i)}
               />
             ))}
-            <button
-              onClick={() => setVariantRows((r) => [...r, { label: "", price: "", bottleSubcategory: "" }])}
-              style={{
-                background: "none",
-                border: `1.5px dashed ${colors.border}`,
-                borderRadius: radii.sm,
-                padding: "8px",
-                width: "100%",
-                fontSize: 14,
-                color: colors.muted,
-                cursor: "pointer",
-                fontFamily: "inherit",
-                marginTop: 4,
-              }}
-            >
-              + Add variant
-            </button>
+            {!VARIANT_OPTIONS[categoryName] && (
+              <button
+                onClick={() => {
+                  const defaultLabel = VARIANT_OPTIONS[categoryName]?.[0]?.label ?? "";
+                  setVariantRows((r) => [...r, { label: defaultLabel, price: "", bottleSubcategory: "" }]);
+                }}
+                style={{
+                  background: "none",
+                  border: `1.5px dashed ${colors.border}`,
+                  borderRadius: radii.sm,
+                  padding: "8px",
+                  width: "100%",
+                  fontSize: 14,
+                  color: colors.muted,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  marginTop: 4,
+                }}
+              >
+                + Add variant
+              </button>
+            )}
           </div>
         )}
 
@@ -877,11 +1005,16 @@ function NewItemModal({
   );
 }
 
+// ── Section order ──────────────────────────────────────────────────────────
+
+const SECTION_ORDER = ["Food", "Wines", "Drinks", "Shop"] as const;
+
 // ── AdminView ──────────────────────────────────────────────────────────────
 
 export function AdminView() {
   const { setView, showToast } = useApp();
   const { reloadMenu } = useMenu();
+  const { isMobile, isTablet } = useBreakpoint();
 
   const [items, setItems] = useState<AdminMenuItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -891,6 +1024,9 @@ export function AdminView() {
   const [newItemCategoryId, setNewItemCategoryId] = useState<number | null>(null);
   const [showNewItemModal, setShowNewItemModal] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [query, setQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchAllMenuItems()
@@ -899,17 +1035,45 @@ export function AdminView() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Derive categories from loaded items (avoids a separate /items/categories request)
-  const categories: AdminCategory[] = (() => {
+  const categories: AdminCategory[] = useMemo(() => {
     const seen = new Map<number, AdminCategory>();
     for (const item of items) {
-      const id = item.category_id ?? 0;
+      const id = item.category?.id ?? 0;
       if (!seen.has(id)) {
         seen.set(id, { id, name: item.category?.name ?? "Other", sort_order: 0 });
       }
     }
     return Array.from(seen.values());
-  })();
+  }, [items]);
+
+  const searchResults = useMemo(() => {
+    if (!query.trim()) return [];
+    const q = query.toLowerCase();
+    return items
+      .filter(
+        (i) =>
+          i.name.toLowerCase().includes(q) ||
+          (i.short_name ?? "").toLowerCase().includes(q)
+      )
+      .slice(0, 10);
+  }, [query, items]);
+
+  const groups = useMemo(() => groupByCategory(items), [items]);
+  const sectionMap = useMemo(
+    () => new Map(groups.map((g) => [g.cat, g])),
+    [groups]
+  );
+  const sections = useMemo(
+    () =>
+      SECTION_ORDER.map((name) => ({
+        name,
+        catId: sectionMap.get(name)?.catId ?? null,
+        sectionItems: sectionMap.get(name)?.items ?? [],
+      })),
+    [sectionMap]
+  );
+
+  const gridCols = isMobile ? 1 : isTablet ? 2 : 3;
 
   const handleBack = () => {
     if (dirty) reloadMenu();
@@ -961,7 +1125,11 @@ export function AdminView() {
     [showToast]
   );
 
-  const groups = groupByCategory(items);
+  const handleSearchSelect = (item: AdminMenuItem) => {
+    setEditItem(item);
+    setQuery("");
+    setSearchOpen(false);
+  };
 
   return (
     <div
@@ -971,6 +1139,7 @@ export function AdminView() {
         fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
       }}
     >
+      {/* ── Header ── */}
       <header
         style={{
           position: "sticky",
@@ -999,11 +1168,143 @@ export function AdminView() {
           <BackIcon size={22} />
         </button>
         <span style={{ fontWeight: 700, fontSize: 17, flex: 1 }}>Menu</span>
-        <span style={{ fontSize: 12, color: colors.muted, fontWeight: 500 }}>
-          Admin
-        </span>
+        <span style={{ fontSize: 12, color: colors.muted, fontWeight: 500 }}>Admin</span>
       </header>
 
+      {/* ── Search bar ── */}
+      {!loading && !loadError && (
+        <div style={{ padding: "12px 16px 0", position: "relative" }}>
+          <div style={{ position: "relative" }}>
+            <span
+              style={{
+                position: "absolute",
+                left: 12,
+                top: "50%",
+                transform: "translateY(-50%)",
+                color: colors.muted,
+                fontSize: 16,
+                pointerEvents: "none",
+                lineHeight: 1,
+              }}
+            >
+              ⌕
+            </span>
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setSearchOpen(true);
+              }}
+              onFocus={() => setSearchOpen(true)}
+              onBlur={() => setTimeout(() => setSearchOpen(false), 150)}
+              placeholder="Search items…"
+              style={{
+                ...inputStyle,
+                paddingLeft: 34,
+              }}
+            />
+            {query && (
+              <button
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => { setQuery(""); setSearchOpen(false); }}
+                style={{
+                  position: "absolute",
+                  right: 10,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: colors.muted,
+                  fontSize: 18,
+                  lineHeight: 1,
+                  padding: 2,
+                }}
+              >
+                ×
+              </button>
+            )}
+          </div>
+
+          {/* Search results dropdown */}
+          {searchOpen && searchResults.length > 0 && (
+            <div
+              style={{
+                position: "absolute",
+                top: "calc(100% - 2px)",
+                left: 16,
+                right: 16,
+                background: colors.surface,
+                border: `1.5px solid ${colors.border}`,
+                borderRadius: radii.md,
+                zIndex: 50,
+                boxShadow: "0 6px 20px rgba(0,0,0,0.1)",
+                overflow: "hidden",
+              }}
+            >
+              {searchResults.map((item) => {
+                const priceLabel = item.variants?.length
+                  ? `${item.variants.length}v`
+                  : item.price != null
+                  ? `€${Number(item.price).toFixed(2)}`
+                  : "—";
+                return (
+                  <button
+                    key={item.id}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => handleSearchSelect(item)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      width: "100%",
+                      padding: "11px 14px",
+                      background: "none",
+                      border: "none",
+                      borderBottom: `1px solid ${colors.border}`,
+                      cursor: "pointer",
+                      textAlign: "left",
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    <span
+                      style={{
+                        flex: 1,
+                        fontSize: 14,
+                        fontWeight: 500,
+                        color: colors.fg,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {item.name}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        color: colors.muted,
+                        background: colors.chipBg,
+                        borderRadius: 4,
+                        padding: "2px 6px",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {item.category?.name ?? "?"}
+                    </span>
+                    <span style={{ fontSize: 13, color: colors.secondary, flexShrink: 0 }}>
+                      {priceLabel}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Loading / Error ── */}
       {loading && (
         <div
           style={{
@@ -1032,65 +1333,143 @@ export function AdminView() {
         </div>
       )}
 
+      {/* ── Sections grid ── */}
       {!loading && !loadError && (
-        <div>
-          {groups.map(({ cat, catId, items: catItems }) => (
-            <div key={catId}>
+        <div
+          style={{
+            padding: 16,
+            display: "grid",
+            gridTemplateColumns: `repeat(${gridCols}, 1fr)`,
+            gap: 16,
+            alignItems: "start",
+          }}
+        >
+          {sections.map(({ name, catId, sectionItems }) => {
+            const collapsed = collapsedSections.has(name);
+            const toggleCollapse = () =>
+              setCollapsedSections((prev) => {
+                const next = new Set(prev);
+                collapsed ? next.delete(name) : next.add(name);
+                return next;
+              });
+            return (
               <div
+                key={name}
                 style={{
-                  padding: "12px 16px 8px",
-                  background: colors.bg,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
+                  background: colors.surface,
+                  borderRadius: radii.lg,
+                  border: `1px solid ${colors.border}`,
+                  overflow: "hidden",
                 }}
               >
-                <span
+                {/* Section header */}
+                <div
                   style={{
-                    fontSize: 11,
-                    fontWeight: 700,
-                    color: colors.muted,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.08em",
-                  }}
-                >
-                  {cat}
-                </span>
-                <button
-                  onClick={() => {
-                    setNewItemCategoryId(catId);
-                    setShowNewItemModal(true);
-                  }}
-                  style={{
-                    background: "none",
-                    border: `1.5px solid ${colors.border}`,
-                    borderRadius: 6,
-                    width: 24,
-                    height: 24,
+                    padding: "11px 14px",
                     display: "flex",
                     alignItems: "center",
-                    justifyContent: "center",
-                    cursor: "pointer",
-                    color: colors.muted,
-                    fontSize: 16,
-                    lineHeight: 1,
-                    padding: 0,
+                    justifyContent: "space-between",
+                    borderBottom: collapsed ? "none" : `1px solid ${colors.border}`,
+                    background: colors.bg,
                   }}
                 >
-                  +
-                </button>
+                  <button
+                    onClick={toggleCollapse}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      padding: 0,
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                      flex: 1,
+                      textAlign: "left",
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: 10,
+                        color: colors.dimmed,
+                        transition: "transform 0.18s",
+                        transform: collapsed ? "rotate(-90deg)" : "rotate(0deg)",
+                        display: "inline-block",
+                        lineHeight: 1,
+                      }}
+                    >
+                      ▾
+                    </span>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: colors.muted,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.08em",
+                      }}
+                    >
+                      {name}
+                      <span style={{ marginLeft: 6, fontWeight: 400, color: colors.dimmed }}>
+                        {sectionItems.length}
+                      </span>
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setNewItemCategoryId(catId);
+                      setShowNewItemModal(true);
+                    }}
+                    style={{
+                      background: "none",
+                      border: `1.5px solid ${colors.border}`,
+                      borderRadius: 6,
+                      width: 26,
+                      height: 26,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                      color: colors.secondary,
+                      fontSize: 18,
+                      lineHeight: 1,
+                      padding: 0,
+                      fontFamily: "inherit",
+                    }}
+                    title={`Add item to ${name}`}
+                  >
+                    +
+                  </button>
+                </div>
+
+                {/* Items list */}
+                {!collapsed && (
+                  sectionItems.length === 0 ? (
+                    <div
+                      style={{
+                        padding: "20px 16px",
+                        color: colors.dimmed,
+                        fontSize: 13,
+                        textAlign: "center",
+                      }}
+                    >
+                      No items
+                    </div>
+                  ) : (
+                    sectionItems.map((item) => (
+                      <ItemRow
+                        key={item.id}
+                        item={item}
+                        toggling={toggling.has(item.id)}
+                        onToggle={() => handleToggle(item)}
+                        onEdit={() => setEditItem(item)}
+                      />
+                    ))
+                  )
+                )}
               </div>
-              {catItems.map((item) => (
-                <ItemRow
-                  key={item.id}
-                  item={item}
-                  toggling={toggling.has(item.id)}
-                  onToggle={() => handleToggle(item)}
-                  onEdit={() => setEditItem(item)}
-                />
-              ))}
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

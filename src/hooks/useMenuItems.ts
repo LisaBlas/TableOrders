@@ -46,47 +46,29 @@ export function useMenuItems({ activeCategory, searchQuery }: UseMenuItemsParams
       return results;
     }
 
-    // Special handling for Wines: wines with glass sizes first, then static bottles
+    // Wines: all items are now in MENU["Wines"]; detect glass vs bottle by variant structure
     if (activeCategory === "Wines") {
-      const winesWithGlasses =
-        MENU["Drinks"]
-          ?.filter((item) => item.variants?.some((v) => v.bottleSubcategory))
-          .map((item) => ({
-            ...item,
-            category: "Wines",
-            subcategory: "glass",
-            wineType: item.variants?.find((v) => v.bottleSubcategory)?.bottleSubcategory,
-          }))
-          .sort((a, b) => getWineTypeOrder(a) - getWineTypeOrder(b)) || [];
-
-      const staticBottles =
-        MENU["Wines"]?.map((item) => ({
-          ...item,
-          category: "Wines",
-          subcategory: "bottle",
-          wineType: item.subcategory,
-        }))
-          .sort((a, b) => getWineTypeOrder(a) - getWineTypeOrder(b)) || [];
-
-      return [...winesWithGlasses, ...staticBottles];
-    }
-
-    // Special handling for Drinks: exclude wines, hide bottle variants
-    if (activeCategory === "Drinks") {
-      const drinks = MENU["Drinks"]
-        ?.map((item) => {
-          if (item.subcategory === "wine") return null;
-          if (item.variants) {
-            const filteredVariants = item.variants.filter((v) => !v.bottleSubcategory);
-            return filteredVariants.length > 0 ? { ...item, category: "Drinks", variants: filteredVariants } : null;
-          }
-          return { ...item, category: "Drinks" };
+      return (MENU["Wines"] ?? [])
+        .map((item) => {
+          const isGlass = item.variants?.some((v) => v.bottleSubcategory);
+          return isGlass
+            ? {
+                ...item,
+                category: "Wines",
+                subcategory: "glass",
+                wineType: item.variants?.find((v) => v.bottleSubcategory)?.bottleSubcategory,
+              }
+            : {
+                ...item,
+                category: "Wines",
+                subcategory: "bottle",
+                wineType: item.subcategory,
+              };
         })
-        .filter((item) => item !== null) as MenuItem[];
-      return drinks || [];
+        .sort((a, b) => getWineTypeOrder(a) - getWineTypeOrder(b));
     }
 
-    // Default (Food, Shop, etc.)
+    // Default (Food, Drinks, Shop, etc.)
     return MENU[activeCategory]?.map((item) => ({ ...item, category: activeCategory })) || [];
   }, [MENU, activeCategory, searchQuery]);
 }

@@ -36,8 +36,7 @@ export interface AdminMenuItem {
   pos_id: string | null;
   destination: string | null;
   min_qty: number;
-  category_id: number | null;
-  category: { name: string } | null;
+  category: { id: number; name: string } | null;
   variants: AdminVariant[];
 }
 
@@ -45,7 +44,7 @@ export async function fetchAllMenuItems(): Promise<AdminMenuItem[]> {
   // fields=* returns category_id as a scalar; category.name resolves the name
   const url =
     `${DIRECTUS_URL}/items/menu_items` +
-    `?fields=*,variants.*,category.name` +
+    `?fields=*,variants.*,category.id,category.name` +
     `&limit=-1` +
     `&sort=category.sort_order,id`;
   const res = await fetch(url, { headers: getHeaders() });
