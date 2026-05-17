@@ -2,5 +2,11 @@ name = "directus-proxy"
 main = "worker.js"
 compatibility_date = "2024-09-23"
 
-# Set the token secret (never put it here) with:
+[[kv_namespaces]]
+binding = "SESSIONS"
+id = "d88f5871db784614b0db333424350d78"
+
+# Secrets — set via CLI, never put values here:
 #   wrangler secret put DIRECTUS_TOKEN
+#   wrangler secret put STAFF_PASSWORD
+#   wrangler secret put ADMIN_PASSWORD
