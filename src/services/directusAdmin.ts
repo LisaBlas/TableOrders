@@ -1,11 +1,7 @@
 const DIRECTUS_URL = import.meta.env.VITE_DIRECTUS_URL ?? "https://cms.blasalviz.com";
-const DIRECTUS_TOKEN = import.meta.env.VITE_DIRECTUS_TOKEN ?? "";
 
 function getHeaders(): HeadersInit {
-  return {
-    "Content-Type": "application/json",
-    ...(DIRECTUS_TOKEN ? { Authorization: `Bearer ${DIRECTUS_TOKEN}` } : {}),
-  };
+  return { "Content-Type": "application/json" };
 }
 
 export interface AdminCategory {

@@ -22,10 +22,14 @@ tool, so preserve speed, clarity, and reliability over speculative abstraction.
   Do not introduce CSS-in-JS libraries or broad CSS rewrites.
 - Directus stores menu items, menu item variants, paid bills, bill items, and
   table sessions.
+- All Directus calls go through a Cloudflare Worker reverse proxy at
+  `https://directus-proxy.alvizblas.workers.dev` (deployed from `worker/`).
+  The Directus token lives only in the Worker secret (`DIRECTUS_TOKEN`) — never
+  in `.env` or the client bundle. `VITE_DIRECTUS_URL` points to the Worker.
 
 ## Commands
 ```bash
-npm install
+npm ci             # use this, not npm install — installs exactly from lockfile
 npm run dev
 npm run build
 npm run preview
@@ -185,6 +189,16 @@ src/
 - Manual conflict resolution model with local/remote/merge choices; no OT/CRDT.
 - Berlin timezone and table count are not configurable.
 
+## Cloudflare Worker
+The Worker (`worker/worker.js` + `worker/wrangler.toml`) is a separate
+deployable — it is not part of the Vite build. To redeploy or rotate the token:
+```bash
+cd worker
+wrangler deploy
+wrangler secret put DIRECTUS_TOKEN
+```
+Do not add `VITE_DIRECTUS_TOKEN` back to `.env` or any service file.
+
 ## Agent Safety Notes
 - Ask before installing dependencies.
 - Ask before deleting files, clearing data, committing, pushing, or deploying.
@@ -193,3 +207,5 @@ src/
   or build artifact related.
 - Keep docs and implementation aligned: if sync, deployment, or data model
   behavior changes, update this file and `CLAUDE.md` if needed.
+- Never add `VITE_DIRECTUS_TOKEN` to `.env` or service files — token is managed
+  exclusively as a Cloudflare Worker secret.

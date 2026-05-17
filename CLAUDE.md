@@ -29,7 +29,8 @@ Built for speed and simplicity — optimized for multi-device, front-of-house us
 - **Inline styles** — `S` object in `appStyles.js`; design tokens (colors, radii) in `tokens.ts`
 - **State** — React Context (AuthContext + AppContext + TableContext + MenuContext + SplitContext), TanStack Query for server state
 - **Directus CMS** — headless CMS for menu data, menu admin writes, paid bills, and table sessions (SQLite, REST API)
-  - **Authentication** — Static token in `.env` file (VITE_DIRECTUS_TOKEN)
+  - **Authentication** — Token lives in a Cloudflare Worker secret (`DIRECTUS_TOKEN`); never in the client bundle. All service calls go to the Worker proxy (`VITE_DIRECTUS_URL`), which injects the token server-side before forwarding to Directus.
+- **Cloudflare Worker** — Reverse proxy at `https://directus-proxy.alvizblas.workers.dev`; deployed from `worker/` (`worker.js` + `wrangler.toml`)
 - **Real-time Sync** — 2-second polling for table sessions, 5-second polling for bills (today only)
 - **DM Sans** font (Google Fonts)
 
@@ -203,7 +204,7 @@ Key shapes:
 
 ## Development Commands
 ```bash
-npm install        # Install dependencies
+npm ci             # Install dependencies (use this, not npm install — respects lockfile exactly)
 npm run dev        # Start dev server (localhost:3000)
 npm run build      # Production build
 npm run build:demo # Static demo build using .env.demo / VITE_DEMO_MODE=true; outputs dist-demo with /TableOrders/demo/ base
@@ -216,8 +217,14 @@ npm test           # Run unit tests (vitest)
 ## Environment Setup
 Create a `.env` file in the project root:
 ```env
-VITE_DIRECTUS_URL=https://cms.blasalviz.com
-VITE_DIRECTUS_TOKEN=your-directus-static-token-here
+# Points to the Cloudflare Worker proxy — token lives there, not here
+VITE_DIRECTUS_URL=https://directus-proxy.alvizblas.workers.dev
+```
+
+`VITE_DIRECTUS_TOKEN` has been removed from the client. The token is stored as a Cloudflare Worker secret and injected server-side on every request. To update the token:
+```bash
+cd worker
+wrangler secret put DIRECTUS_TOKEN
 ```
 
 Demo builds use `.env.demo`:
@@ -227,12 +234,16 @@ VITE_DEMO_MODE=true
 When `VITE_DEMO_MODE=true`, Directus service modules use `src/demo/demoServices.ts` localStorage-backed mocks instead of HTTP calls, seed state through `initDemoState()`, bypass login in `AuthContext`, and show `DemoBanner`.
 Deploy the demo to GitHub Pages with `npm run deploy:demo`; `predeploy:demo` rebuilds `dist-demo`, then publishes it to the `demo/` subfolder so production remains at `/TableOrders/` and demo runs at `/TableOrders/demo/`.
 
-To get a Directus token:
-1. Log into Directus admin panel
-2. Go to Settings → Access Tokens
-3. Create a new static token with read/write permissions for `bills`, `bill_items`, `menu_items`, `menu_item_variants`, `categories`, and `table_sessions` collections
-4. Copy the token to `.env`
-5. Restart the dev server
+## Cloudflare Worker (`worker/`)
+Reverse proxy between the React app and Directus. Deployed separately from the React app.
+```bash
+cd worker
+wrangler deploy                    # deploy / redeploy the Worker
+wrangler secret put DIRECTUS_TOKEN # set or rotate the token secret
+```
+- Worker URL: `https://directus-proxy.alvizblas.workers.dev`
+- CORS: allows `https://lisablas.github.io`, `localhost:3000`, `localhost:5173`
+- Forwards all methods (GET/POST/PATCH/DELETE) with path + query intact
 
 ## Agent Rules
 - **Always `git pull origin main` before making any code changes**, regardless of whether the request comes from the terminal or Slack. Never skip this step.

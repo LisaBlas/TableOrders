@@ -820,7 +820,7 @@ function NewItemModal({
         // Re-fetch the item so variants are included in the returned object
         const refreshed = await fetch(
           `${import.meta.env.VITE_DIRECTUS_URL ?? "https://cms.blasalviz.com"}/items/menu_items/${created.id}?fields=*,variants.*,category.name`,
-          { headers: { Authorization: `Bearer ${import.meta.env.VITE_DIRECTUS_TOKEN ?? ""}` } }
+          {}
         ).then((r) => r.json()).then((r) => ({ ...r.data, variants: r.data.variants ?? [] }));
         onCreated(refreshed);
       } else {

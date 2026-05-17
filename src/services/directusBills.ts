@@ -3,18 +3,9 @@ import { IS_DEMO_MODE } from "../demo";
 import * as demo from "../demo/demoServices";
 
 const DIRECTUS_URL = import.meta.env.VITE_DIRECTUS_URL ?? "https://cms.blasalviz.com";
-const DIRECTUS_TOKEN = import.meta.env.VITE_DIRECTUS_TOKEN ?? "";
-
-if (!IS_DEMO_MODE && !DIRECTUS_TOKEN) {
-  console.error("❌ DIRECTUS TOKEN MISSING! Check .env file");
-}
 
 function getHeaders(): HeadersInit {
-  const headers: HeadersInit = { "Content-Type": "application/json" };
-  if (DIRECTUS_TOKEN) {
-    headers["Authorization"] = `Bearer ${DIRECTUS_TOKEN}`;
-  }
-  return headers;
+  return { "Content-Type": "application/json" };
 }
 
 function parseJsonField(value: unknown): unknown {

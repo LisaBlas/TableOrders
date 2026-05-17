@@ -1,0 +1,6 @@
+name = "directus-proxy"
+main = "worker.js"
+compatibility_date = "2024-09-23"
+
+# Set the token secret (never put it here) with:
+#   wrangler secret put DIRECTUS_TOKEN
