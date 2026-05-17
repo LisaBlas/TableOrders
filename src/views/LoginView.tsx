@@ -9,12 +9,14 @@ export default function LoginView() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
-
-    const success = login(username, password);
+    setLoading(true);
+    const success = await login(username, password);
+    setLoading(false);
     if (success) {
       showToast("Login successful");
     } else {
@@ -54,8 +56,8 @@ export default function LoginView() {
 
           {error && <div style={S.loginError}>{error}</div>}
 
-          <button type="submit" style={S.loginButton}>
-            Log In
+          <button type="submit" style={S.loginButton} disabled={loading}>
+            {loading ? "Logging in…" : "Log In"}
           </button>
         </form>
       </div>

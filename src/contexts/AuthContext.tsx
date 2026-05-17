@@ -1,15 +1,13 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 import { IS_DEMO_MODE } from "../demo";
+import { setSessionToken, clearSessionToken, getSessionToken, DIRECTUS_URL } from "../services/directusFetch";
 
-const STAFF_CONFIG = { username: "camidi", password: "tartine" };
-const ADMIN_CONFIG = { username: "admin", password: "camidiadmin" };
-
-const AUTH_TOKEN_KEY = "authToken";
+const AUTH_ROLE_KEY = "authRole";
 
 interface AuthContextValue {
   isAuthenticated: boolean;
   isAdmin: boolean;
-  login: (username: string, password: string) => boolean;
+  login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
 }
 
@@ -21,36 +19,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (IS_DEMO_MODE) return;
-    const token = localStorage.getItem(AUTH_TOKEN_KEY);
-    if (token === "admin") {
+    const role = localStorage.getItem(AUTH_ROLE_KEY);
+    const token = getSessionToken();
+    if (token && role === "admin") {
       setIsAuthenticated(true);
       setIsAdmin(true);
-    } else if (token === "true") {
+    } else if (token && role === "staff") {
       setIsAuthenticated(true);
       setIsAdmin(false);
     }
   }, []);
 
-  const login = (username: string, password: string): boolean => {
+  const login = async (username: string, password: string): Promise<boolean> => {
     if (IS_DEMO_MODE) return true;
-    if (username === ADMIN_CONFIG.username && password === ADMIN_CONFIG.password) {
-      localStorage.setItem(AUTH_TOKEN_KEY, "admin");
+    try {
+      const res = await fetch(`${DIRECTUS_URL}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+      if (!res.ok) return false;
+      const { token, role } = await res.json();
+      setSessionToken(token);
+      localStorage.setItem(AUTH_ROLE_KEY, role);
       setIsAuthenticated(true);
-      setIsAdmin(true);
+      setIsAdmin(role === "admin");
       return true;
+    } catch {
+      return false;
     }
-    if (username === STAFF_CONFIG.username && password === STAFF_CONFIG.password) {
-      localStorage.setItem(AUTH_TOKEN_KEY, "true");
-      setIsAuthenticated(true);
-      setIsAdmin(false);
-      return true;
-    }
-    return false;
   };
 
   const logout = () => {
     if (IS_DEMO_MODE) return;
-    localStorage.removeItem(AUTH_TOKEN_KEY);
+    clearSessionToken();
+    localStorage.removeItem(AUTH_ROLE_KEY);
     setIsAuthenticated(false);
     setIsAdmin(false);
   };

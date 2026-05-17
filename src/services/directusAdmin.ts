@@ -1,4 +1,4 @@
-const DIRECTUS_URL = import.meta.env.VITE_DIRECTUS_URL ?? "https://cms.blasalviz.com";
+import { directusFetch, DIRECTUS_URL } from "./directusFetch";
 
 function getHeaders(): HeadersInit {
   return { "Content-Type": "application/json" };
@@ -38,12 +38,13 @@ export interface AdminMenuItem {
 
 export async function fetchAllMenuItems(): Promise<AdminMenuItem[]> {
   // fields=* returns category_id as a scalar; category.name resolves the name
-  const url =
-    `${DIRECTUS_URL}/items/menu_items` +
+  const res = await directusFetch(
+    `/items/menu_items` +
     `?fields=*,variants.*,category.id,category.name` +
     `&limit=-1` +
-    `&sort=category.sort_order,id`;
-  const res = await fetch(url, { headers: getHeaders() });
+    `&sort=category.sort_order,id`,
+    { headers: getHeaders() }
+  );
   if (!res.ok) throw new Error(`Directus ${res.status}`);
   const { data } = await res.json();
   return (data as AdminMenuItem[]).map((item) => ({
@@ -53,7 +54,7 @@ export async function fetchAllMenuItems(): Promise<AdminMenuItem[]> {
 }
 
 export async function deleteVariant(id: number): Promise<void> {
-  const res = await fetch(`${DIRECTUS_URL}/items/menu_item_variants/${id}`, {
+  const res = await directusFetch(`/items/menu_item_variants/${id}`, {
     method: "DELETE",
     headers: getHeaders(),
   });
@@ -61,7 +62,7 @@ export async function deleteVariant(id: number): Promise<void> {
 }
 
 export async function patchMenuItem(id: string, patch: Record<string, unknown>): Promise<void> {
-  const res = await fetch(`${DIRECTUS_URL}/items/menu_items/${id}`, {
+  const res = await directusFetch(`/items/menu_items/${id}`, {
     method: "PATCH",
     headers: getHeaders(),
     body: JSON.stringify(patch),
@@ -70,7 +71,7 @@ export async function patchMenuItem(id: string, patch: Record<string, unknown>):
 }
 
 export async function patchVariant(id: number, patch: Record<string, unknown>): Promise<void> {
-  const res = await fetch(`${DIRECTUS_URL}/items/menu_item_variants/${id}`, {
+  const res = await directusFetch(`/items/menu_item_variants/${id}`, {
     method: "PATCH",
     headers: getHeaders(),
     body: JSON.stringify(patch),
@@ -88,7 +89,7 @@ export async function createVariant(data: {
   bottle_subcategory: string | null;
   is_default: boolean;
 }): Promise<AdminVariant> {
-  const res = await fetch(`${DIRECTUS_URL}/items/menu_item_variants`, {
+  const res = await directusFetch(`/items/menu_item_variants`, {
     method: "POST",
     headers: getHeaders(),
     body: JSON.stringify(data),
@@ -110,7 +111,7 @@ export async function createMenuItem(data: {
   sort_order: number;
   category: number;
 }): Promise<AdminMenuItem> {
-  const res = await fetch(`${DIRECTUS_URL}/items/menu_items`, {
+  const res = await directusFetch(`/items/menu_items`, {
     method: "POST",
     headers: getHeaders(),
     body: JSON.stringify(data),
@@ -119,8 +120,8 @@ export async function createMenuItem(data: {
   const { data: created } = await res.json();
 
   // Re-fetch with nested fields so the returned item matches AdminMenuItem shape
-  const fullRes = await fetch(
-    `${DIRECTUS_URL}/items/menu_items/${created.id}?fields=*,variants.*,category.name`,
+  const fullRes = await directusFetch(
+    `/items/menu_items/${created.id}?fields=*,variants.*,category.name`,
     { headers: getHeaders() }
   );
   if (!fullRes.ok) return { ...created, variants: [] };

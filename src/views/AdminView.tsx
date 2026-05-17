@@ -19,6 +19,7 @@ import {
   DRINKS_SUBCATEGORIES,
   SHOP_SUBCATEGORIES,
 } from "../data/constants";
+import { directusFetch } from "../services/directusFetch";
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
@@ -294,11 +295,16 @@ function EditItemModal({
   onClose: () => void;
   onSaved: (patch: Partial<AdminMenuItem>) => void;
 }) {
+  const derivedPosId =
+    item.pos_id ??
+    item.variants?.find((v) => v.label === "Here")?.pos_id ??
+    "";
+
   const [form, setForm] = useState<EditForm>({
     name: item.name,
     shortName: item.short_name ?? "",
     subcategory: item.subcategory ?? "",
-    posId: item.pos_id ?? "",
+    posId: derivedPosId,
     price: item.price != null ? String(item.price) : "",
     minQty: String(item.min_qty ?? 1),
     variantPrices: Object.fromEntries(
@@ -307,8 +313,43 @@ function EditItemModal({
     newVariantRows: [],
     deletedVariantIds: new Set(),
   });
+  const catName = item.category?.name ?? "";
+
+  const initialGlass =
+    catName === "Wines"
+      ? (item.variants?.some((v) => v.label === "0,1" || v.label === "0,2") ?? false)
+      : catName === "Drinks"
+      ? (item.variants?.length ?? 0) > 0
+      : false;
+
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [glassMode, setGlassMode] = useState(initialGlass);
+
+  const handleServingChange = (wantGlass: boolean) => {
+    setGlassMode(wantGlass);
+    if (wantGlass) {
+      const glassLabels = catName === "Wines" ? ["0,1", "0,2"] : ["0,2", "0,4"];
+      const existingLabels = new Set([
+        ...(item.variants?.map((v) => v.label) ?? []),
+        ...form.newVariantRows.map((r) => r.label),
+      ]);
+      const newRows = glassLabels
+        .filter((l) => !existingLabels.has(l))
+        .map((l) => ({ label: l, price: "", bottleSubcategory: "" }));
+      setForm((f) => ({ ...f, newVariantRows: [...f.newVariantRows, ...newRows] }));
+    } else {
+      const glassLabels = new Set(catName === "Wines" ? ["0,1", "0,2"] : ["0,2", "0,4"]);
+      setForm((f) => ({
+        ...f,
+        newVariantRows: f.newVariantRows.filter((r) => !glassLabels.has(r.label)),
+        deletedVariantIds: new Set([
+          ...f.deletedVariantIds,
+          ...(item.variants?.filter((v) => glassLabels.has(v.label)).map((v) => v.id) ?? []),
+        ]),
+      }));
+    }
+  };
 
   const save = async () => {
     setSaving(true);
@@ -321,7 +362,7 @@ function EditItemModal({
         pos_id: form.posId.trim() || null,
         min_qty: parseInt(form.minQty) || 1,
       };
-      if (!(item.variants?.length) && form.price !== "") {
+      if (!(item.variants?.length) && !glassMode && form.price !== "") {
         itemPatch.price = parseFloat(form.price);
       }
       await patchMenuItem(item.id, itemPatch);
@@ -359,7 +400,7 @@ function EditItemModal({
         subcategory: form.subcategory.trim() || null,
         pos_id: form.posId.trim() || null,
         min_qty: parseInt(form.minQty) || 1,
-        ...(!(item.variants?.length) && form.price !== ""
+        ...(!(item.variants?.length) && !glassMode && form.price !== ""
           ? { price: parseFloat(form.price) }
           : {}),
         variants: [
@@ -429,7 +470,7 @@ function EditItemModal({
           onChange={(v) => setForm((f) => ({ ...f, posId: v }))}
           placeholder="Optional"
         />
-        {!(item.variants?.length) && (
+        {!(item.variants?.length) && !glassMode && (
           <FieldInput
             label="Price (€)"
             value={form.price}
@@ -444,25 +485,41 @@ function EditItemModal({
           type="number"
         />
 
-        {item.category?.name === "Wines" && (
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
-            <span style={{ fontSize: 12, color: colors.muted, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>Serving</span>
-            <span style={{
-              fontSize: 12, fontWeight: 600, padding: "3px 10px",
-              borderRadius: 20, border: `1.5px solid ${colors.border}`,
-              color: colors.secondary, background: colors.bg,
-            }}>
-              {item.variants?.some((v) => v.bottle_subcategory) ? "Has glass options" : "Bottle only"}
-            </span>
+        {(catName === "Wines" || catName === "Drinks") && (
+          <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+            {([false, true] as const).map((isGlass) => (
+              <button
+                key={String(isGlass)}
+                onClick={() => handleServingChange(isGlass)}
+                style={{
+                  flex: 1,
+                  padding: "9px",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  borderRadius: radii.md,
+                  border: `1.5px solid ${glassMode === isGlass ? colors.fg : colors.border}`,
+                  background: glassMode === isGlass ? colors.fg : "none",
+                  color: glassMode === isGlass ? "#fff" : colors.secondary,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                }}
+              >
+                {!isGlass
+                  ? catName === "Wines" ? "Bottle only" : "Fixed price"
+                  : "Has glass options"}
+              </button>
+            ))}
           </div>
         )}
 
-        {item.category?.name !== "Food" && (item.variants ?? []).length > 0 && (
+        {catName !== "Food" && ((item.variants ?? []).length > 0 || glassMode) && (
           <div style={{ marginTop: 4, marginBottom: 14 }}>
             <div style={{ ...labelStyle, marginBottom: 10 }}>Variants</div>
             {/* Existing variants — price editable, deletable */}
             {item.variants.map((v) => {
               const markedForDeletion = form.deletedVariantIds.has(v.id);
+              const variantSuffix = VARIANT_OPTIONS[catName]?.find((o) => o.label === v.label)?.posIdSuffix;
+              const variantPosId = variantSuffix !== undefined ? `${form.posId}${variantSuffix}` : null;
               return (
                 <div key={v.id} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10, opacity: markedForDeletion ? 0.4 : 1 }}>
                   <span style={{ flex: 1, fontSize: 14, color: colors.fg, textDecoration: markedForDeletion ? "line-through" : "none" }}>{v.label}</span>
@@ -479,8 +536,17 @@ function EditItemModal({
                     }
                     step="0.01"
                     disabled={markedForDeletion}
-                    style={{ ...inputStyle, width: 90 }}
+                    style={{ ...inputStyle, width: 80 }}
                   />
+                  {variantPosId !== null && (
+                    <input
+                      type="text"
+                      value={variantPosId}
+                      readOnly
+                      tabIndex={-1}
+                      style={{ ...inputStyle, width: 72, color: colors.muted, background: colors.chipBg, cursor: "default" }}
+                    />
+                  )}
                   <button
                     onClick={() =>
                       setForm((f) => {
@@ -514,8 +580,8 @@ function EditItemModal({
             {/* New variant rows */}
             {form.newVariantRows.length > 0 && (
               <div style={{ borderTop: `1px solid ${colors.border}`, paddingTop: 10, marginTop: 6 }}>
-                <div style={{ display: "grid", gridTemplateColumns: item.category?.name === "Wines" ? "1fr 80px 100px auto" : "1fr 80px auto", gap: 8, fontSize: 11, color: colors.muted, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>
-                  <span>Label</span><span>Price</span>{item.category?.name === "Wines" && <span>Wine type</span>}<span />
+                <div style={{ display: "grid", gridTemplateColumns: catName === "Wines" ? `1fr 80px 100px${form.posId ? " 72px" : ""} auto` : `1fr 80px${form.posId ? " 72px" : ""} auto`, gap: 8, fontSize: 11, color: colors.muted, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>
+                  <span>Label</span><span>Price</span>{catName === "Wines" && <span>Wine type</span>}{form.posId && <span>POS ID</span>}<span />
                 </div>
                 {form.newVariantRows.map((row, i) => (
                   <VariantRowInput
@@ -523,7 +589,8 @@ function EditItemModal({
                     row={row}
                     index={i}
                     canRemove={true}
-                    categoryName={item.category?.name ?? ""}
+                    categoryName={catName}
+                    basePosId={form.posId}
                     onChange={(patch) =>
                       setForm((f) => ({
                         ...f,
@@ -540,7 +607,6 @@ function EditItemModal({
             {!VARIANT_OPTIONS[item.category?.name ?? ""] && (
               <button
                 onClick={() => {
-                  const catName = item.category?.name ?? "";
                   const defaultLabel = VARIANT_OPTIONS[catName]?.[0]?.label ?? "";
                   setForm((f) => ({ ...f, newVariantRows: [...f.newVariantRows, { label: defaultLabel, price: "", bottleSubcategory: "" }] }));
                 }}
@@ -632,6 +698,7 @@ function VariantRowInput({
   categoryName,
   onChange,
   onRemove,
+  basePosId,
 }: {
   row: VariantRowData;
   index: number;
@@ -639,10 +706,17 @@ function VariantRowInput({
   categoryName: string;
   onChange: (patch: Partial<VariantRowData>) => void;
   onRemove: () => void;
+  basePosId?: string;
 }) {
   const variantOpts = VARIANT_OPTIONS[categoryName];
   const showWineType = categoryName === "Wines";
-  const cols = showWineType ? "1fr 80px 100px auto" : "1fr 80px auto";
+  const derivedSuffix = basePosId !== undefined
+    ? VARIANT_OPTIONS[categoryName]?.find((o) => o.label === row.label)?.posIdSuffix
+    : undefined;
+  const derivedPosId = derivedSuffix !== undefined ? `${basePosId}${derivedSuffix}` : null;
+  const cols = showWineType
+    ? `1fr 80px 100px${derivedPosId !== null ? " 72px" : ""} auto`
+    : `1fr 80px${derivedPosId !== null ? " 72px" : ""} auto`;
   return (
     <div style={{ display: "grid", gridTemplateColumns: cols, gap: 8, alignItems: "center", marginBottom: 10 }}>
       {variantOpts ? (
@@ -683,6 +757,15 @@ function VariantRowInput({
             <option key={t} value={t}>{t}</option>
           ))}
         </select>
+      )}
+      {derivedPosId !== null && (
+        <input
+          type="text"
+          value={derivedPosId}
+          readOnly
+          tabIndex={-1}
+          style={{ ...inputStyle, fontSize: 14, color: colors.muted, background: colors.chipBg, cursor: "default" }}
+        />
       )}
       <button
         onClick={onRemove}
@@ -818,9 +901,8 @@ function NewItemModal({
           });
         }
         // Re-fetch the item so variants are included in the returned object
-        const refreshed = await fetch(
-          `${import.meta.env.VITE_DIRECTUS_URL ?? "https://cms.blasalviz.com"}/items/menu_items/${created.id}?fields=*,variants.*,category.name`,
-          {}
+        const refreshed = await directusFetch(
+          `/items/menu_items/${created.id}?fields=*,variants.*,category.name`
         ).then((r) => r.json()).then((r) => ({ ...r.data, variants: r.data.variants ?? [] }));
         onCreated(refreshed);
       } else {

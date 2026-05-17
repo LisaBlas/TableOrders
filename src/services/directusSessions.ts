@@ -3,7 +3,7 @@ import { normalizeMarkedBatchIds, type RawMarkedBatchId } from "../utils/batchMa
 import { IS_DEMO_MODE } from "../demo";
 import * as demo from "../demo/demoServices";
 
-const DIRECTUS_URL = import.meta.env.VITE_DIRECTUS_URL ?? "https://cms.blasalviz.com";
+import { directusFetch } from "./directusFetch";
 
 export interface TableSession {
   id: number;
@@ -26,7 +26,7 @@ export function parseTableId(id: string): TableId {
 
 export async function fetchAllSessions(): Promise<TableSession[]> {
   if (IS_DEMO_MODE) return demo.fetchAllSessions();
-  const res = await fetch(`${DIRECTUS_URL}/items/table_sessions?limit=-1`);
+  const res = await directusFetch(`/items/table_sessions?limit=-1`);
   if (!res.ok) throw new Error(`sessions fetch ${res.status}`);
   const { data } = await res.json();
   return (data as RawTableSession[]).map((session) => ({
@@ -45,8 +45,8 @@ export async function upsertSession(
   let resolvedId = directusId;
 
   if (!resolvedId) {
-    const lookup = await fetch(
-      `${DIRECTUS_URL}/items/table_sessions?filter[table_id][_eq]=${encodeURIComponent(data.table_id)}&limit=1`
+    const lookup = await directusFetch(
+      `/items/table_sessions?filter[table_id][_eq]=${encodeURIComponent(data.table_id)}&limit=1`
     );
     if (!lookup.ok) throw new Error(`session lookup ${lookup.status}`);
     const { data: matches } = await lookup.json();
@@ -54,7 +54,7 @@ export async function upsertSession(
   }
 
   if (resolvedId) {
-    const res = await fetch(`${DIRECTUS_URL}/items/table_sessions/${resolvedId}`, {
+    const res = await directusFetch(`/items/table_sessions/${resolvedId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -62,7 +62,7 @@ export async function upsertSession(
     if (!res.ok) throw new Error(`session PATCH ${res.status}`);
     return resolvedId;
   }
-  const res = await fetch(`${DIRECTUS_URL}/items/table_sessions`, {
+  const res = await directusFetch(`/items/table_sessions`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
@@ -74,7 +74,7 @@ export async function upsertSession(
 export async function deleteSession(directusId: number): Promise<{ success: boolean; error?: string }> {
   if (IS_DEMO_MODE) return demo.deleteSession(directusId);
   try {
-    const response = await fetch(`${DIRECTUS_URL}/items/table_sessions/${directusId}`, {
+    const response = await directusFetch(`/items/table_sessions/${directusId}`, {
       method: "DELETE",
     });
 

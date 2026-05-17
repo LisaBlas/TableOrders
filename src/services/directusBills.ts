@@ -1,8 +1,7 @@
 import type { Bill, EqualSplitData, ItemSplitData, OrderItem } from "../types";
 import { IS_DEMO_MODE } from "../demo";
 import * as demo from "../demo/demoServices";
-
-const DIRECTUS_URL = import.meta.env.VITE_DIRECTUS_URL ?? "https://cms.blasalviz.com";
+import { directusFetch } from "./directusFetch";
 
 function getHeaders(): HeadersInit {
   return { "Content-Type": "application/json" };
@@ -96,15 +95,13 @@ export async function fetchBillsByDate(berlinDate: string): Promise<Bill[]> {
   if (IS_DEMO_MODE) return demo.fetchBillsByDate(berlinDate);
   const { gte, lte } = berlinDayBoundsUTC(berlinDate);
 
-  const headers = getHeaders();
-  const res = await fetch(
-    `${DIRECTUS_URL}/items/bills`
+  const res = await directusFetch(
+    `/items/bills`
     + `?filter[timestamp][_gte]=${gte}`
     + `&filter[timestamp][_lte]=${lte}`
     + `&fields=*,items.*`
     + `&sort=timestamp`
-    + `&limit=-1`,
-    { headers }
+    + `&limit=-1`
   );
 
   if (!res.ok) throw new Error(`Directus bills ${res.status}`);
@@ -116,7 +113,7 @@ export async function fetchBillsByDate(berlinDate: string): Promise<Bill[]> {
 // Create a bill + all its items; returns the bill with directusIds populated
 export async function createBillInDirectus(bill: Bill): Promise<Bill> {
   if (IS_DEMO_MODE) return demo.createBillInDirectus(bill);
-  const billRes = await fetch(`${DIRECTUS_URL}/items/bills`, {
+  const billRes = await directusFetch(`/items/bills`, {
     method: "POST",
     headers: getHeaders(),
     body: JSON.stringify({
@@ -155,7 +152,7 @@ export async function createBillInDirectus(bill: Bill): Promise<Bill> {
     crossed_qty: 0,
   }));
 
-  const itemsRes = await fetch(`${DIRECTUS_URL}/items/bill_items`, {
+  const itemsRes = await directusFetch(`/items/bill_items`, {
     method: "POST",
     headers: getHeaders(),
     body: JSON.stringify(itemsPayload),
@@ -164,7 +161,7 @@ export async function createBillInDirectus(bill: Bill): Promise<Bill> {
   if (!itemsRes.ok) {
     // Rollback: delete the orphaned bill before throwing
     try {
-      await fetch(`${DIRECTUS_URL}/items/bills/${billDirectusId}`, {
+      await directusFetch(`/items/bills/${billDirectusId}`, {
         method: "DELETE",
         headers: getHeaders(),
       });
@@ -189,7 +186,7 @@ export async function createBillInDirectus(bill: Bill): Promise<Bill> {
 
 export async function patchBill(directusId: string, data: object): Promise<void> {
   if (IS_DEMO_MODE) return demo.patchBill(directusId, data);
-  const res = await fetch(`${DIRECTUS_URL}/items/bills/${directusId}`, {
+  const res = await directusFetch(`/items/bills/${directusId}`, {
     method: "PATCH",
     headers: getHeaders(),
     body: JSON.stringify(data),
@@ -199,7 +196,7 @@ export async function patchBill(directusId: string, data: object): Promise<void>
 
 export async function patchBillItem(directusId: string, data: object): Promise<void> {
   if (IS_DEMO_MODE) return demo.patchBillItem(directusId, data);
-  const res = await fetch(`${DIRECTUS_URL}/items/bill_items/${directusId}`, {
+  const res = await directusFetch(`/items/bill_items/${directusId}`, {
     method: "PATCH",
     headers: getHeaders(),
     body: JSON.stringify(data),
