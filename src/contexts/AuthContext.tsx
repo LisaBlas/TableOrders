@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 import { IS_DEMO_MODE } from "../demo";
 
-const STAFF_CONFIG = { username: "camidi", password: "fonduefortwo" };
+const STAFF_CONFIG = { username: "camidi", password: "tartine" };
 const ADMIN_CONFIG = { username: "admin", password: "camidiadmin" };
 
 const AUTH_TOKEN_KEY = "authToken";
