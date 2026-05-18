@@ -28,22 +28,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsAuthenticated(true);
       setIsAdmin(false);
     }
+
+    const handleExpired = () => {
+      setIsAuthenticated(false);
+      setIsAdmin(false);
+    };
+    window.addEventListener("session-expired", handleExpired);
+    return () => window.removeEventListener("session-expired", handleExpired);
   }, []);
 
   const login = async (username: string, password: string): Promise<boolean> => {
     if (IS_DEMO_MODE) return true;
     try {
+      const email = `${username}@camidi.com`;
       const res = await fetch(`${DIRECTUS_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ email, password }),
       });
       if (!res.ok) return false;
-      const { token, role } = await res.json();
-      setSessionToken(token);
-      localStorage.setItem(AUTH_ROLE_KEY, role);
+      const { data: { access_token } } = await res.json();
+
+      const meRes = await fetch(`${DIRECTUS_URL}/users/me?fields=role.name`, {
+        headers: { Authorization: `Bearer ${access_token}` },
+      });
+      if (!meRes.ok) return false;
+      const { data: { role } } = await meRes.json();
+      const roleName = typeof role === "object" ? role?.name : role;
+      const appRole = roleName === "admin" ? "admin" : "staff";
+
+      setSessionToken(access_token);
+      localStorage.setItem(AUTH_ROLE_KEY, appRole);
       setIsAuthenticated(true);
-      setIsAdmin(role === "admin");
+      setIsAdmin(appRole === "admin");
       return true;
     } catch {
       return false;

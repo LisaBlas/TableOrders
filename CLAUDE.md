@@ -7,7 +7,7 @@ Built for speed and simplicity — optimized for multi-device, front-of-house us
 **Architectural role:** This app is an order coordination layer, not a fiscal POS. It sits between waitstaff and an external POS system (e.g. a scale-integrated cheese POS). Staff use it to take orders and track tables during service; at end of shift they manually enter daily sales into the real POS, which handles tax calculation and legal receipts. The app's "receipts" are internal working documents for staff, not fiscal documents issued to customers. This means VAT calculation, legal receipt formatting, and fiscal compliance are out of scope.
 
 ## Core Features
-1. **Authentication** — Token-based login with hardcoded staff credentials (`camidi` / `tartine`) and admin credentials (`admin` / `camidiadmin`)
+1. **Authentication** — Directus-native login; username typed by staff is mapped to `{username}@camidi.com` and validated against Directus. JWT stored in localStorage, role resolved from Directus user's role name.
 2. **Floor Management** — Visual table grid with real-time status (Open, Seated, Ordered, Confirmed)
 3. **Table Swap** — Long-press any table to enter swap mode; tap a second table to exchange all state (orders, batches, gutschein, seated status) between both tables
 4. **Order Taking** — Category-based menu with qty controls, unsent/sent order tracking
@@ -29,8 +29,7 @@ Built for speed and simplicity — optimized for multi-device, front-of-house us
 - **Inline styles** — `S` object in `appStyles.js`; design tokens (colors, radii) in `tokens.ts`
 - **State** — React Context (AuthContext + AppContext + TableContext + MenuContext + SplitContext), TanStack Query for server state
 - **Directus CMS** — headless CMS for menu data, menu admin writes, paid bills, and table sessions (SQLite, REST API)
-  - **Authentication** — Token lives in a Cloudflare Worker secret (`DIRECTUS_TOKEN`); never in the client bundle. All service calls go to the Worker proxy (`VITE_DIRECTUS_URL`), which injects the token server-side before forwarding to Directus.
-- **Cloudflare Worker** — Reverse proxy at `https://directus-proxy.alvizblas.workers.dev`; deployed from `worker/` (`worker.js` + `wrangler.toml`)
+  - **Authentication** — Directus-native. `AuthContext` calls `POST /auth/login` on Directus directly, then `GET /users/me?fields=role.name` to resolve the app role. JWT sent as `Authorization: Bearer` on all subsequent requests. No Worker proxy; CORS enabled on Directus server.
 - **Real-time Sync** — 2-second polling for table sessions, 5-second polling for bills (today only)
 - **DM Sans** font (Google Fonts)
 
@@ -145,7 +144,7 @@ Key shapes:
 
 ## Key Behaviors
 - **Authentication required** — App blocked until login with valid credentials
-- **Admin role** — `AuthContext.isAdmin` is set only for `admin` / `camidiadmin`; `TablesView` shows the Menu button only for admins, and `AdminView` is routed as `view === "admin"`
+- **Admin role** — `AuthContext.isAdmin` is set when Directus role name is `"admin"`; `TablesView` shows the Menu button only for admins, and `AdminView` is routed as `view === "admin"`
 - **Real-time multi-device sync** — Table state (orders, batches, gutschein, seated) synced to Directus every 500ms (debounced); fetched every 2 seconds
 - **Conflict resolution** — Dirty local table sessions store a last-synced base snapshot/hash; reconnect uses three-way comparison (base/local/remote) before prompting
 - **Conflict prompts are recovery-only** — Normal online table edits may create short-lived dirty local records for refresh safety, but conflict detection should only prompt during offline→online recovery or failed-write retry paths
@@ -177,7 +176,7 @@ Key shapes:
 - **Responsive layouts** — `useBreakpoint()` hook provides mobile/tablet/tabletLandscape/desktop breakpoints; adaptive grid/list views
 
 ## Limitations & Trade-offs
-- **Hardcoded credentials** — Auth uses static username/password; no per-user roles or multi-tenant support
+- **Simple credentials** — Two Directus users (`camidi`, `admin`); no per-user roles beyond staff/admin, no multi-tenant support
 - **No backend** — orders copied to clipboard instead of sent to kitchen system
 - **No print integration** — clipboard export only
 - **Berlin timezone hardcoded** — `todayBerlinDate()` and `berlinDayBoundsUTC()` assume Europe/Berlin; not configurable
@@ -217,15 +216,10 @@ npm test           # Run unit tests (vitest)
 ## Environment Setup
 Create a `.env` file in the project root:
 ```env
-# Points to the Cloudflare Worker proxy — token lives there, not here
-VITE_DIRECTUS_URL=https://directus-proxy.alvizblas.workers.dev
+VITE_DIRECTUS_URL=https://cms.blasalviz.com
 ```
 
-`VITE_DIRECTUS_TOKEN` has been removed from the client. The token is stored as a Cloudflare Worker secret and injected server-side on every request. To update the token:
-```bash
-cd worker
-wrangler secret put DIRECTUS_TOKEN
-```
+No token in the client. Auth uses Directus user JWTs — credentials live in Directus, not in `.env`.
 
 Demo builds use `.env.demo`:
 ```env
@@ -235,15 +229,8 @@ When `VITE_DEMO_MODE=true`, Directus service modules use `src/demo/demoServices.
 Deploy the demo to GitHub Pages with `npm run deploy:demo`; `predeploy:demo` rebuilds `dist-demo`, then publishes it to the `demo/` subfolder so production remains at `/TableOrders/` and demo runs at `/TableOrders/demo/`.
 
 ## Cloudflare Worker (`worker/`)
-Reverse proxy between the React app and Directus. Deployed separately from the React app.
-```bash
-cd worker
-wrangler deploy                    # deploy / redeploy the Worker
-wrangler secret put DIRECTUS_TOKEN # set or rotate the token secret
-```
-- Worker URL: `https://directus-proxy.alvizblas.workers.dev`
-- CORS: allows `https://lisablas.github.io`, `localhost:3000`, `localhost:5173`
-- Forwards all methods (GET/POST/PATCH/DELETE) with path + query intact
+No longer in use. The `worker/` directory can be deleted. CORS is configured
+on Directus directly (`CORS_ENABLED=true`, `CORS_ORIGIN=https://lisablas.github.io`).
 
 ## Agent Rules
 - **Always `git pull origin main` before making any code changes**, regardless of whether the request comes from the terminal or Slack. Never skip this step.
@@ -289,7 +276,7 @@ Collections: `categories`, `menu_items`, `menu_item_variants`, `bills`, `bill_it
 - Status colors defined in `STATUS_CONFIG` (`constants.ts`): open=blue, seated=yellow, unconfirmed=red, confirmed=green — reused in batch colouring and swap mode highlights
 - Table swap uses long-press (500ms threshold, `LONG_PRESS_MS` in `appConfig.ts`) — `longFiredRef` guards normal taps but is bypassed in swap mode to allow target selection
 - `AppContext` exposes named bill action functions (`addPaidBill`, `markBillAddedToPOS`, `removePaidBillItem`, `restorePaidBillItem`, etc.) — do not manipulate `paidBills` directly
-- Auth credentials are hardcoded in `AuthContext.tsx`; localStorage key `authToken` stores `"true"` for staff and `"admin"` for admin (JWT-like format but no server-side validation)
+- Auth uses Directus native login; `AuthContext` maps typed username to `{username}@camidi.com`, calls Directus `/auth/login`, resolves role via `/users/me?fields=role.name`. localStorage keys: `sessionToken` (Directus JWT), `authRole` (`"staff"` or `"admin"`)
 - localStorage keys in use: `authToken` (auth), `paidBills` (offline bill fallback), `table_orders_client_id` (stable sync client id), `table_sessions_cache` (offline table state), `table_sessions_dirty` (dirty upsert/delete records with base/local snapshots), `table_sessions_sync_meta` (last synced base hashes), `dynamic_tables` (user-created table slots)
 - `syncError` boolean exposed from `TableContext` — sourced from `useDirectusSync` → `useQuery` `isError` on the sessions poll
 - `ErrorBoundary` accepts `inline` prop: when true renders a compact "Something went wrong / Try again" card that resets boundary state instead of a full-page reload screen

@@ -22,10 +22,14 @@ tool, so preserve speed, clarity, and reliability over speculative abstraction.
   Do not introduce CSS-in-JS libraries or broad CSS rewrites.
 - Directus stores menu items, menu item variants, paid bills, bill items, and
   table sessions.
-- All Directus calls go through a Cloudflare Worker reverse proxy at
-  `https://directus-proxy.alvizblas.workers.dev` (deployed from `worker/`).
-  The Directus token lives only in the Worker secret (`DIRECTUS_TOKEN`) — never
-  in `.env` or the client bundle. `VITE_DIRECTUS_URL` points to the Worker.
+- All Directus calls go directly to `https://cms.blasalviz.com`. CORS is
+  configured on Directus (`CORS_ENABLED=true`, `CORS_ORIGIN=https://lisablas.github.io`).
+  `VITE_DIRECTUS_URL` points to the Directus instance.
+- Auth is Directus-native: login maps username → `{username}@camidi.com`, calls
+  Directus `/auth/login`, then `/users/me?fields=role.name` to resolve the app
+  role. The Directus JWT is stored in localStorage (`sessionToken`) and sent as
+  `Authorization: Bearer` on every request. Directus users: `camidi@camidi.com`
+  (role: `staff`), `admin@camidi.com` (role: `admin`).
 
 ## Commands
 ```bash
@@ -83,7 +87,7 @@ src/
 ```
 
 ## Core Workflows
-- `login`: blocks app until hardcoded credentials pass.
+- `login`: blocks app until Directus credentials pass (`camidi` or `admin`, passwords in Directus).
 - `tables`: floor grid, status legend, daily sales access, long-press table swap.
 - `order`: category menu, quantity controls, unsent order bar, sent batches.
 - `ticket`: bill review, split options, close table.
@@ -125,8 +129,11 @@ src/
   updated menu.
 
 ## Important Domain Behaviors
-- Credentials are hardcoded: staff `camidi` / `tartine`, admin `admin` /
-  `camidiadmin`. `authToken` stores `"true"` for staff and `"admin"` for admin.
+- Auth uses Directus native login. `AuthContext` maps the typed username to
+  `{username}@camidi.com` and calls Directus `/auth/login`. The returned JWT is
+  stored as `sessionToken` in localStorage; the resolved role (`staff`/`admin`)
+  is stored as `authRole`. Role comes from `GET /users/me?fields=role.name` —
+  Directus role named `admin` sets `isAdmin: true`, everything else is staff.
 - `TablesView` shows the Menu admin entry only when `AuthContext.isAdmin` is
   true; `AdminView` itself is routed as `view === "admin"`.
 - Restaurant name is hardcoded in `BillTab.tsx`.
@@ -182,7 +189,7 @@ src/
 - Run `npm test` for the unit test suite (vitest, ~68 tests, ~1s).
 
 ## Known Limitations
-- Static credentials; no roles or true server-side auth validation.
+- Auth is server-validated via Directus; credentials and roles managed in Directus, not in code.
 - No kitchen backend, print integration, payment integration, or shift
   management.
 - Polling-based sync instead of WebSockets.
@@ -190,14 +197,9 @@ src/
 - Berlin timezone and table count are not configurable.
 
 ## Cloudflare Worker
-The Worker (`worker/worker.js` + `worker/wrangler.toml`) is a separate
-deployable — it is not part of the Vite build. To redeploy or rotate the token:
-```bash
-cd worker
-wrangler deploy
-wrangler secret put DIRECTUS_TOKEN
-```
-Do not add `VITE_DIRECTUS_TOKEN` back to `.env` or any service file.
+The `worker/` directory is no longer in use. Auth and CORS are handled directly
+by Directus. Do not add a Worker proxy back without updating `VITE_DIRECTUS_URL`
+and the auth flow in `AuthContext.tsx`.
 
 ## Agent Safety Notes
 - Ask before installing dependencies.

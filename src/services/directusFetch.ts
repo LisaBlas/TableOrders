@@ -19,6 +19,12 @@ export function clearSessionToken(): void {
 export async function directusFetch(path: string, init: RequestInit = {}): Promise<Response> {
   const token = getSessionToken();
   const headers = new Headers(init.headers as HeadersInit | undefined);
-  if (token) headers.set("X-Session-Token", token);
-  return fetch(DIRECTUS_URL + path, { ...init, headers });
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  const res = await fetch(DIRECTUS_URL + path, { ...init, headers });
+  if (res.status === 401) {
+    clearSessionToken();
+    localStorage.removeItem("authRole");
+    window.dispatchEvent(new CustomEvent("session-expired"));
+  }
+  return res;
 }
