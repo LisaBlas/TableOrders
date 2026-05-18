@@ -36,6 +36,16 @@ export interface AdminMenuItem {
   variants: AdminVariant[];
 }
 
+export async function fetchAllCategories(): Promise<AdminCategory[]> {
+  const res = await directusFetch(
+    `/items/categories?fields=id,name,sort_order&limit=-1&sort=sort_order`,
+    { headers: getHeaders() }
+  );
+  if (!res.ok) throw new Error(`Directus ${res.status}`);
+  const { data } = await res.json();
+  return data as AdminCategory[];
+}
+
 export async function fetchAllMenuItems(): Promise<AdminMenuItem[]> {
   // fields=* returns category_id as a scalar; category.name resolves the name
   const res = await directusFetch(

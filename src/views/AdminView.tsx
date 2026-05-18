@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback, useMemo, type CSSProperties } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, type CSSProperties } from "react";
 import { useApp } from "../contexts/AppContext";
 import { useMenu } from "../contexts/MenuContext";
-import { BackIcon } from "../components/icons";
+import { BackIcon, TrashIcon, EditIcon, CheckIcon } from "../components/icons";
 import { useBreakpoint } from "../hooks/useBreakpoint";
 import {
+  fetchAllCategories,
   fetchAllMenuItems,
   patchMenuItem,
   patchVariant,
@@ -14,6 +15,7 @@ import {
   type AdminCategory,
 } from "../services/directusAdmin";
 import { colors, radii } from "../styles/tokens";
+import { S } from "../styles/appStyles";
 import {
   FOOD_SUBCATEGORIES,
   DRINKS_SUBCATEGORIES,
@@ -84,31 +86,6 @@ const inputStyle: CSSProperties = {
   boxSizing: "border-box",
 };
 
-const primaryBtnStyle: CSSProperties = {
-  flex: 1,
-  padding: "13px",
-  fontSize: 15,
-  fontWeight: 600,
-  background: colors.fg,
-  color: "#fff",
-  border: "none",
-  borderRadius: radii.md,
-  cursor: "pointer",
-  fontFamily: "inherit",
-};
-
-const secondaryBtnStyle: CSSProperties = {
-  flex: 1,
-  padding: "13px",
-  fontSize: 15,
-  fontWeight: 600,
-  background: "none",
-  color: colors.secondary,
-  border: `1.5px solid ${colors.border}`,
-  borderRadius: radii.md,
-  cursor: "pointer",
-  fontFamily: "inherit",
-};
 
 // ── FieldInput ─────────────────────────────────────────────────────────────
 
@@ -205,12 +182,18 @@ function ItemRow({
   onToggle: () => void;
   onEdit: () => void;
 }) {
-  const priceLabel =
-    item.variants?.length
-      ? `${item.variants.length} variant${item.variants.length !== 1 ? "s" : ""}`
-      : item.price != null
-      ? `€${Number(item.price).toFixed(2)}`
-      : "—";
+  const priceLabel = (item.variants?.length ?? 0) > 0
+    ? (() => {
+        const MAX = 2;
+        const shown = item.variants.slice(0, MAX);
+        const rest = item.variants.length - MAX;
+        const parts = shown.map((v) => `${v.label} €${Number(v.price).toFixed(2)}`);
+        if (rest > 0) parts.push(`+${rest}`);
+        return parts.join(" · ");
+      })()
+    : item.price != null
+    ? `€${Number(item.price).toFixed(2)}`
+    : "—";
 
   return (
     <div
@@ -243,13 +226,18 @@ function ItemRow({
         >
           {item.name}
         </div>
-        {item.short_name && item.short_name !== item.name && (
-          <div style={{ fontSize: 12, color: colors.muted, marginTop: 1 }}>
-            {item.short_name}
-          </div>
-        )}
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2, flexWrap: "wrap" }}>
+          {item.short_name && item.short_name !== item.name && (
+            <span style={{ fontSize: 12, color: colors.muted }}>{item.short_name}</span>
+          )}
+          {item.subcategory && (
+            <span style={{ fontSize: 11, color: colors.muted, background: colors.chipBg, borderRadius: 3, padding: "1px 5px" }}>
+              {item.subcategory}
+            </span>
+          )}
+        </div>
       </div>
-      <span style={{ fontSize: 14, color: colors.secondary, flexShrink: 0 }}>
+      <span style={{ fontSize: 13, color: colors.secondary, flexShrink: 0, maxWidth: 140, textAlign: "right", lineHeight: 1.4 }}>
         {priceLabel}
       </span>
       <button
@@ -264,8 +252,12 @@ function ItemRow({
           cursor: "pointer",
           flexShrink: 0,
           fontFamily: "inherit",
+          display: "flex",
+          alignItems: "center",
+          gap: 4,
         }}
       >
+        <EditIcon size={12} />
         Edit
       </button>
     </div>
@@ -281,6 +273,7 @@ interface EditForm {
   posId: string;
   price: string;
   minQty: string;
+  destination: string;
   variantPrices: Record<number, string>;
   newVariantRows: VariantRowData[];
   deletedVariantIds: Set<number>;
@@ -309,6 +302,7 @@ function EditItemModal({
     posId: derivedPosId,
     price: item.price != null ? String(item.price) : "",
     minQty: String(item.min_qty ?? 1),
+    destination: item.destination ?? "",
     variantPrices: Object.fromEntries(
       (item.variants ?? []).map((v) => [v.id, String(v.price)])
     ),
@@ -325,8 +319,12 @@ function EditItemModal({
       : false;
 
   const [saving, setSaving] = useState(false);
+  const [savedFlash, setSavedFlash] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [glassMode, setGlassMode] = useState(initialGlass);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
 
   const handleServingChange = (wantGlass: boolean) => {
     setGlassMode(wantGlass);
@@ -363,6 +361,7 @@ function EditItemModal({
         subcategory: form.subcategory.trim() || null,
         pos_id: form.posId.trim() || null,
         min_qty: parseInt(form.minQty) || 1,
+        destination: form.destination || null,
       };
       if (!(item.variants?.length) && !glassMode && form.price !== "") {
         itemPatch.price = parseFloat(form.price);
@@ -396,12 +395,13 @@ function EditItemModal({
         )
       );
 
-      onSaved({
+      const patch = {
         name: form.name.trim(),
         short_name: form.shortName.trim() || null,
         subcategory: form.subcategory.trim() || null,
         pos_id: form.posId.trim() || null,
         min_qty: parseInt(form.minQty) || 1,
+        destination: form.destination || null,
         ...(!(item.variants?.length) && !glassMode && form.price !== ""
           ? { price: parseFloat(form.price) }
           : {}),
@@ -411,8 +411,16 @@ function EditItemModal({
             .map((v) => ({ ...v, price: parseFloat(form.variantPrices[v.id] ?? String(v.price)) })),
           ...createdVariants,
         ],
-      });
-      onClose();
+      };
+      onSaved(patch);
+      if (mode === "panel") {
+        setSavedFlash(true);
+        setTimeout(() => {
+          if (mountedRef.current) { setSavedFlash(false); onClose(); }
+        }, 1000);
+      } else {
+        onClose();
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Save failed");
     } finally {
@@ -420,20 +428,8 @@ function EditItemModal({
     }
   };
 
-  const formBody = (
-      <div
-        style={{
-          background: colors.surface,
-          ...(mode === "sheet"
-            ? { borderRadius: `${radii.xl}px ${radii.xl}px 0 0`, maxHeight: "85vh", width: "100%" }
-            : { height: "100%" }),
-          padding: "24px 20px 36px",
-          overflowY: "auto",
-          boxSizing: "border-box",
-          fontFamily: "'DM Sans', sans-serif",
-        }}
-        onClick={mode === "sheet" ? (e) => e.stopPropagation() : undefined}
-      >
+  const formContent = (
+      <>
         <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 20, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <span>Edit: {item.name}</span>
           {mode === "panel" && (
@@ -453,17 +449,6 @@ function EditItemModal({
           onChange={(v) => setForm((f) => ({ ...f, shortName: v }))}
           placeholder="Optional"
         />
-        <SubcategoryField
-          categoryName={item.category?.name ?? ""}
-          value={form.subcategory}
-          onChange={(v) => setForm((f) => ({ ...f, subcategory: v }))}
-        />
-        <FieldInput
-          label="POS ID"
-          value={form.posId}
-          onChange={(v) => setForm((f) => ({ ...f, posId: v }))}
-          placeholder="Optional"
-        />
         {!(item.variants?.length) && !glassMode && (
           <FieldInput
             label="Price (€)"
@@ -472,12 +457,6 @@ function EditItemModal({
             type="number"
           />
         )}
-        <FieldInput
-          label="Min qty"
-          value={form.minQty}
-          onChange={(v) => setForm((f) => ({ ...f, minQty: v }))}
-          type="number"
-        />
 
         {(catName === "Wines" || catName === "Drinks") && (
           <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
@@ -566,7 +545,7 @@ function EditItemModal({
                     }}
                     title={markedForDeletion ? "Undo" : "Delete variant"}
                   >
-                    {markedForDeletion ? "↩" : "×"}
+                    {markedForDeletion ? "↩" : <TrashIcon size={14} />}
                   </button>
                 </div>
               );
@@ -623,39 +602,108 @@ function EditItemModal({
           </div>
         )}
 
+        {/* ── Advanced ── */}
+        <div style={{ borderTop: `1px solid ${colors.border}`, marginTop: 8, paddingTop: 4 }}>
+          <button
+            onClick={() => setShowAdvanced((s) => !s)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              background: "none",
+              border: "none",
+              padding: "8px 0",
+              cursor: "pointer",
+              fontSize: 12,
+              fontWeight: 600,
+              color: colors.muted,
+              textTransform: "uppercase",
+              letterSpacing: "0.06em",
+              fontFamily: "inherit",
+              width: "100%",
+            }}
+          >
+            <span style={{ fontSize: 10, display: "inline-block", lineHeight: 1, transform: showAdvanced ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.15s" }}>▾</span>
+            Advanced
+          </button>
+          {showAdvanced && (
+            <div style={{ paddingTop: 6 }}>
+              <SubcategoryField
+                categoryName={item.category?.name ?? ""}
+                value={form.subcategory}
+                onChange={(v) => setForm((f) => ({ ...f, subcategory: v }))}
+              />
+              <FieldInput
+                label="POS ID"
+                value={form.posId}
+                onChange={(v) => setForm((f) => ({ ...f, posId: v }))}
+                placeholder="Optional"
+              />
+              <FieldInput
+                label="Min qty"
+                value={form.minQty}
+                onChange={(v) => setForm((f) => ({ ...f, minQty: v }))}
+                type="number"
+              />
+              <div style={{ marginBottom: 14 }}>
+                <label style={labelStyle}>Destination</label>
+                <select
+                  value={form.destination}
+                  onChange={(e) => setForm((f) => ({ ...f, destination: e.target.value }))}
+                  style={{ ...inputStyle, appearance: "auto" }}
+                >
+                  <option value="">—</option>
+                  <option value="bar">bar</option>
+                  <option value="counter">counter</option>
+                  <option value="kitchen">kitchen</option>
+                </select>
+              </div>
+            </div>
+          )}
+        </div>
+
         {error && (
-          <div style={{ color: colors.danger, fontSize: 13, marginBottom: 12 }}>
+          <div style={{ color: colors.danger, fontSize: 13, marginBottom: 12, marginTop: 10 }}>
             {error}
           </div>
         )}
 
-        <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
-          <button onClick={onClose} disabled={saving} style={secondaryBtnStyle}>
+        <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
+          <button onClick={onClose} disabled={saving || savedFlash} style={S.modalCancelBtn}>
             Cancel
           </button>
-          <button onClick={save} disabled={saving} style={primaryBtnStyle}>
-            {saving ? "Saving…" : "Save"}
+          <button
+            onClick={save}
+            disabled={saving || savedFlash}
+            style={{
+              ...S.modalConfirmBtn,
+              background: savedFlash ? colors.success : colors.fg,
+              transition: "background 0.2s",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 4,
+            }}
+          >
+            {saving ? "Saving…" : savedFlash ? <><CheckIcon size={14} />Saved</> : "Save"}
           </button>
         </div>
-      </div>
+      </>
   );
 
-  if (mode === "panel") return formBody;
+  if (mode === "panel") return (
+    <div style={{ height: "100%", padding: "24px 20px 36px", overflowY: "auto", boxSizing: "border-box", background: colors.surface }}>
+      {formContent}
+    </div>
+  );
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: colors.overlay,
-        display: "flex",
-        alignItems: "flex-end",
-        zIndex: 200,
-      }}
-      onClick={onClose}
-    >
-      {formBody}
-    </div>
+    <>
+      <div style={S.variantSheetOverlay} onClick={onClose} />
+      <div style={{ ...S.variantSheet, padding: "24px 20px 36px", maxHeight: "85vh", overflowY: "auto", boxSizing: "border-box" }}>
+        {formContent}
+      </div>
+    </>
   );
 }
 
@@ -808,6 +856,7 @@ function VariantRowInput({
 
 type AvailFilter = "all" | "available" | "unavailable";
 type VariantFilter = "all" | "variants" | "simple";
+type QualityFilter = "all" | "no-pos" | "no-price" | "min2";
 
 function FilterPills<T extends string>({
   options,
@@ -853,6 +902,8 @@ function FilterBar({
   onAvailFilter,
   variantFilter,
   onVariantFilter,
+  qualityFilter,
+  onQualityFilter,
   categoryNames,
   onAddItem,
   isTableView,
@@ -865,6 +916,8 @@ function FilterBar({
   onAvailFilter: (f: AvailFilter) => void;
   variantFilter: VariantFilter;
   onVariantFilter: (f: VariantFilter) => void;
+  qualityFilter: QualityFilter;
+  onQualityFilter: (f: QualityFilter) => void;
   categoryNames: string[];
   onAddItem: () => void;
   isTableView: boolean;
@@ -883,6 +936,12 @@ function FilterBar({
     { value: "variants", label: "Variants" },
     { value: "simple", label: "Fixed price" },
   ];
+  const qualityOptions: { value: QualityFilter; label: string }[] = [
+    { value: "all", label: "All" },
+    { value: "no-pos", label: "No POS ID" },
+    { value: "no-price", label: "No price" },
+    { value: "min2", label: "Min qty > 1" },
+  ];
 
   return (
     <div
@@ -895,6 +954,7 @@ function FilterBar({
         gap: 8,
         alignItems: isTableView ? "center" : "stretch",
         flexShrink: 0,
+        flexWrap: isTableView ? "wrap" : undefined,
       }}
     >
       <div style={{ display: "flex", gap: 8, alignItems: "center", flex: isTableView ? "none" : 1 }}>
@@ -926,6 +986,8 @@ function FilterBar({
         <FilterPills options={availOptions} value={availFilter} onChange={onAvailFilter} />
         {isTableView && <span style={{ width: 1, height: 18, background: colors.border, flexShrink: 0 }} />}
         <FilterPills options={variantOptions} value={variantFilter} onChange={onVariantFilter} />
+        {isTableView && <span style={{ width: 1, height: 18, background: colors.border, flexShrink: 0 }} />}
+        <FilterPills options={qualityOptions} value={qualityFilter} onChange={onQualityFilter} />
       </div>
     </div>
   );
@@ -976,6 +1038,25 @@ function SortableHeader({
   );
 }
 
+function ProblemBadge({ label, severity }: { label: string; severity: "warn" | "error" }) {
+  const isWarn = severity === "warn";
+  return (
+    <span style={{
+      fontSize: 10,
+      fontWeight: 700,
+      color: isWarn ? colors.warningText : colors.danger,
+      background: isWarn ? colors.warningBg : colors.dangerBg,
+      border: `1px solid ${isWarn ? colors.warningBorder : colors.danger}`,
+      borderRadius: 4,
+      padding: "1px 5px",
+      lineHeight: 1.4,
+      flexShrink: 0,
+    }}>
+      {label}
+    </span>
+  );
+}
+
 function MenuTable({
   items,
   toggling,
@@ -985,6 +1066,7 @@ function MenuTable({
   sortKey,
   sortDir,
   onSort,
+  duplicatePosIds,
 }: {
   items: AdminMenuItem[];
   toggling: Set<string>;
@@ -994,6 +1076,7 @@ function MenuTable({
   sortKey: string;
   sortDir: "asc" | "desc";
   onSort: (key: string) => void;
+  duplicatePosIds: Set<string>;
 }) {
   const sh = (label: string, key: string, extraStyle?: CSSProperties) => (
     <SortableHeader label={label} sortKey={key} currentKey={sortKey} currentDir={sortDir} onSort={onSort} style={extraStyle} />
@@ -1018,15 +1101,12 @@ function MenuTable({
   return (
     <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
       <colgroup>
-        <col style={{ width: 52 }} />
+        <col style={{ width: 55 }} />
         <col />
         <col style={{ width: 82 }} />
-        <col style={{ width: 100 }} />
         <col style={{ width: 110 }} />
-        <col style={{ width: 80 }} />
-        <col style={{ width: 72 }} />
-        <col style={{ width: 52 }} />
-        <col style={{ width: 48 }} />
+        <col style={{ width: 220 }} />
+        <col style={{ width: 90 }} />
         <col style={{ width: 72 }} />
       </colgroup>
       <thead>
@@ -1037,16 +1117,13 @@ function MenuTable({
           {sh("Subcategory", "subcategory")}
           {sh("Price / Variants", "price")}
           {sh("POS ID", "pos_id")}
-          {sh("Dest.", "destination")}
-          {sh("Min", "min_qty")}
-          {sh("Sort", "sort_order")}
           <th style={{ background: colors.bg, borderBottom: `2px solid ${colors.border}`, position: "sticky", top: 0, zIndex: 2 }} />
         </tr>
       </thead>
       <tbody>
         {items.length === 0 && (
           <tr>
-            <td colSpan={10} style={{ padding: "48px 20px", textAlign: "center", color: colors.muted, fontSize: 14 }}>
+            <td colSpan={7} style={{ padding: "48px 20px", textAlign: "center", color: colors.muted, fontSize: 14 }}>
               No items match the current filters.
             </td>
           </tr>
@@ -1054,25 +1131,49 @@ function MenuTable({
         {items.map((item) => {
           const isSelected = item.id === selectedId;
           const priceLabel = (item.variants?.length ?? 0) > 0
-            ? `${item.variants.length} variant${item.variants.length !== 1 ? "s" : ""}`
+            ? (() => {
+                const MAX = 3;
+                const shown = item.variants.slice(0, MAX);
+                const rest = item.variants.length - MAX;
+                const parts = shown.map((v) => `${v.label} €${Number(v.price).toFixed(2)}`);
+                if (rest > 0) parts.push(`+${rest}`);
+                return parts.join(" · ");
+              })()
             : item.price != null ? `€${Number(item.price).toFixed(2)}` : "—";
           const rowBg = isSelected ? colors.chipBg : colors.surface;
           const textColor = item.available ? colors.fg : colors.dimmed;
           const cell: CSSProperties = { ...cellBase, background: rowBg, color: textColor };
+          const selectionBorder = `3px solid ${isSelected ? colors.fg : "transparent"}`;
+
+          const hasNoPrice = item.price == null && (item.variants?.length ?? 0) === 0;
+          const hasZeroVariant = item.variants?.some((v) => !v.price || v.price === 0) ?? false;
+          const hasNoPosId = !item.pos_id && !(item.variants?.some((v) => v.pos_id));
+          const hasDupPosId = !!item.pos_id && duplicatePosIds.has(item.pos_id);
 
           return (
-            <tr key={item.id}>
-              <td style={{ ...cell, textAlign: "center", maxWidth: "none" }}>
+            <tr key={item.id} style={{ cursor: "pointer" }} onClick={() => onEdit(item)}>
+              <td
+                style={{ ...cell, textAlign: "center", maxWidth: "none", borderLeft: selectionBorder, paddingLeft: 8 }}
+                onClick={(e) => e.stopPropagation()}
+              >
                 <AvailabilityToggle
                   available={item.available}
                   disabled={toggling.has(item.id)}
                   onToggle={() => onToggle(item)}
                 />
               </td>
-              <td style={cell}>
+              <td style={{ ...cell, verticalAlign: "top", paddingTop: 9 }}>
                 <span style={{ ...truncate, fontWeight: 600 }}>{item.name}</span>
                 {item.short_name && item.short_name !== item.name && (
                   <span style={{ ...truncate, fontSize: 11, color: colors.muted, marginTop: 1 }}>{item.short_name}</span>
+                )}
+                {(hasNoPrice || hasZeroVariant || hasNoPosId || hasDupPosId) && (
+                  <div style={{ display: "flex", gap: 3, flexWrap: "wrap", marginTop: 4 }}>
+                    {hasNoPrice && <ProblemBadge label="No price" severity="error" />}
+                    {hasZeroVariant && <ProblemBadge label="€0 variant" severity="error" />}
+                    {hasNoPosId && <ProblemBadge label="No POS" severity="warn" />}
+                    {hasDupPosId && <ProblemBadge label="Dup POS" severity="warn" />}
+                  </div>
                 )}
               </td>
               <td style={cell}>
@@ -1081,14 +1182,11 @@ function MenuTable({
                 </span>
               </td>
               <td style={cell}><span style={truncate}>{item.subcategory ?? "—"}</span></td>
-              <td style={cell}><span style={truncate}>{priceLabel}</span></td>
+              <td style={cell}><span style={{ ...truncate, fontSize: 12 }}>{priceLabel}</span></td>
               <td style={cell}><span style={{ ...truncate, fontFamily: "monospace", fontSize: 12 }}>{item.pos_id ?? "—"}</span></td>
-              <td style={cell}><span style={truncate}>{item.destination ?? "—"}</span></td>
-              <td style={{ ...cell, textAlign: "center" }}>{item.min_qty ?? 1}</td>
-              <td style={{ ...cell, textAlign: "center", color: colors.muted }}>{item.sort_order}</td>
               <td style={{ ...cell, maxWidth: "none" }}>
                 <button
-                  onClick={() => onEdit(item)}
+                  onClick={(e) => { e.stopPropagation(); onEdit(item); }}
                   style={{
                     background: isSelected ? colors.fg : "none",
                     color: isSelected ? "#fff" : colors.secondary,
@@ -1099,8 +1197,12 @@ function MenuTable({
                     cursor: "pointer",
                     fontFamily: "inherit",
                     whiteSpace: "nowrap",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 3,
                   }}
                 >
+                  <EditIcon size={11} />
                   {isSelected ? "Editing" : "Edit"}
                 </button>
               </td>
@@ -1239,30 +1341,9 @@ function NewItemModal({
     (mode === "simple" || variantRows.some((r) => r.price !== ""));
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: colors.overlay,
-        display: "flex",
-        alignItems: "flex-end",
-        zIndex: 200,
-      }}
-      onClick={onClose}
-    >
-      <div
-        style={{
-          background: colors.surface,
-          borderRadius: `${radii.xl}px ${radii.xl}px 0 0`,
-          padding: "24px 20px 36px",
-          width: "100%",
-          maxHeight: "90vh",
-          overflowY: "auto",
-          boxSizing: "border-box",
-          fontFamily: "'DM Sans', sans-serif",
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
+    <>
+      <div style={S.variantSheetOverlay} onClick={onClose} />
+      <div style={{ ...S.variantSheet, padding: "24px 20px 36px", maxHeight: "90vh", overflowY: "auto", boxSizing: "border-box" }}>
         <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 20 }}>New Item</div>
 
         {/* Mode toggle — hidden for Food, wine serving for Wines, generic for others */}
@@ -1392,17 +1473,17 @@ function NewItemModal({
         )}
 
         <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
-          <button onClick={onClose} disabled={saving} style={secondaryBtnStyle}>Cancel</button>
+          <button onClick={onClose} disabled={saving} style={S.modalCancelBtn}>Cancel</button>
           <button
             onClick={create}
             disabled={saving || !canSubmit}
-            style={{ ...primaryBtnStyle, opacity: !canSubmit ? 0.5 : 1 }}
+            style={{ ...S.modalConfirmBtn, opacity: !canSubmit ? 0.5 : 1 }}
           >
             {saving ? "Creating…" : "Add Item"}
           </button>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -1419,6 +1500,7 @@ export function AdminView() {
   const isTableView = !isMobile && !isTablet;
 
   const [items, setItems] = useState<AdminMenuItem[]>([]);
+  const [categories, setCategories] = useState<AdminCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [toggling, setToggling] = useState<Set<string>>(new Set());
@@ -1431,23 +1513,21 @@ export function AdminView() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [availabilityFilter, setAvailabilityFilter] = useState<AvailFilter>("all");
   const [variantFilter, setVariantFilter] = useState<VariantFilter>("all");
+  const [qualityFilter, setQualityFilter] = useState<QualityFilter>("all");
 
   useEffect(() => {
-    fetchAllMenuItems()
-      .then(setItems)
+    Promise.all([fetchAllCategories(), fetchAllMenuItems()])
+      .then(([cats, menuItems]) => { setCategories(cats); setItems(menuItems); })
       .catch((err) => setLoadError(err.message))
       .finally(() => setLoading(false));
   }, []);
 
-  const categories: AdminCategory[] = useMemo(() => {
-    const seen = new Map<number, AdminCategory>();
+  const duplicatePosIds = useMemo(() => {
+    const counts = new Map<string, number>();
     for (const item of items) {
-      const id = item.category?.id ?? 0;
-      if (!seen.has(id)) {
-        seen.set(id, { id, name: item.category?.name ?? "Other", sort_order: 0 });
-      }
+      if (item.pos_id) counts.set(item.pos_id, (counts.get(item.pos_id) ?? 0) + 1);
     }
-    return Array.from(seen.values());
+    return new Set([...counts.entries()].filter(([, n]) => n > 1).map(([id]) => id));
   }, [items]);
 
   const [sortKey, setSortKey] = useState("sort_order");
@@ -1462,10 +1542,10 @@ export function AdminView() {
     () =>
       SECTION_ORDER.map((name) => ({
         name,
-        catId: sectionMap.get(name)?.catId ?? null,
+        catId: sectionMap.get(name)?.catId ?? categories.find((c) => c.name === name)?.id ?? null,
         sectionItems: sectionMap.get(name)?.items ?? [],
       })),
-    [sectionMap]
+    [sectionMap, categories]
   );
 
   const filteredSorted = useMemo(() => {
@@ -1477,6 +1557,9 @@ export function AdminView() {
     if (categoryFilter !== "all") result = result.filter((i) => i.category?.name === categoryFilter);
     if (availabilityFilter !== "all") result = result.filter((i) => availabilityFilter === "available" ? i.available : !i.available);
     if (variantFilter !== "all") result = result.filter((i) => variantFilter === "variants" ? (i.variants?.length ?? 0) > 0 : (i.variants?.length ?? 0) === 0);
+    if (qualityFilter === "no-pos") result = result.filter((i) => !i.pos_id && !i.variants?.some((v) => v.pos_id));
+    if (qualityFilter === "no-price") result = result.filter((i) => i.price == null && (i.variants?.length ?? 0) === 0);
+    if (qualityFilter === "min2") result = result.filter((i) => (i.min_qty ?? 1) > 1);
     return [...result].sort((a, b) => {
       let av: string | number = 0, bv: string | number = 0;
       switch (sortKey) {
@@ -1494,7 +1577,7 @@ export function AdminView() {
       if (av > bv) return sortDir === "asc" ? 1 : -1;
       return 0;
     });
-  }, [items, query, categoryFilter, availabilityFilter, variantFilter, sortKey, sortDir]);
+  }, [items, query, categoryFilter, availabilityFilter, variantFilter, qualityFilter, sortKey, sortDir]);
 
   const mobileSections = useMemo(() => {
     const q = query.toLowerCase();
@@ -1505,11 +1588,15 @@ export function AdminView() {
           const matchSearch = !query.trim() || item.name.toLowerCase().includes(q) || (item.short_name ?? "").toLowerCase().includes(q);
           const matchAvail = availabilityFilter === "all" || (availabilityFilter === "available" ? item.available : !item.available);
           const matchVariant = variantFilter === "all" || (variantFilter === "variants" ? (item.variants?.length ?? 0) > 0 : (item.variants?.length ?? 0) === 0);
-          return matchSearch && matchAvail && matchVariant;
+          const matchQuality = qualityFilter === "all"
+            || (qualityFilter === "no-pos" && !item.pos_id && !item.variants?.some((v) => v.pos_id))
+            || (qualityFilter === "no-price" && item.price == null && (item.variants?.length ?? 0) === 0)
+            || (qualityFilter === "min2" && (item.min_qty ?? 1) > 1);
+          return matchSearch && matchAvail && matchVariant && matchQuality;
         }),
       }))
       .filter((s) => categoryFilter === "all" || s.name === categoryFilter);
-  }, [sections, query, categoryFilter, availabilityFilter, variantFilter]);
+  }, [sections, query, categoryFilter, availabilityFilter, variantFilter, qualityFilter]);
 
   const gridCols = isMobile ? 1 : 2;
 
@@ -1610,6 +1697,8 @@ export function AdminView() {
           onAvailFilter={setAvailabilityFilter}
           variantFilter={variantFilter}
           onVariantFilter={setVariantFilter}
+          qualityFilter={qualityFilter}
+          onQualityFilter={setQualityFilter}
           categoryNames={categories.map((c) => c.name)}
           onAddItem={() => { setNewItemCategoryId(null); setShowNewItemModal(true); }}
           isTableView={isTableView}
@@ -1641,6 +1730,7 @@ export function AdminView() {
               sortKey={sortKey}
               sortDir={sortDir}
               onSort={handleSort}
+              duplicatePosIds={duplicatePosIds}
             />
           </div>
           {editItem && (

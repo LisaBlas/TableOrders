@@ -1306,12 +1306,13 @@ export const S = {
     flex: 1,
     padding: "12px",
     borderRadius: radii.md,
-    border: "1.5px solid #ddd",
+    border: `1.5px solid ${colors.border}`,
     background: colors.surface,
     fontSize: 15,
     fontWeight: 600,
     cursor: "pointer",
-    color: colors.subtle,
+    color: colors.secondary,
+    fontFamily: "inherit",
   },
   modalConfirmBtn: {
     flex: 1,
@@ -1323,6 +1324,7 @@ export const S = {
     fontSize: 15,
     fontWeight: 600,
     cursor: "pointer",
+    fontFamily: "inherit",
   },
   modalDeleteBtn: {
     flex: 1,
@@ -1334,6 +1336,7 @@ export const S = {
     fontSize: 15,
     fontWeight: 600,
     cursor: "pointer",
+    fontFamily: "inherit",
   },
 
   // Daily Sales
