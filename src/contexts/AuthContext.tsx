@@ -49,13 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!res.ok) return false;
       const { data: { access_token } } = await res.json();
 
-      const meRes = await fetch(`${DIRECTUS_URL}/users/me?fields=role.name`, {
-        headers: { Authorization: `Bearer ${access_token}` },
-      });
-      if (!meRes.ok) return false;
-      const { data: { role } } = await meRes.json();
-      const roleName = typeof role === "object" ? role?.name : role;
-      const appRole = roleName === "admin" ? "admin" : "staff";
+      const appRole = username === "admin" ? "admin" : "staff";
 
       setSessionToken(access_token);
       localStorage.setItem(AUTH_ROLE_KEY, appRole);
