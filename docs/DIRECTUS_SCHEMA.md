@@ -50,13 +50,14 @@
 {
   id: string (PK),        // e.g., "f1", "dr1", "wg1"
   name: string,           // "Aperol", "Picpoul", "Cheese Plate"
+  short_name: string,     // Abbreviated display name; also used as posName in frontend
   category_id: number,    // FK → categories
   subcategory: string,    // "cheese", "wine", "cocktail" (not normalized)
-  base_price: decimal,    // Price if no variants (null if has_variants = true)
-  has_variants: boolean,  // true → check menu_item_variants
+  price: decimal,         // Price if no variants (null if item has variants)
   pos_id: string,         // POS system ID (e.g., "73", "251")
-  pos_name: string,       // POS display name (e.g., "Aperol", "CP 1PAX")
-  is_active: boolean,     // false = hidden from menu
+  destination: string,    // "bar" | "counter" | "kitchen" (order routing)
+  min_qty: number,        // Minimum order quantity (default 1; 2 for cheese plate, raclette, fondue)
+  available: boolean,     // false = hidden from menu
   sort_order: number,     // Display order within category
   date_created: datetime,
   date_updated: datetime
@@ -68,19 +69,18 @@
 - O2M → `menu_item_variants.item_id`
 
 **Key Patterns:**
-- `has_variants = false` → use `base_price`, ignore variants
-- `has_variants = true` → `base_price` is null, read from `menu_item_variants`
+- No variants → `price` is set, `variants` array is empty
+- Has variants → `price` is null, prices come from `menu_item_variants`
+- `pos_name` is not stored on `menu_items`; the frontend uses `short_name` as the POS display name
 
 **Example Queries:**
 ```javascript
 // Fetch active menu with variants
-const menu = await directus.request(
-  readItems('menu_items', {
-    filter: { is_active: { _eq: true } },
-    fields: ['*', 'category_id.*', 'variants.*'],
-    sort: ['category_id.sort_order', 'sort_order']
-  })
-);
+GET /items/menu_items
+  ?fields=*,variants.*,category.name
+  &filter[available][_eq]=true
+  &limit=-1
+  &sort=category.sort_order,id
 ```
 
 ---
@@ -91,12 +91,14 @@ const menu = await directus.request(
 ```typescript
 {
   id: number (PK),
-  item_id: string,        // FK → menu_items.id
-  variant_type: string,   // "small", "large", "here", "togo"
-  label: string,          // "0,1", "0,2", "Here", "To Go"
-  price: decimal,         // Variant-specific price
-  pos_id: string,         // Variant-specific POS ID (e.g., "251-1")
-  pos_name: string,       // Variant-specific POS name
+  item_id: string,              // FK → menu_items.id
+  type: string,                 // "small", "large", "here", "togo"
+  label: string,                // "0,1", "0,2", "Here", "To Go"
+  price: decimal,               // Variant-specific price
+  pos_id: string,               // Variant-specific POS ID (e.g., "251-1")
+  pos_name: string,             // Variant-specific POS name
+  bottle_subcategory: string,   // Bottle wine subcategory (e.g., "white", "red"); null for non-bottles
+  is_default: boolean,          // True if this variant is pre-selected in the UI
   sort_order: number,
   date_created: datetime,
   date_updated: datetime
@@ -109,12 +111,12 @@ const menu = await directus.request(
 **Example Data:**
 ```javascript
 // Picpoul by glass (item_id: "wg1")
-{ variant_type: "small", label: "0,1", price: 3.50, pos_id: "251-1" }
-{ variant_type: "large", label: "0,2", price: 6.50, pos_id: "251-2" }
+{ type: "small", label: "0,1", price: 3.50, pos_id: "251-1", is_default: true }
+{ type: "large", label: "0,2", price: 6.50, pos_id: "251-2" }
 
 // Picpoul bottle (item_id: "picpoul_bottle")
-{ variant_type: "here", label: "Here", price: 22.50, pos_id: "3101" }
-{ variant_type: "togo", label: "To Go", price: 11.50, pos_id: "3102" }
+{ type: "here", label: "Here", price: 22.50, pos_id: "3101", bottle_subcategory: "white" }
+{ type: "togo", label: "To Go", price: 11.50, pos_id: "3102", bottle_subcategory: "white" }
 ```
 
 ---
@@ -355,18 +357,11 @@ ALTER TABLE menu_items RENAME COLUMN subcategory TO subcategory_id;
 
 ### Fetch Full Menu (with variants and categories)
 ```javascript
-const menu = await directus.request(
-  readItems('menu_items', {
-    filter: { is_active: { _eq: true } },
-    fields: [
-      '*',
-      'category_id.name',
-      'category_id.sort_order',
-      'variants.*'
-    ],
-    sort: ['category_id.sort_order', 'sort_order']
-  })
-);
+GET /items/menu_items
+  ?fields=*,variants.*,category.name
+  &filter[available][_eq]=true
+  &limit=-1
+  &sort=category.sort_order,id
 ```
 
 ---
