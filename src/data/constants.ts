@@ -791,9 +791,9 @@ export const FOOD_SUBCATEGORIES: Subcategory[] = [
 ];
 
 export const DRINKS_SUBCATEGORIES: Subcategory[] = [
+  { id: "soft", label: "🥤 Soft" },
   { id: "bier", label: "🍺 Bier" },
   { id: "cocktail", label: "🍸 Cocktail" },
-  { id: "soft", label: "🥤 Soft" },
   { id: "schnaps", label: "🥃 Schnaps" },
   { id: "warm", label: "☕ Warm" },
 ];

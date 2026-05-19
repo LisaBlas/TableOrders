@@ -34,10 +34,17 @@ export function MenuGrid({
   }
 
   const grouped = groupBy(filteredItems, "subcategory") as Record<string, MenuItem[]>;
+  const orderedEntries = subcategoryConfig.length > 0
+    ? Object.entries(grouped).sort(([a], [b]) => {
+        const ai = subcategoryConfig.findIndex((s) => s.id === a);
+        const bi = subcategoryConfig.findIndex((s) => s.id === b);
+        return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+      })
+    : Object.entries(grouped);
 
   return (
     <div style={menuGridStyle}>
-      {Object.entries(grouped).map(([subcategoryId, items]) => {
+      {orderedEntries.map(([subcategoryId, items]) => {
         const subcategoryObj = subcategoryConfig.find((subcategory) => subcategory.id === subcategoryId);
         const subcategoryLabel = subcategoryObj?.label || subcategoryId;
 
