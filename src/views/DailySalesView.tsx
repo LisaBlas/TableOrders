@@ -4,7 +4,7 @@ import { useBreakpoint } from "../hooks/useBreakpoint";
 import { S } from "../styles/appStyles";
 import { BillCard } from "../components/BillCard";
 import { SalesSummary } from "../components/SalesSummary";
-import { BackIcon, CalendarIcon, ShareIcon } from "../components/icons";
+import { BackIcon, CalendarIcon } from "../components/icons";
 import { todayBerlinDate } from "../services/directusBills";
 import { aggregateDailySales, type PosEntry } from "../utils/salesAggregation";
 
@@ -231,28 +231,6 @@ export function DailySalesView() {
         </button>
         <span style={S.headerTitle}>Daily Sales</span>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          {paidBills.length > 0 && (
-            <button
-              onClick={handleShare}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                fontSize: 13,
-                fontWeight: 600,
-                border: "1.5px solid #e0e0e0",
-                borderRadius: 8,
-                padding: "4px 10px",
-                background: "#f8f8f8",
-                color: "#1a1a1a",
-                cursor: "pointer",
-                fontFamily: "inherit",
-              }}
-            >
-              <ShareIcon size={15} />
-              Share
-            </button>
-          )}
           <div style={{ position: "relative" }}>
             <button
               onClick={() => dateInputRef.current?.showPicker()}
@@ -307,7 +285,7 @@ export function DailySalesView() {
             </div>
           </div>
 
-          <SalesSummary paidBills={paidBills} />
+          <SalesSummary paidBills={paidBills} onShare={handleShare} />
 
           <div
             style={{ flex: 1, overflow: "hidden", minHeight: 0, touchAction: "pan-y" }}

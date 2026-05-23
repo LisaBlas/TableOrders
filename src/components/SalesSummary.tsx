@@ -1,11 +1,13 @@
+import { ShareIcon } from "./icons";
 import { S } from "../styles/appStyles";
 import type { Bill } from "../types";
 
 interface SalesSummaryProps {
   paidBills: Bill[];
+  onShare?: () => void;
 }
 
-export function SalesSummary({ paidBills }: SalesSummaryProps) {
+export function SalesSummary({ paidBills, onShare }: SalesSummaryProps) {
   const totalTips = paidBills.reduce((sum, bill) => sum + (bill.tip ?? 0), 0);
   const billsWithGutschein = paidBills.filter((bill) => bill.gutschein && bill.gutschein > 0);
   const totalGutschein = billsWithGutschein.reduce((sum, bill) => sum + (bill.gutschein || 0), 0);
@@ -42,6 +44,31 @@ export function SalesSummary({ paidBills }: SalesSummaryProps) {
           {paidBills.reduce((sum, bill) => sum + bill.total, 0).toFixed(2)}€
         </span>
       </div>
+      {onShare && (
+        <button
+          onClick={onShare}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 6,
+            width: "100%",
+            marginTop: 12,
+            fontSize: 15,
+            fontWeight: 700,
+            border: "none",
+            borderRadius: S.sendBtn.borderRadius,
+            padding: "13px",
+            background: S.sendBtn.background,
+            color: S.sendBtn.color,
+            cursor: "pointer",
+            fontFamily: "inherit",
+          }}
+        >
+          <ShareIcon size={16} />
+          Share
+        </button>
+      )}
     </div>
   );
 }
