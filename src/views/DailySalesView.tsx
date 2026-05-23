@@ -4,7 +4,7 @@ import { useBreakpoint } from "../hooks/useBreakpoint";
 import { S } from "../styles/appStyles";
 import { BillCard } from "../components/BillCard";
 import { SalesSummary } from "../components/SalesSummary";
-import { BackIcon, CalendarIcon } from "../components/icons";
+import { BackIcon, CalendarIcon, ShareIcon } from "../components/icons";
 import { todayBerlinDate } from "../services/directusBills";
 import { aggregateDailySales, type PosEntry } from "../utils/salesAggregation";
 
@@ -180,6 +180,40 @@ export function DailySalesView() {
     );
   };
 
+  const handleShare = () => {
+    const totalTips = paidBills.reduce((sum, b) => sum + (b.tip ?? 0), 0);
+    const totalGutschein = paidBills.reduce((sum, b) => sum + (b.gutschein ?? 0), 0);
+    const totalRevenue = paidBills.reduce((sum, b) => sum + b.total, 0);
+
+    const articleMap = new Map<string, number>();
+    for (const bill of paidBills) {
+      for (const item of bill.items) {
+        const name = item.name;
+        articleMap.set(name, (articleMap.get(name) ?? 0) + item.qty);
+      }
+    }
+    const articles = [...articleMap.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([name, qty]) => `${name} × ${qty}`)
+      .join("\n");
+
+    const lines: string[] = [
+      `📊 Daily Sales — ${dateLabel}`,
+      ``,
+      `Bills closed: ${paidBills.length}`,
+      `Total Tips: ${totalTips >= 0 ? "+" : ""}${totalTips.toFixed(2)}€`,
+      ...(totalGutschein > 0 ? [`Vouchers: -${totalGutschein.toFixed(2)}€`] : []),
+      `Total Revenue: ${totalRevenue.toFixed(2)}€`,
+      ``,
+      `Articles sold:`,
+      articles,
+    ];
+
+    navigator.clipboard.writeText(lines.join("\n")).then(() => {
+      app.showToast("📋 Copied to clipboard!");
+    });
+  };
+
   // Responsive styles
   const headerStyle = isTablet || isTabletLandscape || isDesktop ? S.headerTablet : S.header;
   const billsListStyle = isDesktop || isTabletLandscape ? S.billsListTabletLandscape : isTablet ? S.billsListTablet : S.billsList;
@@ -196,35 +230,59 @@ export function DailySalesView() {
           <BackIcon size={22} />
         </button>
         <span style={S.headerTitle}>Daily Sales</span>
-        <div style={{ position: "relative" }}>
-          <button
-            onClick={() => dateInputRef.current?.showPicker()}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              fontSize: 13,
-              fontWeight: 600,
-              border: "1.5px solid #e0e0e0",
-              borderRadius: 8,
-              padding: "4px 10px",
-              background: "#f8f8f8",
-              color: "#1a1a1a",
-              cursor: "pointer",
-              fontFamily: "inherit",
-            }}
-          >
-            <CalendarIcon size={15} />
-            {dateLabel}
-          </button>
-          <input
-            ref={dateInputRef}
-            type="date"
-            value={selectedDate}
-            max={today}
-            onChange={(e) => e.target.value && setSelectedDate(e.target.value)}
-            style={{ position: "absolute", opacity: 0, pointerEvents: "none", width: 0, height: 0 }}
-          />
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {paidBills.length > 0 && (
+            <button
+              onClick={handleShare}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                fontSize: 13,
+                fontWeight: 600,
+                border: "1.5px solid #e0e0e0",
+                borderRadius: 8,
+                padding: "4px 10px",
+                background: "#f8f8f8",
+                color: "#1a1a1a",
+                cursor: "pointer",
+                fontFamily: "inherit",
+              }}
+            >
+              <ShareIcon size={15} />
+              Share
+            </button>
+          )}
+          <div style={{ position: "relative" }}>
+            <button
+              onClick={() => dateInputRef.current?.showPicker()}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                fontSize: 13,
+                fontWeight: 600,
+                border: "1.5px solid #e0e0e0",
+                borderRadius: 8,
+                padding: "4px 10px",
+                background: "#f8f8f8",
+                color: "#1a1a1a",
+                cursor: "pointer",
+                fontFamily: "inherit",
+              }}
+            >
+              <CalendarIcon size={15} />
+              {dateLabel}
+            </button>
+            <input
+              ref={dateInputRef}
+              type="date"
+              value={selectedDate}
+              max={today}
+              onChange={(e) => e.target.value && setSelectedDate(e.target.value)}
+              style={{ position: "absolute", opacity: 0, pointerEvents: "none", width: 0, height: 0 }}
+            />
+          </div>
         </div>
       </header>
 
