@@ -258,6 +258,7 @@ export function DailySalesView() {
     const articleMap = new Map<string, number>();
     for (const bill of paidBills) {
       for (const item of bill.items) {
+        if (item.category !== "Food") continue;
         const name = item.name;
         articleMap.set(name, (articleMap.get(name) ?? 0) + item.qty);
       }
