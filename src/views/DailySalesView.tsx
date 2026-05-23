@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useApp } from "../contexts/AppContext";
 import { useBreakpoint } from "../hooks/useBreakpoint";
 import { S } from "../styles/appStyles";
@@ -6,7 +6,9 @@ import { BillCard } from "../components/BillCard";
 import { SalesSummary } from "../components/SalesSummary";
 import { BackIcon, CalendarIcon } from "../components/icons";
 import { todayBerlinDate } from "../services/directusBills";
-import { aggregateDailySales, type PosEntry } from "../utils/salesAggregation";
+import { aggregateDailySales, comparePosEntries, type PosEntry } from "../utils/salesAggregation";
+
+type ArticleSortMode = "category" | "posId";
 
 export function DailySalesView() {
   const app = useApp();
@@ -28,6 +30,7 @@ export function DailySalesView() {
   const dateInputRef = useRef<HTMLInputElement>(null);
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
+  const [articleSortMode, setArticleSortMode] = useState<ArticleSortMode>("category");
 
   const today = todayBerlinDate();
   const dateLabel = selectedDate === today
@@ -126,6 +129,44 @@ export function DailySalesView() {
       marginBottom: 16
     };
 
+    const getArticleGroup = (item: PosEntry) => item.category === "Food" ? "Food" : "Drinks";
+    const sortedWithPosId = [...withPosId].sort(comparePosEntries);
+    const groupedArticles = {
+      Food: sortedWithPosId.filter((item) => getArticleGroup(item) === "Food"),
+      Drinks: sortedWithPosId.filter((item) => getArticleGroup(item) === "Drinks"),
+    };
+
+    const renderSalesItems = (items: PosEntry[]) => (
+      <div style={salesGridStyle}>
+        {items.map((item) => (
+          <div key={`${item.posId}-${item.posName}-${item.items.join(',')}`} style={{ ...S.billCard, padding: "12px 16px" }}>
+            {renderPosRow(item, "#1a1a1a")}
+          </div>
+        ))}
+      </div>
+    );
+
+    const renderSortButton = (mode: ArticleSortMode, label: string) => (
+      <button
+        type="button"
+        onClick={() => setArticleSortMode(mode)}
+        style={{
+          flex: 1,
+          border: "none",
+          borderRadius: 6,
+          padding: "9px 10px",
+          background: articleSortMode === mode ? "#1a1a1a" : "transparent",
+          color: articleSortMode === mode ? "#fff" : "#666",
+          fontSize: 13,
+          fontWeight: 800,
+          fontFamily: "inherit",
+          cursor: "pointer",
+        }}
+      >
+        {label}
+      </button>
+    );
+
     return (
       <>
         {/* Compact summary */}
@@ -146,8 +187,22 @@ export function DailySalesView() {
               </div>
             )}
             {remainingItemsCount > 0 && (
-              <div style={{ color: "#1a1a1a", fontWeight: 600 }}>
-                {remainingItemsCount} item{remainingItemsCount !== 1 ? 's' : ''} remaining to enter
+              <div style={{ color: "#1a1a1a", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 16,
+                  height: 16,
+                  borderRadius: "50%",
+                  background: "#1a1a1a",
+                  color: "#fff",
+                  fontSize: 11,
+                  fontWeight: 900,
+                  lineHeight: 1,
+                  flexShrink: 0,
+                }}>i</span>
+                <span>{remainingItemsCount} item{remainingItemsCount !== 1 ? 's' : ''} remaining</span>
               </div>
             )}
           </div>
@@ -156,16 +211,31 @@ export function DailySalesView() {
         {/* Sales section */}
         {withPosId.length > 0 && (
           <>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1a1a", marginBottom: 12 }}>
-              Sales
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 12 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1a1a" }}>
+                Sales
+              </div>
+              <div style={{ display: "flex", gap: 2, padding: 2, borderRadius: 8, background: "#f0f0f0", minWidth: 180 }}>
+                {renderSortButton("category", "Category")}
+                {renderSortButton("posId", "POS ID")}
+              </div>
             </div>
-            <div style={salesGridStyle}>
-              {[...withPosId].sort((a, b) => b.qty - a.qty).map((item) => (
-                <div key={`${item.posId}-${item.posName}-${item.items.join(',')}`} style={{ ...S.billCard, padding: "12px 16px" }}>
-                  {renderPosRow(item, "#1a1a1a")}
-                </div>
-              ))}
-            </div>
+            {articleSortMode === "posId" ? renderSalesItems(sortedWithPosId) : (
+              <>
+                {groupedArticles.Food.length > 0 && (
+                  <>
+                    <div style={{ ...S.subcategorySeparator, marginBottom: 10 } as React.CSSProperties}>Food</div>
+                    {renderSalesItems(groupedArticles.Food)}
+                  </>
+                )}
+                {groupedArticles.Drinks.length > 0 && (
+                  <>
+                    <div style={{ ...S.subcategorySeparator, marginBottom: 10 } as React.CSSProperties}>Drinks</div>
+                    {renderSalesItems(groupedArticles.Drinks)}
+                  </>
+                )}
+              </>
+            )}
           </>
         )}
 
@@ -285,8 +355,6 @@ export function DailySalesView() {
             </div>
           </div>
 
-          <SalesSummary paidBills={paidBills} onShare={handleShare} />
-
           <div
             style={{ flex: 1, overflow: "hidden", minHeight: 0, touchAction: "pan-y" }}
             onTouchStart={handleTouchStart}
@@ -301,6 +369,9 @@ export function DailySalesView() {
             }}>
               {/* Tables (chronological) pane */}
               <div style={{ ...billsListStyle, width: "50%", height: "100%", flex: "none" }}>
+                <div style={{ gridColumn: "1 / -1" }}>
+                  <SalesSummary paidBills={paidBills} onShare={handleShare} />
+                </div>
                 {[...paidBills].reverse().map((bill, reverseIdx) => {
                   const billIndex = paidBills.length - 1 - reverseIdx;
                   return (
@@ -321,6 +392,7 @@ export function DailySalesView() {
               </div>
               {/* Articles (total) pane */}
               <div style={{ ...totalTabContainerStyle, width: "50%", height: "100%", flex: "none" }}>
+                <SalesSummary paidBills={paidBills} onShare={handleShare} />
                 {renderTotalTab()}
               </div>
             </div>

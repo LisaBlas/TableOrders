@@ -3,6 +3,7 @@ import type { Bill, OrderItem } from "../types";
 export interface PosEntry {
   posId: string;
   posName: string;
+  category?: string;
   qty: number;
   revenue: number;
   items: string[];
@@ -17,9 +18,10 @@ function addToMap(
 ) {
   if (qty <= 0) return;
 
-  const key = `${posId}::${posName}::${item.name}`;
+  const category = item.category;
+  const key = `${category ?? "Uncategorized"}::${posId}::${posName}::${item.name}`;
   if (!map.has(key)) {
-    map.set(key, { posId, posName, qty: 0, revenue: 0, items: [] });
+    map.set(key, { posId, posName, category, qty: 0, revenue: 0, items: [] });
   }
 
   const entry = map.get(key)!;
@@ -33,12 +35,16 @@ function parsePos(id: string) {
   return { base: parseInt(parts[0]) || 0, suffix: parseInt(parts[1]) || 0 };
 }
 
+export function comparePosEntries(a: PosEntry, b: PosEntry) {
+  const posA = parsePos(a.posId);
+  const posB = parsePos(b.posId);
+  if (posA.base !== posB.base) return posA.base - posB.base;
+  if (posA.suffix !== posB.suffix) return posA.suffix - posB.suffix;
+  return a.posName.localeCompare(b.posName);
+}
+
 function sortPosEntries(map: Map<string, PosEntry>) {
-  return Array.from(map.values()).sort((a, b) => {
-    const posA = parsePos(a.posId);
-    const posB = parsePos(b.posId);
-    return posA.base !== posB.base ? posA.base - posB.base : posA.suffix - posB.suffix;
-  });
+  return Array.from(map.values()).sort(comparePosEntries);
 }
 
 export function isMissingPosId(id: string) {
@@ -78,4 +84,3 @@ export function aggregateDailySales(paidBills: Bill[]) {
     missingPosId: activeAll.filter((item) => isMissingPosId(item.posId)),
   };
 }
-
