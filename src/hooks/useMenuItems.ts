@@ -25,6 +25,14 @@ function getWineTypeOrder(item: MenuItem) {
   return wineType ? WINE_TYPE_ORDER[wineType] ?? 99 : 99;
 }
 
+function hasGlassWineVariants(item: MenuItem) {
+  return item.variants?.some((v) => v.label === "0,1" || v.label === "0,2") ?? false;
+}
+
+function getVariantWineType(item: MenuItem) {
+  return item.variants?.find((v) => v.bottleSubcategory)?.bottleSubcategory;
+}
+
 export function useMenuItems({ activeCategory, searchQuery }: UseMenuItemsParams): MenuItem[] {
   const { menu: MENU } = useMenu();
 
@@ -51,22 +59,22 @@ export function useMenuItems({ activeCategory, searchQuery }: UseMenuItemsParams
     // keeps the tab working regardless of whether the Directus migration has happened.
     if (activeCategory === "Wines") {
       const glassWines = (MENU["Drinks"] ?? [])
-        .filter((item) => item.variants?.some((v) => v.bottleSubcategory))
+        .filter((item) => hasGlassWineVariants(item))
         .map((item) => ({
           ...item,
           category: "Wines",
           subcategory: "glass",
-          wineType: item.variants?.find((v) => v.bottleSubcategory)?.bottleSubcategory,
+          wineType: getVariantWineType(item) ?? item.subcategory,
         }));
 
       const winesEntries = (MENU["Wines"] ?? []).map((item) => {
-        const isGlass = item.variants?.some((v) => v.bottleSubcategory);
+        const isGlass = hasGlassWineVariants(item);
         return isGlass
           ? {
               ...item,
               category: "Wines",
               subcategory: "glass",
-              wineType: item.variants?.find((v) => v.bottleSubcategory)?.bottleSubcategory,
+              wineType: getVariantWineType(item) ?? item.subcategory,
             }
           : {
               ...item,
