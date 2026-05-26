@@ -158,7 +158,7 @@ export function OrderView() {
       </div>
 
       {searchQuery ? (
-        <div style={{ ...S.orderContent, paddingBottom: (unsent.length > 0 || batches.length > 0) ? 180 : 36 }}>
+        <div style={{ ...S.orderContent, paddingBottom: (unsent.length > 0 || batches.length > 0) ? 220 : 36 }}>
           <MenuGrid
             filteredItems={filteredItems}
             subcategoryConfig={subcategoryConfig}
@@ -189,7 +189,7 @@ export function OrderView() {
                   width: `${paneWidthPct}%`,
                   height: "100%",
                   flex: "none",
-                  paddingBottom: (unsent.length > 0 || batches.length > 0) ? 180 : 36,
+                  paddingBottom: (unsent.length > 0 || batches.length > 0) ? 220 : 36,
                 }}
               >
                 <MenuGrid
