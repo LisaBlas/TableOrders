@@ -82,7 +82,7 @@ export function useMenuItems({ activeCategory, searchQuery }: UseMenuItemsParams
     // Drinks tab: exclude wine items (shown in Wines tab) and strip bottleSubcategory variants
     if (activeCategory === "Drinks") {
       return (MENU["Drinks"] ?? [])
-        .map((item) => {
+        .map((item): MenuItem | null => {
           if (item.subcategory === "wine") return null;
           if (item.variants) {
             const filteredVariants = item.variants.filter((v) => !v.bottleSubcategory);

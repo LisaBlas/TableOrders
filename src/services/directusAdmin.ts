@@ -80,7 +80,7 @@ export async function patchVariant(id: number, patch: Record<string, unknown>): 
 }
 
 export async function createVariant(data: {
-  item_id: string;
+  item: string;
   label: string;
   price: number;
   type: string;
@@ -121,7 +121,7 @@ export async function createMenuItem(data: {
 
   // Re-fetch with nested fields so the returned item matches AdminMenuItem shape
   const fullRes = await directusFetch(
-    `/items/menu_items/${created.id}?fields=*,variants.*,category.name`,
+    `/items/menu_items/${created.id}?fields=*,variants.*,category.id,category.name`,
     { headers: getHeaders() }
   );
   if (!fullRes.ok) return { ...created, variants: [] };

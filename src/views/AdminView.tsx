@@ -45,6 +45,55 @@ const VARIANT_OPTIONS: Record<string, { label: string; posIdSuffix: string }[]> 
   ],
 };
 
+function getVariantType(categoryName: string, label: string): string {
+  if (label === "Here") return "here";
+  if (label === "Fl. To Go") return "togo";
+  if (categoryName === "Wines") {
+    if (label === "0,1") return "small";
+    if (label === "0,2") return "large";
+  }
+  if (categoryName === "Drinks") {
+    if (label === "0,2") return "small";
+    if (label === "0,4") return "large";
+  }
+  return label.trim().toLowerCase().replace(/\s+/g, "_");
+}
+
+function getVariantPosId(categoryName: string, label: string, basePosId: string): string | null {
+  const suffix = VARIANT_OPTIONS[categoryName]?.find((o) => o.label === label)?.posIdSuffix;
+  const base = basePosId.trim();
+  return base && suffix !== undefined ? `${base}${suffix}` : null;
+}
+
+function getVariantPosName(label: string, shortName: string, name: string): string {
+  const base = shortName.trim() || name.trim();
+  if (label === "Here") return `${base} Fl.`;
+  if (label === "Fl. To Go") return `${base} Fl. To Go`;
+  return `${base} ${label}`;
+}
+
+function getWineVariantRows(serving: "glass" | "bottle"): VariantRowData[] {
+  const bottleRows = [
+    { label: "Here",      price: "", bottleSubcategory: "" },
+    { label: "Fl. To Go", price: "", bottleSubcategory: "" },
+  ];
+  return serving === "glass"
+    ? [
+        ...bottleRows,
+        { label: "0,1", price: "", bottleSubcategory: "" },
+        { label: "0,2", price: "", bottleSubcategory: "" },
+      ]
+    : bottleRows;
+}
+
+function isStandardWineVariant(label: string): boolean {
+  return label === "Here" || label === "Fl. To Go" || label === "0,1" || label === "0,2";
+}
+
+function isStandardDrinkVariant(label: string): boolean {
+  return label === "0,2" || label === "0,4";
+}
+
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 function groupByCategory(
@@ -338,7 +387,7 @@ function EditItemModal({
       ]);
       const newRows = glassLabels
         .filter((l) => !existingLabels.has(l))
-        .map((l) => ({ label: l, price: "", bottleSubcategory: "" }));
+        .map((l) => ({ label: l, price: "", bottleSubcategory: form.subcategory || item.subcategory || "" }));
       setForm((f) => ({ ...f, newVariantRows: [...f.newVariantRows, ...newRows] }));
     } else {
       const glassLabels = new Set(catName === "Wines" ? ["0,1", "0,2"] : ["0,2", "0,4"]);
@@ -384,13 +433,13 @@ function EditItemModal({
       const createdVariants = await Promise.all(
         validNewRows.map((row) =>
           createVariant({
-            item_id: item.id,
+            item: item.id,
             label: row.label.trim(),
             price: parseFloat(row.price),
-            type: "",
-            pos_id: null,
-            pos_name: null,
-            bottle_subcategory: row.bottleSubcategory || null,
+            type: getVariantType(catName, row.label),
+            pos_id: getVariantPosId(catName, row.label, form.posId),
+            pos_name: getVariantPosName(row.label, form.shortName, form.name),
+            bottle_subcategory: catName === "Wines" ? (form.subcategory || item.subcategory || null) : (row.bottleSubcategory || null),
             is_default: false,
           })
         )
@@ -574,8 +623,8 @@ function EditItemModal({
             {/* New variant rows */}
             {form.newVariantRows.length > 0 && (
               <div style={{ borderTop: `1px solid ${colors.border}`, paddingTop: 10, marginTop: 6 }}>
-                <div style={{ display: "grid", gridTemplateColumns: catName === "Wines" ? `1fr 80px 100px${form.posId ? " 72px" : ""} auto` : `1fr 80px${form.posId ? " 72px" : ""} auto`, gap: 8, fontSize: 11, color: colors.muted, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>
-                  <span>Label</span><span>Price</span>{catName === "Wines" && <span>Wine type</span>}{form.posId && <span>POS ID</span>}<span />
+                <div style={{ display: "grid", gridTemplateColumns: `1fr 80px${form.posId ? " 72px" : ""} auto`, gap: 8, fontSize: 11, color: colors.muted, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>
+                  <span>Label</span><span>Price</span>{form.posId && <span>POS ID</span>}<span />
                 </div>
                 {form.newVariantRows.map((row, i) => (
                   <VariantRowInput
@@ -585,6 +634,11 @@ function EditItemModal({
                     canRemove={true}
                     categoryName={catName}
                     basePosId={form.posId}
+                    hideWineType
+                    lockLabel={
+                      (catName === "Wines" && isStandardWineVariant(row.label)) ||
+                      (catName === "Drinks" && isStandardDrinkVariant(row.label))
+                    }
                     onChange={(patch) =>
                       setForm((f) => ({
                         ...f,
@@ -710,6 +764,8 @@ function VariantRowInput({
   onChange,
   onRemove,
   basePosId,
+  hideWineType = false,
+  lockLabel = false,
 }: {
   row: VariantRowData;
   index: number;
@@ -718,9 +774,11 @@ function VariantRowInput({
   onChange: (patch: Partial<VariantRowData>) => void;
   onRemove: () => void;
   basePosId?: string;
+  hideWineType?: boolean;
+  lockLabel?: boolean;
 }) {
   const variantOpts = VARIANT_OPTIONS[categoryName];
-  const showWineType = categoryName === "Wines";
+  const showWineType = categoryName === "Wines" && !hideWineType;
   const derivedSuffix = basePosId !== undefined
     ? VARIANT_OPTIONS[categoryName]?.find((o) => o.label === row.label)?.posIdSuffix
     : undefined;
@@ -733,8 +791,9 @@ function VariantRowInput({
       {variantOpts ? (
         <select
           value={row.label}
+          disabled={lockLabel}
           onChange={(e) => onChange({ label: e.target.value })}
-          style={{ ...inputStyle, fontSize: 14, appearance: "auto" }}
+          style={{ ...inputStyle, fontSize: 14, appearance: "auto", cursor: lockLabel ? "default" : "pointer" }}
         >
           {variantOpts.map((o) => (
             <option key={o.label} value={o.label}>{o.label}</option>
@@ -744,6 +803,7 @@ function VariantRowInput({
         <input
           type="text"
           value={row.label}
+          readOnly={lockLabel}
           onChange={(e) => onChange({ label: e.target.value })}
           placeholder="Label"
           style={{ ...inputStyle, fontSize: 14 }}
@@ -1126,45 +1186,41 @@ function NewItemModal({
   onCreated: (item: AdminMenuItem) => void;
 }) {
   const defaultCat = categories.find((c) => c.id === defaultCategoryId) ?? categories[0];
+  const isDefaultWine = defaultCat?.name === "Wines";
   const [categoryId, setCategoryId] = useState<number>(defaultCat?.id ?? 0);
   const [name, setName] = useState("");
   const [shortName, setShortName] = useState("");
   const [subcategory, setSubcategory] = useState("");
-  const [mode, setMode] = useState<"simple" | "variants">("simple");
+  const [mode, setMode] = useState<"simple" | "variants">(isDefaultWine ? "variants" : "simple");
   const [wineServing, setWineServing] = useState<"glass" | "bottle">("bottle");
   const [price, setPrice] = useState("");
   const [basePosId, setBasePosId] = useState("");
-  const [variantRows, setVariantRows] = useState<VariantRowData[]>([
-    { label: "Bottle", price: "", bottleSubcategory: "" },
-  ]);
+  const [variantRows, setVariantRows] = useState<VariantRowData[]>(
+    isDefaultWine ? getWineVariantRows("bottle") : [{ label: "Bottle", price: "", bottleSubcategory: "" }]
+  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const categoryName = categories.find((c) => c.id === categoryId)?.name ?? "";
 
   const handleCategoryChange = (id: number) => {
+    const nextCategoryName = categories.find((c) => c.id === id)?.name ?? "";
     setCategoryId(id);
     setSubcategory("");
     setWineServing("bottle");
-    setMode("simple");
+    if (nextCategoryName === "Wines") {
+      setMode("variants");
+      setVariantRows(getWineVariantRows("bottle"));
+    } else {
+      setMode("simple");
+      setVariantRows([{ label: "Bottle", price: "", bottleSubcategory: "" }]);
+    }
   };
 
   const handleWineServingChange = (serving: "glass" | "bottle") => {
     setWineServing(serving);
     setMode("variants");
-    if (serving === "glass") {
-      setVariantRows([
-        { label: "Here",      price: "", bottleSubcategory: "" },
-        { label: "Fl. To Go", price: "", bottleSubcategory: "" },
-        { label: "0,1",       price: "", bottleSubcategory: "" },
-        { label: "0,2",       price: "", bottleSubcategory: "" },
-      ]);
-    } else {
-      setVariantRows([
-        { label: "Here",      price: "", bottleSubcategory: "" },
-        { label: "Fl. To Go", price: "", bottleSubcategory: "" },
-      ]);
-    }
+    setVariantRows(getWineVariantRows(serving));
   };
 
   const handleModeChange = (m: "simple" | "variants") => {
@@ -1209,19 +1265,19 @@ function NewItemModal({
           const suffix = (VARIANT_OPTIONS[categoryName] ?? []).find((o) => o.label === row.label)?.posIdSuffix ?? "";
           const posId = basePosId.trim() ? `${basePosId.trim()}${suffix}` : null;
           await createVariant({
-            item_id: created.id,
+            item: created.id,
             label: row.label,
             price: parseFloat(row.price),
-            type: "",
+            type: getVariantType(categoryName, row.label),
             pos_id: posId,
-            pos_name: null,
-            bottle_subcategory: row.bottleSubcategory || null,
+            pos_name: getVariantPosName(row.label, shortName, name),
+            bottle_subcategory: categoryName === "Wines" ? (subcategory || null) : (row.bottleSubcategory || null),
             is_default: false,
           });
         }
         // Re-fetch the item so variants are included in the returned object
         const refreshed = await directusFetch(
-          `/items/menu_items/${created.id}?fields=*,variants.*,category.name`
+          `/items/menu_items/${created.id}?fields=*,variants.*,category.id,category.name`
         ).then((r) => r.json()).then((r) => ({ ...r.data, variants: r.data.variants ?? [] }));
         onCreated(refreshed);
       } else {
@@ -1235,8 +1291,15 @@ function NewItemModal({
     }
   };
 
+  const hasRequiredWineBottlePrices =
+    categoryName !== "Wines" ||
+    ["Here", "Fl. To Go"].every((label) =>
+      variantRows.some((row) => row.label === label && row.price !== "")
+    );
+
   const canSubmit = name.trim() &&
-    (mode === "simple" || variantRows.some((r) => r.price !== ""));
+    (mode === "simple" || variantRows.some((r) => r.price !== "")) &&
+    hasRequiredWineBottlePrices;
 
   return (
     <div
@@ -1344,10 +1407,9 @@ function NewItemModal({
           <div style={{ marginBottom: 14 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
               <label style={{ ...labelStyle, marginBottom: 0 }}>Variants</label>
-              <div style={{ display: "grid", gridTemplateColumns: categoryName === "Wines" ? "1fr 80px 100px 32px" : "1fr 80px 32px", gap: 8, fontSize: 11, color: colors.muted, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 80px 32px", gap: 8, fontSize: 11, color: colors.muted, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
                 <span>Label</span>
                 <span>Price</span>
-                {categoryName === "Wines" && <span>Wine type</span>}
                 <span />
               </div>
             </div>
@@ -1356,8 +1418,17 @@ function NewItemModal({
                 key={i}
                 row={row}
                 index={i}
-                canRemove={variantRows.length > 1}
+                canRemove={
+                  variantRows.length > 1 &&
+                  !(categoryName === "Wines" && isStandardWineVariant(row.label)) &&
+                  !(categoryName === "Drinks" && isStandardDrinkVariant(row.label))
+                }
                 categoryName={categoryName}
+                hideWineType={categoryName === "Wines"}
+                lockLabel={
+                  (categoryName === "Wines" && isStandardWineVariant(row.label)) ||
+                  (categoryName === "Drinks" && isStandardDrinkVariant(row.label))
+                }
                 onChange={(patch) => updateVariantRow(i, patch)}
                 onRemove={() => removeVariantRow(i)}
               />

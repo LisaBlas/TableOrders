@@ -66,7 +66,7 @@
 
 **Relationships:**
 - M2O → `categories.id`
-- O2M → `menu_item_variants.item_id`
+- O2M → `menu_item_variants.item`
 
 **Key Patterns:**
 - No variants → `price` is set, `variants` array is empty
@@ -91,7 +91,7 @@ GET /items/menu_items
 ```typescript
 {
   id: number (PK),
-  item_id: string,              // FK → menu_items.id
+  item: string,                 // FK → menu_items.id
   type: string,                 // "small", "large", "here", "togo"
   label: string,                // "0,1", "0,2", "Here", "To Go"
   price: decimal,               // Variant-specific price
