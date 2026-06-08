@@ -91,6 +91,37 @@ function billFromDirectus(d: any): Bill {
   };
 }
 
+export async function fetchBillsByDateRange(startDate: string, endDate: string): Promise<Bill[]> {
+  if (IS_DEMO_MODE) {
+    const days: string[] = [];
+    let cur = startDate;
+    while (cur <= endDate) {
+      days.push(cur);
+      const [y, m, d] = cur.split("-").map(Number);
+      const next = new Date(Date.UTC(y, m - 1, d + 1));
+      cur = next.toISOString().slice(0, 10);
+    }
+    const results = await Promise.all(days.map((d) => demo.fetchBillsByDate(d)));
+    return results.flat();
+  }
+  const { gte } = berlinDayBoundsUTC(startDate);
+  const { lte } = berlinDayBoundsUTC(endDate);
+
+  const res = await directusFetch(
+    `/items/bills`
+    + `?filter[timestamp][_gte]=${gte}`
+    + `&filter[timestamp][_lte]=${lte}`
+    + `&fields=*,items.*`
+    + `&sort=timestamp`
+    + `&limit=-1`
+  );
+
+  if (!res.ok) throw new Error(`Directus bills ${res.status}`);
+  const { data: bills } = await res.json();
+
+  return bills.map((b: any) => billFromDirectus(b));
+}
+
 export async function fetchBillsByDate(berlinDate: string): Promise<Bill[]> {
   if (IS_DEMO_MODE) return demo.fetchBillsByDate(berlinDate);
   const { gte, lte } = berlinDayBoundsUTC(berlinDate);

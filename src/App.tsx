@@ -17,6 +17,7 @@ import { SplitItemView } from "./views/SplitItemView";
 import { SplitConfirmView } from "./views/SplitConfirmView";
 import { SplitDoneView } from "./views/SplitDoneView";
 import { DailySalesView } from "./views/DailySalesView";
+import { AnalyticsView } from "./views/AnalyticsView";
 import { AdminView } from "./views/AdminView";
 import LoginView from "./views/LoginView";
 import { Toast } from "./components/Toast";
@@ -147,6 +148,8 @@ function Router() {
         setView('order');
       } else if (v === 'dailySales') {
         setView('tables');
+      } else if (v === 'analytics') {
+        setView('tables');
       } else if (v === 'admin') {
         setView('tables');
       } else if (v === 'split') {
@@ -221,6 +224,11 @@ function Router() {
       {view === "dailySales" && (
         <ErrorBoundary inline>
           <DailySalesView />
+        </ErrorBoundary>
+      )}
+      {view === "analytics" && (
+        <ErrorBoundary inline>
+          <AnalyticsView />
         </ErrorBoundary>
       )}
       {view === "admin" && <AdminView />}

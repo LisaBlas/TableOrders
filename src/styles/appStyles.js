@@ -1428,6 +1428,26 @@ export const S = {
     fontFamily: "inherit",
   },
 
+  salesTipsBlock: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTop: `1px solid ${colors.border}`,
+  },
+  salesTipsLabel: {
+    fontSize: 13,
+    fontWeight: 600,
+    color: colors.muted,
+  },
+  salesTipsAmt: {
+    fontSize: 22,
+    fontWeight: 800,
+  },
+  salesTipsHint: {
+    fontSize: 12,
+    color: colors.muted,
+    marginTop: 3,
+  },
+
   // Bills list
   billsList: _billsList,
   billsListTablet: {

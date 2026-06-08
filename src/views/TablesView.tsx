@@ -12,7 +12,7 @@ import { TableCard } from "../components/TableCard";
 import { SwapSheet } from "../components/SwapSheet";
 import { Modal } from "../components/Modal";
 import { S } from "../styles/appStyles";
-import { LogoutIcon, SalesIcon } from "../components/icons";
+import { LogoutIcon, SalesIcon, BarChartIcon } from "../components/icons";
 import type { TableId, TableConfig, TableEntry } from "../types";
 
 const DESTINATION_ORDER = ["bar", "counter", "kitchen"] as const;
@@ -164,7 +164,27 @@ export function TablesView() {
             onClick={() => setView("dailySales")}
           >
             <SalesIcon size={15} color="#555" />
-            Sales
+            Shift
+          </button>
+          <button
+            style={{
+              background: "none",
+              border: "1.5px solid #ddd",
+              borderRadius: 8,
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: "pointer",
+              padding: "7px 10px",
+              lineHeight: 1,
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+              color: "#555",
+            }}
+            onClick={() => setView("analytics")}
+          >
+            <BarChartIcon size={15} color="#555" />
+            Sales Trends
           </button>
           <button
             style={{

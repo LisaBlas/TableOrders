@@ -2,11 +2,12 @@ import { useRef, useState } from "react";
 import { useApp } from "../contexts/AppContext";
 import { useBreakpoint } from "../hooks/useBreakpoint";
 import { S } from "../styles/appStyles";
+import { colors, radii } from "../styles/tokens";
 import { BillCard } from "../components/BillCard";
 import { SalesSummary } from "../components/SalesSummary";
 import { BackIcon, CalendarIcon } from "../components/icons";
 import { todayBerlinDate } from "../services/directusBills";
-import { aggregateDailySales, comparePosEntries, type PosEntry } from "../utils/salesAggregation";
+import { aggregateDailySales, comparePosEntries, isMissingPosId, type PosEntry } from "../utils/salesAggregation";
 
 type ArticleSortMode = "category" | "posId";
 
@@ -55,110 +56,114 @@ export function DailySalesView() {
     else if (dx > 0 && tabIndex > 0) setDailySalesTab(tabOrder[tabIndex - 1]);
   };
 
-  // Total tab aggregation - by POS ID for easy POS entry
   const renderTotalTab = () => {
-    const { addedToPOSBills, withPosId, missingPosId } = aggregateDailySales(paidBills);
+    const { addedToPOSBills, withPosId, missingPosId, uncategorised } = aggregateDailySales(paidBills);
 
-    // Calculate summary stats
     const addedItemsCount = addedToPOSBills.reduce((sum, bill) => {
       return sum + bill.items.reduce((itemSum, item) => {
-        if (bill.addedToPOS) {
-          // If entire bill is marked as added, count all items
-          return itemSum + item.qty;
-        } else {
-          // Otherwise only count crossed items
-          const crossedQty = item.crossedQty ?? (item.crossed ? item.qty : 0);
-          return itemSum + crossedQty;
-        }
+        if (bill.addedToPOS) return itemSum + item.qty;
+        const crossedQty = item.crossedQty ?? (item.crossed ? item.qty : 0);
+        return itemSum + crossedQty;
       }, 0);
     }, 0);
 
-    const remainingItemsCount = withPosId.reduce((sum, entry) => sum + entry.qty, 0);
+    const allCategoryItems = [...withPosId, ...missingPosId].sort(comparePosEntries);
+    const allItems = [...withPosId, ...missingPosId, ...uncategorised].sort(comparePosEntries);
+    const remainingItemsCount = allItems.reduce((sum, entry) => sum + entry.qty, 0);
+    const getArticleGroup = (item: PosEntry) => item.category === "Food" ? "Food" : "Drinks";
+    const groupedArticles = {
+      Food: allCategoryItems.filter((item) => getArticleGroup(item) === "Food"),
+      Drinks: allCategoryItems.filter((item) => getArticleGroup(item) === "Drinks"),
+    };
 
-    const renderPosRow = (item: PosEntry, color: string, compact?: boolean) => (
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-        <span style={{ fontFamily: "monospace", fontSize: compact ? 14 : 20, fontWeight: 900, color, width: compact ? "6ch" : "8ch", flexShrink: 0 }}>
-          [{item.posId}]
+
+    const renderPosRow = (item: PosEntry, panelIsMissing = false) => {
+      const isMissing = panelIsMissing || isMissingPosId(item.posId);
+      return (
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "minmax(58px, 74px) minmax(0, 1fr) auto",
+          alignItems: "center",
+          gap: 10,
+          padding: "10px 0",
+          minHeight: 48,
+        }}
+      >
+        <span style={{ fontFamily: "monospace", fontSize: 15, fontWeight: 800, color: isMissing ? colors.danger : colors.fg, letterSpacing: 0 }}>
+          [{isMissing ? "???" : (item.posId ?? "--")}]
         </span>
-        <span style={{ flex: 1, fontSize: compact ? 12 : 15, fontWeight: 600, color }}>
-          {item.posName}
+        <span style={{ minWidth: 0, fontSize: 13, fontWeight: 600, color: colors.fg, lineHeight: 1.25 }}>
+          <span style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {item.posName}
+          </span>
           {item.items[0] && item.items[0] !== item.posName && (
-            <span style={{ display: "block", fontSize: compact ? 10 : 12, fontWeight: 400, color: "#999" }}>{item.items[0]}</span>
+            <span style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 11, fontWeight: 400, color: colors.muted }}>
+              {item.items[0]}
+            </span>
           )}
         </span>
-        <span style={{
-          fontSize: compact ? 13 : 15,
-          fontWeight: 800,
-          color: color === "#e07b5a" ? "#e07b5a" : "#fff",
-          background: color === "#e07b5a" ? "#fdeee8" : "#1a1a1a",
-          borderRadius: 20,
-          padding: compact ? "2px 8px" : "4px 12px",
-          minWidth: compact ? 28 : 36,
-          textAlign: "center",
-          flexShrink: 0,
-        }}>×{item.qty}</span>
+        <span
+          style={{
+            fontSize: 12,
+            fontWeight: 700,
+            color: isMissing ? colors.danger : colors.surface,
+            background: isMissing ? colors.dangerBg : colors.fg,
+            border: isMissing ? `1px solid ${colors.dangerBg}` : `1px solid ${colors.fg}`,
+            borderRadius: radii.pill,
+            padding: "3px 9px",
+            minWidth: 34,
+            textAlign: "center" as const,
+            flexShrink: 0,
+          }}
+        >
+          x{item.qty}
+        </span>
       </div>
-    );
+      );
+    };
 
-    const renderGroup = (items: PosEntry[], isMissing: boolean) => {
+    const renderPanel = (title: string, items: PosEntry[], isMissing = false) => {
       if (items.length === 0) return null;
-      const color = isMissing ? "#e07b5a" : "#1a1a1a";
       return (
-        <div style={{ ...S.billCard, ...(isMissing ? { borderLeft: "4px solid #e07b5a" } : {}) }}>
+        <div
+          style={{
+            background: colors.surface,
+            border: `1px solid ${isMissing ? "#f0d1cd" : colors.border}`,
+            borderRadius: radii.lg,
+            padding: "14px 16px",
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, marginBottom: 4 }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: isMissing ? colors.danger : colors.fg }}>
+              {title}
+            </span>
+            <span style={{ fontSize: 12, color: colors.muted }}>
+              {items.reduce((sum, item) => sum + item.qty, 0)} items
+            </span>
+          </div>
           {items.map((item, idx) => (
-            <div key={`${item.posId ?? 'missing'}-${item.posName}-${item.items.join(',')}`}>
-              {idx > 0 && <div style={S.divider} />}
-              {renderPosRow(item, color)}
+            <div key={`${item.posId ?? "missing"}-${item.posName}-${item.items.join(",")}`}>
+              {idx > 0 && <div style={{ height: 1, background: colors.border }} />}
+              {renderPosRow(item, isMissing)}
             </div>
           ))}
         </div>
       );
     };
 
-    const isWideScreen = isDesktop || isTabletLandscape || isTablet;
-
-    const salesGridStyle = isWideScreen ? {
-      display: "grid",
-      gridTemplateColumns: isDesktop ? "repeat(3, 1fr)" : "repeat(2, 1fr)",
-      gap: 12,
-      marginBottom: 16
-    } : {
-      display: "flex",
-      flexDirection: "column" as const,
-      gap: 12,
-      marginBottom: 16
-    };
-
-    const getArticleGroup = (item: PosEntry) => item.category === "Food" ? "Food" : "Drinks";
-    const sortedWithPosId = [...withPosId].sort(comparePosEntries);
-    const groupedArticles = {
-      Food: sortedWithPosId.filter((item) => getArticleGroup(item) === "Food"),
-      Drinks: sortedWithPosId.filter((item) => getArticleGroup(item) === "Drinks"),
-    };
-
-    const renderSalesItems = (items: PosEntry[]) => (
-      <div style={salesGridStyle}>
-        {items.map((item) => (
-          <div key={`${item.posId}-${item.posName}-${item.items.join(',')}`} style={{ ...S.billCard, padding: "12px 16px" }}>
-            {renderPosRow(item, "#1a1a1a")}
-          </div>
-        ))}
-      </div>
-    );
-
     const renderSortButton = (mode: ArticleSortMode, label: string) => (
       <button
         type="button"
         onClick={() => setArticleSortMode(mode)}
         style={{
-          flex: 1,
-          border: "none",
-          borderRadius: 6,
-          padding: "9px 10px",
-          background: articleSortMode === mode ? "#1a1a1a" : "transparent",
-          color: articleSortMode === mode ? "#fff" : "#666",
-          fontSize: 13,
-          fontWeight: 800,
+          border: `1px solid ${articleSortMode === mode ? colors.fg : colors.border}`,
+          borderRadius: radii.pill,
+          padding: "5px 12px",
+          background: articleSortMode === mode ? colors.fg : "transparent",
+          color: articleSortMode === mode ? colors.surface : colors.fg,
+          fontSize: 12,
+          fontWeight: articleSortMode === mode ? 700 : 500,
           fontFamily: "inherit",
           cursor: "pointer",
         }}
@@ -169,129 +174,81 @@ export function DailySalesView() {
 
     return (
       <>
-        {/* Compact summary */}
         {(addedItemsCount > 0 || remainingItemsCount > 0) && (
-          <div style={{
-            background: "#e8f4fc",
-            border: "1px solid #c2dcf5",
-            borderRadius: 8,
-            padding: "12px 16px",
-            marginTop: 16,
-            marginBottom: 16,
-            fontSize: 13,
-            lineHeight: 1.6
-          }}>
-            {addedItemsCount > 0 && (
-              <div style={{ color: "#3498db", fontWeight: 600 }}>
-                ✓ {addedItemsCount} item{addedItemsCount !== 1 ? 's' : ''} added during shift ({addedToPOSBills.length} bill{addedToPOSBills.length !== 1 ? 's' : ''})
-              </div>
-            )}
+          <div
+            style={{
+              background: colors.surface,
+              border: `1px solid ${colors.border}`,
+              borderRadius: radii.lg,
+              padding: "12px 16px",
+              margin: "12px 0",
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 8,
+              alignItems: "center",
+              fontSize: 12,
+              color: colors.muted,
+            }}
+          >
             {remainingItemsCount > 0 && (
-              <div style={{ color: "#1a1a1a", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: 16,
-                  height: 16,
-                  borderRadius: "50%",
-                  background: "#1a1a1a",
-                  color: "#fff",
-                  fontSize: 11,
-                  fontWeight: 900,
-                  lineHeight: 1,
-                  flexShrink: 0,
-                }}>i</span>
-                <span>{remainingItemsCount} item{remainingItemsCount !== 1 ? 's' : ''} remaining</span>
-              </div>
+              <span style={{ background: colors.fg, color: colors.surface, borderRadius: radii.pill, padding: "4px 10px", fontWeight: 700 }}>
+                {remainingItemsCount} remaining
+              </span>
             )}
+            {addedItemsCount > 0 && (
+              <span style={{ background: colors.successBg, color: colors.success, borderRadius: radii.pill, padding: "4px 10px", fontWeight: 700 }}>
+                {addedItemsCount} added
+              </span>
+            )}
+            <span>POS crossing status</span>
           </div>
         )}
 
-        {/* Sales section */}
-        {withPosId.length > 0 && (
-          <>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 12 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1a1a" }}>
-                Sales
+        {allItems.length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: colors.fg }}>Articles Sold</div>
+                <div style={{ fontSize: 12, color: colors.muted, marginTop: 2 }}>{remainingItemsCount} items to cross</div>
               </div>
-              <div style={{ display: "flex", gap: 2, padding: 2, borderRadius: 8, background: "#f0f0f0", minWidth: 180 }}>
+              <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                 {renderSortButton("category", "Category")}
                 {renderSortButton("posId", "POS ID")}
               </div>
             </div>
-            {articleSortMode === "posId" ? renderSalesItems(sortedWithPosId) : (
-              <>
-                {groupedArticles.Food.length > 0 && (
-                  <>
-                    <div style={{ ...S.subcategorySeparator, marginBottom: 10 } as React.CSSProperties}>Food</div>
-                    {renderSalesItems(groupedArticles.Food)}
-                  </>
-                )}
-                {groupedArticles.Drinks.length > 0 && (
-                  <>
-                    <div style={{ ...S.subcategorySeparator, marginBottom: 10 } as React.CSSProperties}>Drinks</div>
-                    {renderSalesItems(groupedArticles.Drinks)}
-                  </>
-                )}
-              </>
+            {articleSortMode === "posId" ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {renderPanel("All POS IDs", allItems)}
+              </div>
+            ) : (isDesktop || isTabletLandscape) ? (
+              <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 12 }}>
+                  {uncategorised.length > 0 && renderPanel("Uncategorised", uncategorised, true)}
+                  {renderPanel("Drinks", groupedArticles.Drinks)}
+                </div>
+                <div style={{ flex: 1 }}>
+                  {renderPanel("Food", groupedArticles.Food)}
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {uncategorised.length > 0 && renderPanel("Uncategorised", uncategorised, true)}
+                {renderPanel("Food", groupedArticles.Food)}
+                {renderPanel("Drinks", groupedArticles.Drinks)}
+              </div>
             )}
-          </>
-        )}
-
-        {/* Missing POS IDs */}
-        {missingPosId.length > 0 && (
-          <>
-            <div style={{ ...S.subcategorySeparator, color: "#e07b5a" } as React.CSSProperties}>⚠️ Missing POS IDs</div>
-            {renderGroup(missingPosId, true)}
-          </>
+          </div>
         )}
       </>
     );
   };
 
-  const handleShare = () => {
-    const totalTips = paidBills.reduce((sum, b) => sum + (b.tip ?? 0), 0);
-    const totalGutschein = paidBills.reduce((sum, b) => sum + (b.gutschein ?? 0), 0);
-    const totalRevenue = paidBills.reduce((sum, b) => sum + b.total, 0);
-
-    const articleMap = new Map<string, number>();
-    for (const bill of paidBills) {
-      for (const item of bill.items) {
-        if (item.category && item.category !== "Food") continue;
-        const name = item.name;
-        articleMap.set(name, (articleMap.get(name) ?? 0) + item.qty);
-      }
-    }
-    const articles = [...articleMap.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .map(([name, qty]) => `${name} × ${qty}`)
-      .join("\n");
-
-    const lines: string[] = [
-      `📊 Daily Sales — ${dateLabel}`,
-      ``,
-      `Bills closed: ${paidBills.length}`,
-      `Total Tips: ${totalTips >= 0 ? "+" : ""}${totalTips.toFixed(2)}€`,
-      ...(totalGutschein > 0 ? [`Vouchers: -${totalGutschein.toFixed(2)}€`] : []),
-      `Total Revenue: ${totalRevenue.toFixed(2)}€`,
-      ``,
-      `Articles sold:`,
-      articles,
-    ];
-
-    navigator.clipboard.writeText(lines.join("\n")).then(() => {
-      app.showToast("📋 Copied to clipboard!");
-    });
-  };
-
-  // Responsive styles
   const headerStyle = isTablet || isTabletLandscape || isDesktop ? S.headerTablet : S.header;
   const billsListStyle = isDesktop || isTabletLandscape ? S.billsListTabletLandscape : isTablet ? S.billsListTablet : S.billsList;
   const totalTabContainerStyle = {
     flex: 1,
     overflowY: "auto" as const,
-    padding: isDesktop || isTabletLandscape ? "0 24px 100px" : isTablet ? "0 20px 100px" : "0 16px 100px"
+    padding: isDesktop || isTabletLandscape ? "0 24px 100px" : isTablet ? "0 20px 100px" : "0 16px 100px",
   };
 
   return (
@@ -311,11 +268,11 @@ export function DailySalesView() {
                 gap: 6,
                 fontSize: 13,
                 fontWeight: 600,
-                border: "1.5px solid #e0e0e0",
-                borderRadius: 8,
-                padding: "4px 10px",
-                background: "#f8f8f8",
-                color: "#1a1a1a",
+                border: `1px solid ${colors.border}`,
+                borderRadius: radii.sm,
+                padding: "5px 10px",
+                background: colors.surface,
+                color: colors.fg,
                 cursor: "pointer",
                 fontFamily: "inherit",
               }}
@@ -337,8 +294,8 @@ export function DailySalesView() {
 
       {paidBills.length === 0 ? (
         <div style={S.emptyState}>
-          <div style={S.emptyStateIcon}>📊</div>
-          <div style={S.emptyStateText}>No sales for this date.<br />Closed bills will appear here.</div>
+          <div style={S.emptyStateIcon}>0</div>
+          <div style={S.emptyStateText}>No paid bills for {dateLabel.toLowerCase()}.</div>
         </div>
       ) : (
         <>
@@ -351,7 +308,7 @@ export function DailySalesView() {
               <button
                 style={{ ...S.tab, ...(dailySalesTab === "total" ? S.tabActive : {}) }}
                 onClick={() => setDailySalesTab("total")}
-              >Articles</button>
+              >Articles Sold</button>
               <div style={{ ...S.tabIndicator, transform: dailySalesTab === "total" ? "translateX(100%)" : "translateX(0)" }} />
             </div>
           </div>
@@ -368,10 +325,9 @@ export function DailySalesView() {
               transform: `translateX(${-tabIndex * 50}%)`,
               transition: "transform 0.3s ease-out",
             }}>
-              {/* Tables (chronological) pane */}
               <div style={{ ...billsListStyle, width: "50%", height: "100%", flex: "none" }}>
                 <div style={{ gridColumn: "1 / -1" }}>
-                  <SalesSummary paidBills={paidBills} onShare={handleShare} />
+                  <SalesSummary paidBills={paidBills} />
                 </div>
                 {[...paidBills].reverse().map((bill, reverseIdx) => {
                   const billIndex = paidBills.length - 1 - reverseIdx;
@@ -391,9 +347,7 @@ export function DailySalesView() {
                   );
                 })}
               </div>
-              {/* Articles (total) pane */}
               <div style={{ ...totalTabContainerStyle, width: "50%", height: "100%", flex: "none" }}>
-                <SalesSummary paidBills={paidBills} onShare={handleShare} />
                 {renderTotalTab()}
               </div>
             </div>

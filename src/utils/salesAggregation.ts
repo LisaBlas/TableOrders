@@ -48,7 +48,7 @@ function sortPosEntries(map: Map<string, PosEntry>) {
 }
 
 export function isMissingPosId(id: string) {
-  return id === "NO_POS_ID" || id === "0000";
+  return id === "NO_POS_ID" || id === "0000" || id === "???";
 }
 
 export function aggregateDailySales(paidBills: Bill[]) {
@@ -81,6 +81,7 @@ export function aggregateDailySales(paidBills: Bill[]) {
   return {
     addedToPOSBills: billsWithCrossedItems,
     withPosId: activeAll.filter((item) => !isMissingPosId(item.posId)),
-    missingPosId: activeAll.filter((item) => isMissingPosId(item.posId)),
+    missingPosId: activeAll.filter((item) => isMissingPosId(item.posId) && !!item.category),
+    uncategorised: activeAll.filter((item) => isMissingPosId(item.posId) && !item.category),
   };
 }

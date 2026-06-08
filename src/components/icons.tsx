@@ -182,6 +182,28 @@ export const ShareIcon: React.FC<IconProps> = ({
   </svg>
 );
 
+export const BarChartIcon: React.FC<IconProps> = ({
+  size = 20,
+  color = 'currentColor',
+  style
+}) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={color}
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    style={style}
+  >
+    <rect x="3" y="12" width="4" height="9" />
+    <rect x="10" y="6" width="4" height="15" />
+    <rect x="17" y="3" width="4" height="18" />
+  </svg>
+);
+
 export const SalesIcon: React.FC<IconProps> = ({
   size = 20,
   color = 'currentColor',

@@ -1,53 +1,79 @@
-import { ShareIcon } from "./icons";
 import { S } from "../styles/appStyles";
+import { colors } from "../styles/tokens";
 import type { Bill } from "../types";
 
 interface SalesSummaryProps {
   paidBills: Bill[];
-  onShare?: () => void;
 }
 
-export function SalesSummary({ paidBills, onShare }: SalesSummaryProps) {
+export function SalesSummary({ paidBills }: SalesSummaryProps) {
   const totalTips = paidBills.reduce((sum, bill) => sum + (bill.tip ?? 0), 0);
   const billsWithGutschein = paidBills.filter((bill) => bill.gutschein && bill.gutschein > 0);
   const totalGutschein = billsWithGutschein.reduce((sum, bill) => sum + (bill.gutschein || 0), 0);
-  const totalItemsSold = paidBills.reduce((sum, bill) => sum + bill.items.reduce((s, item) => s + item.qty, 0), 0);
   const totalRevenue = paidBills.reduce((sum, bill) => sum + bill.total, 0);
-  const metricCards = [
-    { label: "Bills closed", value: paidBills.length },
-    { label: "Total items sold", value: totalItemsSold },
+  const averageBill = paidBills.length > 0 ? totalRevenue / paidBills.length : 0;
+  const tipSign = totalTips >= 0 ? "+" : "";
+  const hasVouchers = totalGutschein > 0;
+
+  const tiles = [
+    { label: "Revenue", value: `${totalRevenue.toFixed(2)}\u20ac`, sub: "Shift total", strong: true },
     {
-      label: "Total Tips",
-      value: totalTips >= 0 ? `+${totalTips.toFixed(2)}\u20ac` : `${totalTips.toFixed(2)}\u20ac`,
+      label: "Tips",
+      value: `${tipSign}${totalTips.toFixed(2)}\u20ac`,
+      sub: "For team distribution",
+      tone: totalTips >= 0 ? colors.success : colors.danger,
     },
-    {
-      label: `Vouchers (${billsWithGutschein.length})`,
-      value: `-${totalGutschein.toFixed(2)}\u20ac`,
-    },
+    { label: "Tables", value: String(paidBills.length), sub: "Paid bills" },
+    hasVouchers
+      ? {
+          label: "Vouchers",
+          value: `-${totalGutschein.toFixed(2)}\u20ac`,
+          sub: `${billsWithGutschein.length} bill${billsWithGutschein.length !== 1 ? "s" : ""}`,
+        }
+      : { label: "Avg Bill", value: `${averageBill.toFixed(2)}\u20ac`, sub: "Per table" },
   ];
 
   return (
-    <div style={S.salesSummary}>
-      <div style={S.salesMetricGrid}>
-        {metricCards.map((metric) => (
-          <div key={metric.label} style={S.salesMetricCard}>
-            <span style={S.salesLabel}>{metric.label}</span>
-            <span style={S.salesValue}>{metric.value}</span>
+    <div
+      style={{
+        ...S.salesSummary,
+        padding: 0,
+        overflow: "hidden",
+      }}
+    >
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+          gap: 1,
+          background: colors.border,
+        }}
+      >
+        {tiles.map((tile) => (
+          <div
+            key={tile.label}
+            style={{
+              background: colors.surface,
+              padding: "12px 16px",
+              minHeight: 82,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
+              gap: 4,
+            }}
+          >
+            <span style={{ fontSize: 11, color: colors.muted, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              {tile.label}
+            </span>
+            <span style={{ fontSize: tile.strong ? 24 : 20, fontWeight: 800, lineHeight: 1.05, color: tile.tone ?? colors.fg }}>
+              {tile.value}
+            </span>
+            <span style={{ fontSize: 12, color: colors.muted, lineHeight: 1.2 }}>
+              {tile.sub}
+            </span>
           </div>
         ))}
       </div>
-      <div style={S.salesTotalRow}>
-        <span style={S.salesTotalLabel}>Total Revenue</span>
-        <span style={S.salesTotalAmt}>
-          {totalRevenue.toFixed(2)}{"\u20ac"}
-        </span>
-      </div>
-      {onShare && (
-        <button onClick={onShare} style={S.salesShareButton}>
-          <ShareIcon size={16} />
-          Share
-        </button>
-      )}
     </div>
   );
 }
