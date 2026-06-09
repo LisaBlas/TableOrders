@@ -32,6 +32,19 @@ export function KpiSummary({ kpis }: Props) {
         deltaType="pct"
       />
       <KpiTile
+        label="Covers"
+        value={String(kpis.covers)}
+        delta={kpis.coversΔ}
+        deltaType="abs"
+        deltaSuffix=""
+      />
+      <KpiTile
+        label="Rev / Cover"
+        value={kpis.covers > 0 ? `€${kpis.revPerCover.toFixed(2)}` : "—"}
+        delta={kpis.revPerCoverΔ}
+        deltaType="pct"
+      />
+      <KpiTile
         label="Avg Tip"
         value={`${kpis.avgTipPct.toFixed(1)}%`}
         delta={kpis.avgTipPctΔ}
@@ -39,7 +52,7 @@ export function KpiSummary({ kpis }: Props) {
         deltaSuffix="pp"
       />
       <KpiTile
-        label="Tables"
+        label="Bills"
         value={String(kpis.tables)}
         delta={kpis.tablesΔ}
         deltaType="abs"
