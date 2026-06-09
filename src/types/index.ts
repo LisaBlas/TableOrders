@@ -121,6 +121,7 @@ export interface Bill {
   gutschein?: number;
   tip?: number;
   timestamp: string;
+  session_id?: string;
   paymentMode: "full" | "equal" | "item";
   splitData?: EqualSplitData | ItemSplitData;
   addedToPOS?: boolean;

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { AnalyticsPeriod } from "../../utils/analytics";
+import type { AnalyticsPeriod, DateRange } from "../../utils/analytics";
 import { colors, radii } from "../../styles/tokens";
 import { todayBerlinDate } from "../../services/directusBills";
 
@@ -7,8 +7,21 @@ interface Props {
   period: AnalyticsPeriod;
   customStart: string;
   customEnd: string;
+  currentRange: DateRange;
+  priorRange: DateRange;
   onPeriodChange: (p: AnalyticsPeriod) => void;
   onCustomRangeChange: (start: string, end: string) => void;
+}
+
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+function fmtDate(d: string): string {
+  const [, m, day] = d.split("-").map(Number);
+  return `${MONTHS[m - 1]} ${day}`;
+}
+
+function fmtRange(start: string, end: string): string {
+  return `${fmtDate(start)}–${fmtDate(end)}`;
 }
 
 const SEGMENTS: { id: AnalyticsPeriod; label: string }[] = [
@@ -22,6 +35,8 @@ export function PeriodSelector({
   period,
   customStart,
   customEnd,
+  currentRange,
+  priorRange,
   onPeriodChange,
   onCustomRangeChange,
 }: Props) {
@@ -80,6 +95,13 @@ export function PeriodSelector({
             </button>
           );
         })}
+      </div>
+
+      {/* Date range context row */}
+      <div style={{ padding: "5px 16px 0", fontSize: 12, color: colors.muted }}>
+        {fmtRange(currentRange.start, currentRange.end)}
+        <span style={{ margin: "0 5px" }}>·</span>
+        vs {fmtRange(priorRange.start, priorRange.end)}
       </div>
 
       {/* Custom date inputs */}

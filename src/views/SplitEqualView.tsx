@@ -35,6 +35,7 @@ export function SplitEqualView() {
       guests: state.equalGuests,
       equalPayments: state.equalPayments,
       equalShare: equalShareRounded,
+      sessionId: state.sessionId,
     });
 
     app.addPaidBill({ ...bill, tableId: displayId });

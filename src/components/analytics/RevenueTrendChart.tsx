@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { DayData } from "../../utils/analytics";
 import { fmtEurFull } from "../../utils/analytics";
 import { colors, radii } from "../../styles/tokens";
@@ -23,6 +23,12 @@ export function RevenueTrendChart({ days }: Props) {
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const maxRevenue = Math.max(...days.map((d) => d.revenue), 1);
 
+  useEffect(() => {
+    const withIdx = days.map((d, i) => ({ r: d.revenue, i })).filter((x) => x.r > 0);
+    const last = withIdx[withIdx.length - 1];
+    setSelectedIdx(last?.i ?? null);
+  }, [days.length]);
+
   const selected = selectedIdx !== null ? days[selectedIdx] : null;
   const showDayLabels = days.length <= 14;
 
@@ -32,12 +38,16 @@ export function RevenueTrendChart({ days }: Props) {
         background: colors.surface,
         borderRadius: radii.lg,
         border: `1px solid ${colors.border}`,
-        margin: "12px 16px 0",
         padding: "16px 16px 12px",
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
         <span style={{ fontSize: 13, fontWeight: 600, color: colors.fg }}>Revenue Trend</span>
+        {maxRevenue > 1 && !selected && (
+          <span style={{ fontSize: 12, color: colors.muted }}>
+            Peak <b style={{ color: colors.fg }}>€{maxRevenue.toFixed(0)}</b>
+          </span>
+        )}
         {selected && (
           <button
             onClick={() => setSelectedIdx(null)}
@@ -74,6 +84,7 @@ export function RevenueTrendChart({ days }: Props) {
           <span style={{ color: colors.muted }}>Revenue <b style={{ color: colors.fg }}>{fmtEurFull(selected.revenue)}</b></span>
           <span style={{ color: colors.muted }}>Covers <b style={{ color: colors.fg }}>{selected.covers}</b></span>
           <span style={{ color: colors.muted }}>Avg Bill <b style={{ color: colors.fg }}>{fmtEurFull(selected.avgBill)}</b></span>
+          <span style={{ color: colors.muted }}>Bills <b style={{ color: colors.fg }}>{selected.billCount}</b></span>
         </div>
       )}
 

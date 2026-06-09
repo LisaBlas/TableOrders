@@ -3,48 +3,104 @@ import { colors, radii } from "../../styles/tokens";
 
 interface Props {
   kpis: KpiWithDeltas;
+  comparisonLabel: string;
+  wide?: boolean;
 }
 
-export function KpiSummary({ kpis }: Props) {
+export function KpiSummary({ kpis, comparisonLabel, wide }: Props) {
   return (
     <div
       style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(2, 1fr)",
-        gap: 1,
-        background: colors.border,
+        background: colors.surface,
         border: `1px solid ${colors.border}`,
         borderRadius: radii.lg,
         overflow: "hidden",
-        margin: "12px 16px 0",
       }}
     >
-      <KpiTile
-        label="Revenue"
-        value={`€${kpis.revenue.toFixed(0)}`}
-        delta={kpis.revenueΔ}
-        deltaType="pct"
-      />
-      <KpiTile
-        label="Avg Bill"
-        value={`€${kpis.avgBill.toFixed(2)}`}
-        delta={kpis.avgBillΔ}
-        deltaType="pct"
-      />
-      <KpiTile
-        label="Avg Tip"
-        value={`${kpis.avgTipPct.toFixed(1)}%`}
-        delta={kpis.avgTipPctΔ}
-        deltaType="abs"
-        deltaSuffix="pp"
-      />
-      <KpiTile
-        label="Tables"
-        value={String(kpis.tables)}
-        delta={kpis.tablesΔ}
-        deltaType="abs"
-        deltaSuffix=""
-      />
+      {comparisonLabel && (
+        <div
+          style={{
+            padding: "8px 10px 4px",
+            fontSize: 11,
+            color: colors.muted,
+            fontWeight: 500,
+            borderBottom: `1px solid ${colors.border}`,
+          }}
+        >
+          {comparisonLabel}
+        </div>
+      )}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: wide ? "repeat(5, 1fr)" : "repeat(2, 1fr)",
+          gap: 1,
+          background: colors.border,
+        }}
+      >
+        <KpiTile
+          label="Revenue"
+          value={`€${kpis.revenue.toFixed(0)}`}
+          delta={kpis.revenueΔ}
+          deltaType="pct"
+        />
+        <KpiTile
+          label="Avg Bill"
+          value={`€${kpis.avgBill.toFixed(2)}`}
+          delta={kpis.avgBillΔ}
+          deltaType="pct"
+        />
+        {wide ? (
+          <>
+            <KpiTile
+              label="Avg Tip"
+              value={`${kpis.avgTipPct.toFixed(1)}%`}
+              delta={kpis.avgTipPctΔ}
+              deltaType="abs"
+              deltaSuffix="pp"
+            />
+            <KpiTile
+              label="Tables"
+              value={String(kpis.bills)}
+              delta={kpis.billsΔ}
+              deltaType="abs"
+              deltaSuffix=""
+            />
+            <KpiTile
+              label="Covers"
+              value={String(kpis.covers)}
+              delta={kpis.coversΔ}
+              deltaType="abs"
+              deltaSuffix=""
+            />
+          </>
+        ) : (
+          <>
+            <KpiTile
+              label="Tables"
+              value={String(kpis.bills)}
+              delta={kpis.billsΔ}
+              deltaType="abs"
+              deltaSuffix=""
+            />
+            <KpiTile
+              label="Covers"
+              value={String(kpis.covers)}
+              delta={kpis.coversΔ}
+              deltaType="abs"
+              deltaSuffix=""
+            />
+            <KpiTile
+              label="Avg Tip"
+              value={`${kpis.avgTipPct.toFixed(1)}%`}
+              delta={kpis.avgTipPctΔ}
+              deltaType="abs"
+              deltaSuffix="pp"
+              wide
+            />
+          </>
+        )}
+      </div>
     </div>
   );
 }
@@ -62,7 +118,7 @@ function KpiTile({ label, value, delta, deltaType, deltaSuffix = "%", wide }: Ti
   const positive = delta !== null && delta > 0;
   const negative = delta !== null && delta < 0;
 
-  let deltaText = "—";
+  let deltaText = "no prior data";
   if (delta !== null) {
     const sign = delta > 0 ? "+" : "";
     if (deltaType === "pct") {

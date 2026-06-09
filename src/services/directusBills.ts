@@ -72,6 +72,7 @@ function billFromDirectus(d: any): Bill {
     gutschein: d.gutschein ?? undefined,
     tip: d.tip ?? undefined,
     timestamp: d.timestamp,
+    session_id: d.session_id ?? undefined,
     paymentMode: d.payment_mode,
     addedToPOS: d.added_to_pos ?? false,
     splitData: readSplitData(d),
@@ -157,6 +158,7 @@ export async function createBillInDirectus(bill: Bill): Promise<Bill> {
       added_to_pos: false,
       split_data: bill.splitData ?? null,
       split_guests: splitGuestCount(bill.splitData),
+      session_id: bill.session_id ?? null,
     }),
   });
   if (!billRes.ok) throw new Error(`Create bill failed: ${billRes.status}`);

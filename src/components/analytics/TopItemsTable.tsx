@@ -23,7 +23,6 @@ export function TopItemsTable({ items }: Props) {
         background: colors.surface,
         borderRadius: radii.lg,
         border: `1px solid ${colors.border}`,
-        margin: "12px 16px 0",
         padding: "16px",
       }}
     >
@@ -76,9 +75,10 @@ export function TopItemsTable({ items }: Props) {
                 </div>
                 <div style={{ fontSize: 11, color: colors.muted }}>{item.category}</div>
               </div>
-              <span style={{ fontSize: 13, fontWeight: 600, flexShrink: 0 }}>
-                €{item.revenue.toFixed(0)}
-              </span>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", flexShrink: 0 }}>
+                <span style={{ fontSize: 13, fontWeight: 600 }}>€{item.revenue.toFixed(0)}</span>
+                <span style={{ fontSize: 11, color: colors.dimmed }}>{item.pct.toFixed(0)}%</span>
+              </div>
               <span style={{ fontSize: 12, color: colors.muted, flexShrink: 0, width: 32, textAlign: "right" }}>
                 ×{item.qty}
               </span>

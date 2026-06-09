@@ -79,10 +79,15 @@ src/
     directusSessions.ts    Table session reads/writes
   views/                   Route-like app screens
   components/              Reusable UI and bill/order components
+  components/analytics/    KpiSummary, PeriodSelector, RevenueTrendChart,
+                           CategoryBreakdown, TopItemsTable, WeekdayPattern,
+                           InsightStrip
   hooks/                   Derived table/menu/breakpoint/localStorage hooks
   data/constants.js        Tables, static menu fallback, status config
   styles/appStyles.js      Central inline style object
   utils/                   Formatting, bill factories, migration, aggregation
+  utils/analytics.ts       KPI aggregation, timeline, categories, top items,
+                           weekday pattern, insight computation
   types/index.ts           Shared domain types
 ```
 
@@ -94,6 +99,7 @@ src/
 - `split`, `splitConfirm`, `splitDone`: equal and item-based payment flows.
 - `dailySales`: historical bills, revenue summary, POS aggregation, clear day.
 - `admin`: admin-only in-app Directus menu editor.
+- `analytics`: Sales Trends dashboard — period selector (Last 7/30/Month/Custom), KPI tiles with period-over-period deltas, revenue trend chart, item revenue mix, top items, weekday pattern, insight strip.
 
 ## Data And Sync Rules
 - Table sessions live in Directus `table_sessions`.
@@ -109,6 +115,11 @@ src/
 - Menu/order item IDs may be numeric from Directus/static data. Local cache and
   conflict validators must accept both string and number IDs; normalize IDs only
   for hashing/comparison, not by rejecting numeric cached sessions.
+- Bills carry a `session_id` (UUID). All bills from the same table close share
+  one ID — generated in `SplitContext` on split initiation, or freshly at each
+  non-split close site. `aggregateKpis` counts distinct session IDs so split
+  bills don't inflate the Tables KPI; legacy bills without `session_id` each
+  count as 1.
 - Bills are optimistic: temporary client IDs are replaced by Directus IDs after
   writes succeed.
 - Split bill metadata is persisted in `bills.split_data` for both equal

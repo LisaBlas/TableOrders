@@ -54,6 +54,7 @@ export function SplitConfirmView() {
       paymentMode: "item" as const,
       splitData: { payments: state.payments },
       tip: totalTip !== 0 ? totalTip : undefined,
+      session_id: state.sessionId || undefined,
     };
 
     // Save bill

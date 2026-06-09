@@ -19,7 +19,7 @@ export function toPaidBillItems(items: OrderItem[]): OrderItem[] {
   return items.map((item) => ({ ...item, qty: item.sentQty || 0 }));
 }
 
-function baseTableBill(tableId: TableId, items: OrderItem[], gutschein = 0) {
+function baseTableBill(tableId: TableId, items: OrderItem[], gutschein = 0, sessionId?: string) {
   const subtotal = getBillSubtotal(items);
   const total = getBillTotal(subtotal, gutschein);
 
@@ -31,6 +31,7 @@ function baseTableBill(tableId: TableId, items: OrderItem[], gutschein = 0) {
     subtotal: gutschein > 0 ? subtotal : undefined,
     gutschein: gutschein > 0 ? gutschein : undefined,
     timestamp: new Date().toISOString(),
+    session_id: sessionId,
   };
 }
 
@@ -38,10 +39,11 @@ export function createFullTableBill(params: {
   tableId: TableId;
   orders: OrdersByTable;
   gutschein?: number;
+  sessionId?: string;
 }): Bill {
   const items = getSentBillItems(params.orders, params.tableId);
   return {
-    ...baseTableBill(params.tableId, items, params.gutschein),
+    ...baseTableBill(params.tableId, items, params.gutschein, params.sessionId),
     paymentMode: "full",
   };
 }
@@ -69,6 +71,7 @@ export function createEqualSplitTableBill(params: {
   guests: number;
   equalPayments: PaymentInput[];
   equalShare: number;
+  sessionId?: string;
 }): BillWithTip {
   const items = getSentBillItems(params.orders, params.tableId);
   const subtotal = getBillSubtotal(items);
@@ -76,7 +79,7 @@ export function createEqualSplitTableBill(params: {
   const tip = calculateEqualSplitTip(params.equalPayments, params.equalShare, params.guests, billableTotal);
 
   return {
-    ...baseTableBill(params.tableId, items, params.gutschein),
+    ...baseTableBill(params.tableId, items, params.gutschein, params.sessionId),
     paymentMode: "equal",
     splitData: { guests: params.guests },
     tip: tip !== 0 ? tip : undefined,
@@ -101,12 +104,13 @@ export function createItemSplitTableBill(params: {
   gutschein?: number;
   payments: SplitPayment[];
   itemPayments: Record<number, PaymentInput>;
+  sessionId?: string;
 }): BillWithTip {
   const items = getSentBillItems(params.orders, params.tableId);
   const tip = calculateItemSplitTip(params.payments, params.itemPayments);
 
   return {
-    ...baseTableBill(params.tableId, items, params.gutschein),
+    ...baseTableBill(params.tableId, items, params.gutschein, params.sessionId),
     paymentMode: "item",
     splitData: { payments: params.payments },
     tip: tip !== 0 ? tip : undefined,

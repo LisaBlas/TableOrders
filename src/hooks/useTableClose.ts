@@ -25,6 +25,7 @@ export function useTableClose(tableId: TableId, sent: OrderItem[], isLargeScreen
   };
 
   const submitClose = () => {
+    const sessionId = crypto.randomUUID();
     const tempId = crypto.randomUUID();
     const parsedPaymentAmount = parseFloat(paymentAmount);
     const paid =
@@ -41,6 +42,7 @@ export function useTableClose(tableId: TableId, sent: OrderItem[], isLargeScreen
       timestamp: new Date().toISOString(),
       paymentMode: "full",
       tip: paymentConfirmed ? tip : undefined,
+      session_id: sessionId,
     });
 
     table.cleanupTable(tableId);

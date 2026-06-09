@@ -94,37 +94,45 @@ export interface KpiData {
   revenue: number;
   avgBill: number;
   avgTipPct: number;
-  tables: number;
+  bills: number;
+  covers: number;
 }
 
 export interface KpiWithDeltas extends KpiData {
   revenueΔ: number | null;
   avgBillΔ: number | null;
   avgTipPctΔ: number | null;
-  tablesΔ: number | null;
+  billsΔ: number | null;
+  coversΔ: number | null;
 }
 
-export function aggregateKpis(bills: Bill[]): KpiData {
-  const revenue = bills.reduce((s, b) => s + billRevenue(b), 0);
-  const tips = bills.reduce((s, b) => s + (b.tip ?? 0), 0);
+export function aggregateKpis(rawBills: Bill[]): KpiData {
+  const revenue = rawBills.reduce((s, b) => s + billRevenue(b), 0);
+  const tips = rawBills.reduce((s, b) => s + (b.tip ?? 0), 0);
+  const covers = rawBills.reduce((s, b) => s + billCovers(b), 0);
+  const sessionIds = new Set(rawBills.map((b) => b.session_id).filter(Boolean));
+  const legacyCount = rawBills.filter((b) => !b.session_id).length;
   return {
     revenue,
-    avgBill: bills.length ? revenue / bills.length : 0,
+    avgBill: rawBills.length ? revenue / rawBills.length : 0,
     avgTipPct: revenue > 0 ? (tips / revenue) * 100 : 0,
-    tables: bills.length,
+    bills: sessionIds.size + legacyCount,
+    covers,
   };
 }
 
 export function computeDeltas(current: KpiData, prior: KpiData): KpiWithDeltas {
   const pct = (curr: number, prev: number): number | null =>
     prev === 0 ? null : ((curr - prev) / prev) * 100;
+  const noPrior = prior.bills === 0;
 
   return {
     ...current,
     revenueΔ: pct(current.revenue, prior.revenue),
     avgBillΔ: pct(current.avgBill, prior.avgBill),
-    avgTipPctΔ: current.avgTipPct - prior.avgTipPct,
-    tablesΔ: current.tables - prior.tables,
+    avgTipPctΔ: noPrior ? null : current.avgTipPct - prior.avgTipPct,
+    billsΔ: noPrior ? null : current.bills - prior.bills,
+    coversΔ: noPrior ? null : current.covers - prior.covers,
   };
 }
 
@@ -216,15 +224,18 @@ export interface ItemData {
   revenue: number;
   qty: number;
   category: DisplayCategory;
+  pct: number;
 }
 
 export function getTopItems(bills: Bill[], sortBy: "revenue" | "qty", limit = 20): ItemData[] {
-  const map = new Map<string, ItemData>();
+  const map = new Map<string, Omit<ItemData, "pct">>();
+  let totalRevenue = 0;
 
   for (const bill of bills) {
     for (const item of bill.items) {
       const existing = map.get(item.name);
       const rev = item.price * item.qty;
+      totalRevenue += rev;
       if (existing) {
         existing.revenue += rev;
         existing.qty += item.qty;
@@ -241,7 +252,8 @@ export function getTopItems(bills: Bill[], sortBy: "revenue" | "qty", limit = 20
 
   return [...map.values()]
     .sort((a, b) => (sortBy === "revenue" ? b.revenue - a.revenue : b.qty - a.qty))
-    .slice(0, limit);
+    .slice(0, limit)
+    .map((item) => ({ ...item, pct: totalRevenue > 0 ? (item.revenue / totalRevenue) * 100 : 0 }));
 }
 
 // ── Weekday pattern ──────────────────────────────────────────────────────────
@@ -276,6 +288,41 @@ export function groupByWeekday(bills: Bill[], start: string, end: string): Weekd
     avgRevenue: buckets[i].count > 0 ? buckets[i].total / buckets[i].count : 0,
     dayCount: buckets[i].count,
   }));
+}
+
+// ── Insight strip ───────────────────────────────────────────────────────────
+
+const _DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const _MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+export function computeInsights(
+  kpis: KpiWithDeltas,
+  days: DayData[],
+  categories: CategoryData[],
+): string[] {
+  const insights: string[] = [];
+
+  if (kpis.revenueΔ !== null) {
+    const dir = kpis.revenueΔ >= 0 ? "up" : "down";
+    insights.push(`Revenue ${dir} ${Math.abs(kpis.revenueΔ).toFixed(1)}% vs previous period`);
+  }
+
+  let bestDay: DayData | undefined;
+  for (const d of days) {
+    if (!bestDay || d.revenue > bestDay.revenue) bestDay = d;
+  }
+  if (bestDay && bestDay.revenue > 0) {
+    const [y, m, day] = bestDay.date.split("-").map(Number);
+    const dow = new Date(Date.UTC(y, m - 1, day)).getUTCDay();
+    insights.push(`Best day: ${_DOW[dow]} ${_MON[m - 1]} ${day}, €${bestDay.revenue.toFixed(0)}`);
+  }
+
+  const topCat = [...categories].sort((a, b) => b.revenue - a.revenue)[0];
+  if (topCat && topCat.revenue > 0) {
+    insights.push(`Top category: ${topCat.category}, ${topCat.pct.toFixed(0)}% of item revenue`);
+  }
+
+  return insights;
 }
 
 // ── Formatting helpers ───────────────────────────────────────────────────────

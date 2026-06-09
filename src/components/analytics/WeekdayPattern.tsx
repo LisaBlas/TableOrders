@@ -11,7 +11,8 @@ interface Props {
 export function WeekdayPattern({ weekdays, start, end }: Props) {
   const rangeDays = daysBetween(start, end);
   const maxAvg = Math.max(...weekdays.map((w) => w.avgRevenue), 1);
-  const shortSample = rangeDays < 28;
+  const lowData = rangeDays < 14;
+  const showSampleCount = rangeDays >= 28;
 
   return (
     <div
@@ -19,20 +20,27 @@ export function WeekdayPattern({ weekdays, start, end }: Props) {
         background: colors.surface,
         borderRadius: radii.lg,
         border: `1px solid ${colors.border}`,
-        margin: "12px 16px 0",
         padding: "16px",
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
         <span style={{ fontSize: 13, fontWeight: 600 }}>Weekday Pattern</span>
-        {shortSample && (
-          <span style={{ fontSize: 11, color: colors.muted }}>Best with 4+ weeks of data</span>
+        {lowData && (
+          <span style={{ fontSize: 12, color: colors.danger, fontWeight: 500 }}>Not enough data</span>
+        )}
+        {!lowData && rangeDays < 28 && (
+          <span style={{ fontSize: 11, color: colors.muted }}>Best with 4+ weeks</span>
         )}
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {weekdays.map((wd) => (
           <div key={wd.day} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ fontSize: 12, color: colors.muted, width: 28, flexShrink: 0 }}>{wd.label}</span>
+            <div style={{ width: 36, flexShrink: 0 }}>
+              <span style={{ fontSize: 12, color: colors.muted }}>{wd.label}</span>
+              {showSampleCount && wd.dayCount > 0 && (
+                <span style={{ fontSize: 10, color: colors.dimmed, marginLeft: 3 }}>×{wd.dayCount}</span>
+              )}
+            </div>
             <div
               style={{
                 flex: 1,
@@ -40,6 +48,7 @@ export function WeekdayPattern({ weekdays, start, end }: Props) {
                 background: colors.bg,
                 borderRadius: 4,
                 overflow: "hidden",
+                opacity: lowData ? 0.4 : 1,
               }}
             >
               <div

@@ -23,6 +23,7 @@ Built for speed and simplicity — optimized for multi-device, front-of-house us
 12. **Responsive Design** — Adaptive layouts for mobile, tablet portrait, tablet landscape, desktop
 13. **Multi-Device Sync** — Real-time table state synchronization across devices via Directus polling
 14. **In-App Menu Admin** — Admin-only menu editor for availability, item details, variants, and new item creation
+15. **Analytics Dashboard** — Sales Trends view (`AnalyticsView`) with KPI summary, revenue trend chart, item revenue mix, top items, weekday pattern, and period comparison; backed by `bills` + `bill_items` in Directus
 
 ## Tech Stack
 - **React 18** with TypeScript (Vite)
@@ -100,6 +101,14 @@ src/
 │   ├── Receipt.tsx               # Printable receipt
 │   ├── SalesSummary.tsx          # Daily sales summary stats
 │   └── icons.tsx                 # SVG icon components (BackIcon, BillIcon, SalesIcon)
+├── components/analytics/
+│   ├── KpiSummary.tsx            # 5-tile KPI grid (Revenue, Avg Bill, Avg Tip, Tables, Covers) with comparison label
+│   ├── PeriodSelector.tsx        # Period chips (Last 7/30/Month/Custom) + date range context row
+│   ├── RevenueTrendChart.tsx     # Interactive daily bar chart; auto-selects last day with revenue; shows peak label
+│   ├── CategoryBreakdown.tsx     # Item Revenue Mix horizontal bar chart (Food/Wines/Drinks/Shop)
+│   ├── TopItemsTable.tsx         # Top items by revenue or qty with % of item revenue suffix
+│   ├── WeekdayPattern.tsx        # Avg revenue by weekday; shows ×N sample count at ≥28 days
+│   └── InsightStrip.tsx          # Deterministic insight row (revenue delta, best day, top category)
 ├── data/
 │   └── constants.ts              # Tables config (TABLES), static menu (MENU), STATUS_CONFIG, subcategory lists, MIN_QTY_2_IDS
 ├── utils/
@@ -111,6 +120,7 @@ src/
 │   ├── migration.ts              # Legacy bill migration (adds posId to pre-Directus bills)
 │   ├── billFactory.ts            # Bill creation factories (createFullTableBill, createEqualSplitTableBill, etc.)
 │   ├── salesAggregation.ts       # POS entry aggregation for Daily Sales view
+│   ├── analytics.ts              # Analytics aggregation: KPI, timeline, category, top items, weekday, insights
 │   └── fetchWithRetry.ts         # Exponential backoff retry helper (used by MenuContext)
 ├── styles/
 │   ├── appStyles.js              # All inline style definitions (S object) + responsive variants
@@ -141,6 +151,7 @@ Key shapes:
 - `splitDone` — Final split summary
 - `dailySales` — Revenue summary, list of all paid bills, aggregated POS view, date picker
 - `admin` — Admin-only in-app menu editor for Directus `menu_items` and `menu_item_variants`
+- `analytics` — Sales Trends dashboard: period selector, KPI tiles with deltas, revenue trend, category mix, top items, weekday pattern, insight strip
 
 ## Key Behaviors
 - **Authentication required** — App blocked until login with valid credentials
@@ -150,6 +161,7 @@ Key shapes:
 - **Conflict prompts are recovery-only** — Normal online table edits may create short-lived dirty local records for refresh safety, but conflict detection should only prompt during offline→online recovery or failed-write retry paths
 - **Optimistic bill creation** — Bills added to cache immediately with `tempId`; replaced with `directusId` on successful Directus write
 - **Split bill metadata** — Persisted in `bills.split_data` for both equal splits (`{ guests }`) and item splits (`{ payments }`); `split_guests` stores the durable guest count for both split modes
+- **`session_id` on bills** — All bills from the same table close share one UUID; generated in `SplitContext` on split initiation and at each non-split close site; `aggregateKpis` counts distinct session IDs so split bills don't inflate the Tables KPI; legacy bills without `session_id` each count as 1 table
 - **Unsent items** can be modified (qty +/-)
 - **Sent items** are locked, shown in batch history
 - **Custom items** — staff can add freeform items (name, price, qty) via `addCustomItem`; IDs prefixed `custom-{timestamp}`, never clash with menu IDs
@@ -190,7 +202,7 @@ Key shapes:
 2. ~~**Menu editor**~~ — ✅ Done via in-app `AdminView` backed by Directus
 3. ~~**Auth**~~ — ✅ Done (basic token auth; could add roles/permissions)
 4. ~~**Responsive design**~~ — ✅ Done (mobile/tablet/desktop breakpoints)
-5. **Analytics dashboard** — Data is in Directus (`bills` + `bill_items`); build a read-only dashboard querying by date range, category, item
+5. ~~**Analytics dashboard**~~ — ✅ Done (`AnalyticsView` + `src/components/analytics/` + `src/utils/analytics.ts`)
 6. **Kitchen integration** — WebSocket or polling for order status updates (replace clipboard export)
 7. **Receipt printing** — browser print API or thermal printer integration
 8. **Multi-table view** — Batch operations, server-assigned tables

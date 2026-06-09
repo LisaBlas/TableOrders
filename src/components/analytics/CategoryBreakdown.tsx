@@ -14,12 +14,11 @@ export function CategoryBreakdown({ categories }: Props) {
         background: colors.surface,
         borderRadius: radii.lg,
         border: `1px solid ${colors.border}`,
-        margin: "12px 16px 0",
         padding: "16px",
       }}
     >
       <span style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 14 }}>
-        Revenue Mix
+        Item Revenue Mix
       </span>
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {categories.map((cat) => (

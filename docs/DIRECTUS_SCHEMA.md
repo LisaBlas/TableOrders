@@ -136,6 +136,7 @@ GET /items/menu_items
   split_data: json,       // { guests: number } or { payments: SplitPayment[] }
   split_guests: number,   // Durable guest count for equal and item splits
   added_to_pos: boolean,  // Bill marked as entered into POS
+  session_id: string,     // Shared across all bills from the same table close (nullable; legacy bills omit this)
   date_created: datetime,
   date_updated: datetime
 }

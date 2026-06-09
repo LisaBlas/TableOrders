@@ -28,6 +28,7 @@ export function TicketView() {
       tableId: displayId,
       orders: table.orders,
       gutschein: table.gutscheinAmounts[tableId] || 0,
+      sessionId: crypto.randomUUID(),
     });
 
     app.addPaidBill(bill);

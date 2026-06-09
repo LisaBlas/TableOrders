@@ -24,6 +24,7 @@ export function SplitDoneView() {
       gutschein: table.gutscheinAmounts[tableId] || 0,
       payments: state.payments,
       itemPayments: state.itemPayments,
+      sessionId: state.sessionId,
     });
 
     app.addPaidBill(bill);

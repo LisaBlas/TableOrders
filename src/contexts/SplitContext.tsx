@@ -6,6 +6,7 @@ import type { OrderItem, SplitPayment, PaymentInput, ExpandedItem } from "../typ
 
 interface SplitState {
   mode: "equal" | "item" | null;
+  sessionId: string;
   remaining: ExpandedItem[];
   selected: Set<string>;
   payments: SplitPayment[];
@@ -16,6 +17,7 @@ interface SplitState {
 
 const initialState: SplitState = {
   mode: null,
+  sessionId: "",
   remaining: [],
   selected: new Set(),
   payments: [],
@@ -45,6 +47,7 @@ function splitReducer(state: SplitState, action: SplitAction): SplitState {
       return {
         ...initialState,
         mode: "equal",
+        sessionId: crypto.randomUUID(),
         remaining: expandItems(action.items) as ExpandedItem[],
         equalPayments: [{ amount: "", confirmed: false }],
       };
@@ -62,7 +65,7 @@ function splitReducer(state: SplitState, action: SplitAction): SplitState {
           isGutschein: true,
         });
       }
-      return { ...initialState, mode: "item", remaining };
+      return { ...initialState, mode: "item", sessionId: crypto.randomUUID(), remaining };
     }
 
     case "TOGGLE_ITEM": {
