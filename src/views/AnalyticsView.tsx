@@ -92,6 +92,42 @@ export function AnalyticsView() {
     `vs prior ${daysBetween(current.start, current.end)} days`;
 
   const header = isTablet || isWide ? S.headerTablet : S.header;
+  const dashboardSummary = (
+    <div
+      style={{
+        background: colors.surface,
+        border: `1px solid ${colors.border}`,
+        borderRadius: radii.lg,
+        overflow: "hidden",
+      }}
+    >
+      <PeriodSelector
+        period={period}
+        customStart={customStart}
+        customEnd={customEnd}
+        currentRange={current}
+        priorRange={prior}
+        onPeriodChange={setPeriod}
+        onCustomRangeChange={(s, e) => {
+          setCustomStart(s);
+          setCustomEnd(e);
+        }}
+        embedded
+      />
+
+      {!loading && currentBills.length > 0 && (
+        <InsightStrip kpis={kpisWithDeltas} days={dayTimeline} categories={categories} embedded />
+      )}
+
+      {loading ? (
+        <div style={{ padding: 12 }}>
+          <SkeletonBlock height={96} />
+        </div>
+      ) : (
+        <KpiSummary kpis={kpisWithDeltas} comparisonLabel={comparisonLabel} wide={kpiWide} embedded />
+      )}
+    </div>
+  );
 
   return (
     <div style={S.page}>
@@ -115,29 +151,10 @@ export function AnalyticsView() {
         <div style={{ width: 32 }} />
       </div>
 
-      {/* Period selector — always visible */}
-      <PeriodSelector
-        period={period}
-        customStart={customStart}
-        customEnd={customEnd}
-        currentRange={current}
-        priorRange={prior}
-        onPeriodChange={setPeriod}
-        onCustomRangeChange={(s, e) => {
-          setCustomStart(s);
-          setCustomEnd(e);
-        }}
-      />
-
-      {/* Insight strip — renders when data is ready */}
-      {!loading && currentBills.length > 0 && (
-        <InsightStrip kpis={kpisWithDeltas} days={dayTimeline} categories={categories} />
-      )}
-
       {/* Loading skeletons */}
       {loading && (
         <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: "12px 16px 0" }}>
-          <SkeletonBlock height={96} />
+          {dashboardSummary}
           <SkeletonBlock height={120} />
           <SkeletonBlock height={160} />
           <SkeletonBlock height={140} />
@@ -150,47 +167,60 @@ export function AnalyticsView() {
           style={{
             display: "flex",
             flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "60px 32px",
+            padding: "12px 16px 40px",
             gap: 12,
           }}
         >
-          <span style={{ fontSize: 32 }}>📊</span>
-          <p style={{ fontSize: 15, color: colors.muted, margin: 0, textAlign: "center" }}>
-            No paid bills for {fmtShort(current.start)}–{fmtShort(current.end)}.
-          </p>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
-            <button
-              onClick={() => setPeriod("last30")}
-              style={{
-                padding: "8px 16px",
-                borderRadius: radii.sm,
-                border: `1px solid ${colors.border}`,
-                background: colors.surface,
-                color: colors.fg,
-                fontSize: 13,
-                fontFamily: "inherit",
-                cursor: "pointer",
-              }}
-            >
-              Switch to Last 30
-            </button>
-            <button
-              onClick={() => setView("dailySales")}
-              style={{
-                padding: "8px 16px",
-                borderRadius: radii.sm,
-                border: `1px solid ${colors.border}`,
-                background: colors.surface,
-                color: colors.fg,
-                fontSize: 13,
-                fontFamily: "inherit",
-                cursor: "pointer",
-              }}
-            >
-              Go to Daily Sales
-            </button>
+          {dashboardSummary}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "48px 24px",
+              gap: 12,
+              background: colors.surface,
+              border: `1px solid ${colors.border}`,
+              borderRadius: radii.lg,
+            }}
+          >
+            <span style={{ fontSize: 32 }}>📊</span>
+            <p style={{ fontSize: 15, color: colors.muted, margin: 0, textAlign: "center" }}>
+              No paid bills for {fmtShort(current.start)}–{fmtShort(current.end)}.
+            </p>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
+              <button
+                onClick={() => setPeriod("last30")}
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: radii.sm,
+                  border: `1px solid ${colors.border}`,
+                  background: colors.surface,
+                  color: colors.fg,
+                  fontSize: 13,
+                  fontFamily: "inherit",
+                  cursor: "pointer",
+                }}
+              >
+                Switch to Last 30
+              </button>
+              <button
+                onClick={() => setView("dailySales")}
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: radii.sm,
+                  border: `1px solid ${colors.border}`,
+                  background: colors.surface,
+                  color: colors.fg,
+                  fontSize: 13,
+                  fontFamily: "inherit",
+                  cursor: "pointer",
+                }}
+              >
+                Go to Daily Sales
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -200,7 +230,7 @@ export function AnalyticsView() {
         isWide ? (
           // ── Desktop two-column layout ──
           <div style={{ padding: "16px 16px 40px", display: "flex", flexDirection: "column", gap: 12 }}>
-            <KpiSummary kpis={kpisWithDeltas} comparisonLabel={comparisonLabel} wide={kpiWide} />
+            {dashboardSummary}
             <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 12 }}>
               <RevenueTrendChart days={dayTimeline} />
               <CategoryBreakdown categories={categories} />
@@ -213,7 +243,7 @@ export function AnalyticsView() {
         ) : (
           // ── Mobile single-column stack ──
           <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: "12px 16px 40px" }}>
-            <KpiSummary kpis={kpisWithDeltas} comparisonLabel={comparisonLabel} wide={kpiWide} />
+            {dashboardSummary}
             <RevenueTrendChart days={dayTimeline} />
             <CategoryBreakdown categories={categories} />
             <TopItemsTable items={topItems} />

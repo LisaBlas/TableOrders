@@ -5,15 +5,16 @@ interface Props {
   kpis: KpiWithDeltas;
   comparisonLabel: string;
   wide?: boolean;
+  embedded?: boolean;
 }
 
-export function KpiSummary({ kpis, comparisonLabel, wide }: Props) {
+export function KpiSummary({ kpis, comparisonLabel, wide, embedded = false }: Props) {
   return (
     <div
       style={{
         background: colors.surface,
-        border: `1px solid ${colors.border}`,
-        borderRadius: radii.lg,
+        border: embedded ? "none" : `1px solid ${colors.border}`,
+        borderRadius: embedded ? 0 : radii.lg,
         overflow: "hidden",
       }}
     >
