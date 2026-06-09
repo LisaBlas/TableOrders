@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useApp } from "../contexts/AppContext";
+import { useTable } from "../contexts/TableContext";
 import { useBreakpoint } from "../hooks/useBreakpoint";
 import { S } from "../styles/appStyles";
 import { colors, radii } from "../styles/tokens";
@@ -12,6 +13,8 @@ import { CategoryBreakdown } from "../components/analytics/CategoryBreakdown";
 import { TopItemsTable } from "../components/analytics/TopItemsTable";
 import { WeekdayPattern } from "../components/analytics/WeekdayPattern";
 import { InsightStrip } from "../components/analytics/InsightStrip";
+import { PeakHoursChart } from "../components/analytics/PeakHoursChart";
+import { TopTablesTable } from "../components/analytics/TopTablesTable";
 import { fetchBillsByDateRange, todayBerlinDate } from "../services/directusBills";
 import {
   type AnalyticsPeriod,
@@ -24,6 +27,8 @@ import {
   groupByCategory,
   getTopItems,
   groupByWeekday,
+  groupByHour,
+  groupByTable,
 } from "../utils/analytics";
 
 const _MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -47,6 +52,7 @@ function SkeletonBlock({ height = 80 }: { height?: number }) {
 
 export function AnalyticsView() {
   const { setView } = useApp();
+  const { resolveTableDisplayId } = useTable();
   const { isTablet, isTabletLandscape, isDesktop } = useBreakpoint();
   const isWide = isDesktop || isTabletLandscape;
   const kpiWide = isTablet || isWide;
@@ -82,6 +88,8 @@ export function AnalyticsView() {
   const categories = groupByCategory(currentBills);
   const topItems = getTopItems(currentBills, "revenue");
   const weekdays = groupByWeekday(currentBills, current.start, current.end);
+  const peakHours = groupByHour(currentBills);
+  const topTables = groupByTable(currentBills);
 
   const isEmpty = !loading && currentBills.length === 0;
 
@@ -239,6 +247,10 @@ export function AnalyticsView() {
               <TopItemsTable items={topItems} />
               <WeekdayPattern weekdays={weekdays} start={current.start} end={current.end} />
             </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0, alignItems: "start" }}>
+              <PeakHoursChart hours={peakHours} />
+              <TopTablesTable tables={topTables} resolveLabel={resolveTableDisplayId} />
+            </div>
           </div>
         ) : (
           // ── Mobile single-column stack ──
@@ -248,6 +260,8 @@ export function AnalyticsView() {
             <CategoryBreakdown categories={categories} />
             <TopItemsTable items={topItems} />
             <WeekdayPattern weekdays={weekdays} start={current.start} end={current.end} />
+            <PeakHoursChart hours={peakHours} />
+            <TopTablesTable tables={topTables} resolveLabel={resolveTableDisplayId} />
           </div>
         )
       )}

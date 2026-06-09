@@ -1,4 +1,4 @@
-import type { Bill } from "../types";
+import type { Bill, TableId } from "../types";
 import { todayBerlinDate } from "../services/directusBills";
 
 // ── Date helpers ────────────────────────────────────────────────────────────
@@ -92,18 +92,20 @@ export function getPeriodBounds(
 
 export interface KpiData {
   revenue: number;
+  covers: number;
+  revPerCover: number;
   avgBill: number;
   avgTipPct: number;
   bills: number;
-  covers: number;
 }
 
 export interface KpiWithDeltas extends KpiData {
   revenueΔ: number | null;
+  coversΔ: number | null;
+  revPerCoverΔ: number | null;
   avgBillΔ: number | null;
   avgTipPctΔ: number | null;
   billsΔ: number | null;
-  coversΔ: number | null;
 }
 
 export function aggregateKpis(rawBills: Bill[]): KpiData {
@@ -114,10 +116,11 @@ export function aggregateKpis(rawBills: Bill[]): KpiData {
   const legacyCount = rawBills.filter((b) => !b.session_id).length;
   return {
     revenue,
+    covers,
+    revPerCover: covers > 0 ? revenue / covers : 0,
     avgBill: rawBills.length ? revenue / rawBills.length : 0,
     avgTipPct: revenue > 0 ? (tips / revenue) * 100 : 0,
     bills: sessionIds.size + legacyCount,
-    covers,
   };
 }
 
@@ -129,10 +132,11 @@ export function computeDeltas(current: KpiData, prior: KpiData): KpiWithDeltas {
   return {
     ...current,
     revenueΔ: pct(current.revenue, prior.revenue),
+    coversΔ: noPrior ? null : current.covers - prior.covers,
+    revPerCoverΔ: pct(current.revPerCover, prior.revPerCover),
     avgBillΔ: pct(current.avgBill, prior.avgBill),
     avgTipPctΔ: noPrior ? null : current.avgTipPct - prior.avgTipPct,
     billsΔ: noPrior ? null : current.bills - prior.bills,
-    coversΔ: noPrior ? null : current.covers - prior.covers,
   };
 }
 
@@ -323,6 +327,72 @@ export function computeInsights(
   }
 
   return insights;
+}
+
+// ── Peak hours ───────────────────────────────────────────────────────────────
+
+export interface HourData {
+  hour: number;
+  label: string;
+  revenue: number;
+  billCount: number;
+}
+
+function berlinHour(iso: string): number {
+  return Number(
+    new Intl.DateTimeFormat("en-CA", {
+      hour: "2-digit",
+      hour12: false,
+      timeZone: "Europe/Berlin",
+    }).format(new Date(iso)),
+  );
+}
+
+export function groupByHour(bills: Bill[]): HourData[] {
+  const buckets: { revenue: number; billCount: number }[] = Array.from({ length: 24 }, () => ({
+    revenue: 0,
+    billCount: 0,
+  }));
+
+  for (const bill of bills) {
+    const h = berlinHour(bill.timestamp);
+    if (h >= 0 && h < 24) {
+      buckets[h].revenue += billRevenue(bill);
+      buckets[h].billCount += 1;
+    }
+  }
+
+  return buckets
+    .map((b, h) => ({ hour: h, label: `${String(h).padStart(2, "0")}:00`, ...b }))
+    .filter((b) => b.billCount > 0);
+}
+
+// ── Top tables ────────────────────────────────────────────────────────────────
+
+export interface TableData {
+  tableId: TableId;
+  revenue: number;
+  billCount: number;
+  avgBill: number;
+}
+
+export function groupByTable(bills: Bill[]): TableData[] {
+  const map = new Map<string, TableData>();
+
+  for (const bill of bills) {
+    const key = String(bill.tableId);
+    const rev = billRevenue(bill);
+    const existing = map.get(key);
+    if (existing) {
+      existing.revenue += rev;
+      existing.billCount += 1;
+      existing.avgBill = existing.revenue / existing.billCount;
+    } else {
+      map.set(key, { tableId: bill.tableId, revenue: rev, billCount: 1, avgBill: rev });
+    }
+  }
+
+  return [...map.values()].sort((a, b) => b.revenue - a.revenue);
 }
 
 // ── Formatting helpers ───────────────────────────────────────────────────────
