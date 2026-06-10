@@ -26,12 +26,18 @@ function getTableDestinations(tableId: TableId, orders: any, sentBatches: any): 
   return DESTINATION_ORDER.filter((d) => found.has(d));
 }
 
-function resolveGridStyles(bp: { isTablet: boolean; isTabletLandscape: boolean; isDesktop: boolean }) {
-  const isWide = bp.isDesktop || bp.isTabletLandscape;
+function resolveGridStyles(bp: { isTablet: boolean; isTabletLandscape: boolean; isLaptop: boolean; isDesktop: boolean }) {
+  const isWide = bp.isDesktop || bp.isLaptop || bp.isTabletLandscape;
   const isBig = isWide || bp.isTablet;
 
   let grid, card;
-  if (isWide) {
+  if (bp.isDesktop) {
+    grid = S.gridDesktop;
+    card = S.tableCardDesktop;
+  } else if (bp.isLaptop) {
+    grid = S.gridLaptop;
+    card = S.tableCardLaptop;
+  } else if (bp.isTabletLandscape) {
     grid = S.gridTabletLandscape;
     card = S.tableCardTabletLandscape;
   } else if (bp.isTablet) {

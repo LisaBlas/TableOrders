@@ -77,8 +77,16 @@ function SplashScreen() {
 }
 
 function LoadingScreen() {
-  const { isTabletLandscape, isTablet, isDesktop } = useBreakpoint();
-  const rootStyle = isDesktop || isTabletLandscape ? S.rootTabletLandscape : isTablet ? S.rootTablet : S.root;
+  const { isTabletLandscape, isTablet, isLaptop, isDesktop } = useBreakpoint();
+  const rootStyle = isDesktop
+    ? S.rootDesktop
+    : isLaptop
+      ? S.rootLaptop
+      : isTabletLandscape
+        ? S.rootTabletLandscape
+        : isTablet
+          ? S.rootTablet
+          : S.root;
 
   return (
     <div style={rootStyle}>
@@ -118,7 +126,7 @@ function Router() {
   const { menuLoading } = useMenu();
   const { isAuthenticated } = useAuth();
   const { syncError, conflicts, resolveConflict } = useTable();
-  const { isTabletLandscape, isTablet, isDesktop } = useBreakpoint();
+  const { isTabletLandscape, isTablet, isLaptop, isDesktop } = useBreakpoint();
   const { state: splitState, dispatch: splitDispatch } = useSplit();
 
   const [splashDone, setSplashDone] = useState(false);
@@ -187,17 +195,26 @@ function Router() {
     return <LoginView />;
   }
 
-  const rootStyle = isDesktop || isTabletLandscape ? S.rootTabletLandscape : isTablet ? S.rootTablet : S.root;
+  const rootStyle = isDesktop
+    ? S.rootDesktop
+    : isLaptop
+      ? S.rootLaptop
+      : isTabletLandscape
+        ? S.rootTabletLandscape
+        : isTablet
+          ? S.rootTablet
+          : S.root;
 
   const NAV_VIEWS: View[] = ["tables", "dailySales", "analytics"];
   const isNavView = NAV_VIEWS.includes(view);
-  const isWide = isDesktop || isTabletLandscape;
+  const isWide = isDesktop || isLaptop || isTabletLandscape;
   const useSidebar = isNavView && isWide;
   const useBottomBar = isNavView && !isWide;
+  const navRootStyle = isDesktop ? S.rootNavDesktop : isLaptop ? S.rootNavLaptop : rootStyle;
 
   const outerStyle: React.CSSProperties = isNavView
     ? {
-        ...rootStyle,
+        ...navRootStyle,
         display: "flex",
         flexDirection: useSidebar ? "row" : "column",
         height: "100dvh",

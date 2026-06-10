@@ -40,8 +40,8 @@ const ghostItemStyle: React.CSSProperties = {
 export function AppNav() {
   const { view, setView } = useApp();
   const { isAdmin, logout } = useAuth();
-  const { isTabletLandscape, isDesktop } = useBreakpoint();
-  const isWide = isDesktop || isTabletLandscape;
+  const { isTabletLandscape, isLaptop, isDesktop } = useBreakpoint();
+  const isWide = isDesktop || isLaptop || isTabletLandscape;
 
   if (!NAV_VIEWS.includes(view)) return null;
 
@@ -55,12 +55,12 @@ export function AppNav() {
     return (
       <nav
         style={{
-          width: 72,
+          width: isLaptop || isDesktop ? 88 : 72,
           flexShrink: 0,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          paddingTop: 24,
+          paddingTop: isLaptop || isDesktop ? 28 : 24,
           paddingBottom: 20,
           background: colors.surface,
           borderRight: `1px solid ${colors.border}`,

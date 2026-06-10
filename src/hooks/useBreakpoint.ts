@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 
-export type Breakpoint = "mobile" | "tablet" | "tabletLandscape" | "desktop";
+export type Breakpoint = "mobile" | "tablet" | "tabletLandscape" | "laptop" | "desktop";
 
 interface BreakpointState {
   current: Breakpoint;
   isMobile: boolean;
   isTablet: boolean;
   isTabletLandscape: boolean;
+  isLaptop: boolean;
   isDesktop: boolean;
   width: number;
 }
@@ -16,11 +17,13 @@ const BREAKPOINTS = {
   mobile: 0,
   tablet: 768,        // iPad portrait, Android tablets portrait
   tabletLandscape: 1024, // iPad landscape
+  laptop: 1200,       // small laptops and desktop browser windows
   desktop: 1440,
 } as const;
 
 function getBreakpoint(width: number): Breakpoint {
   if (width >= BREAKPOINTS.desktop) return "desktop";
+  if (width >= BREAKPOINTS.laptop) return "laptop";
   if (width >= BREAKPOINTS.tabletLandscape) return "tabletLandscape";
   if (width >= BREAKPOINTS.tablet) return "tablet";
   return "mobile";
@@ -32,8 +35,9 @@ function getBreakpoint(width: number): Breakpoint {
  * Breakpoints:
  * - mobile: 0-767px (phones)
  * - tablet: 768-1023px (iPad portrait, small tablets)
- * - tabletLandscape: 1024-1439px (iPad landscape, large tablets)
- * - desktop: 1440px+ (not used for this app, but available)
+ * - tabletLandscape: 1024-1199px (iPad landscape, large tablets)
+ * - laptop: 1200-1439px (small laptops and desktop browser windows)
+ * - desktop: 1440px+
  *
  * Usage:
  * ```tsx
@@ -68,6 +72,7 @@ export function useBreakpoint(): BreakpointState {
     isMobile: current === "mobile",
     isTablet: current === "tablet",
     isTabletLandscape: current === "tabletLandscape",
+    isLaptop: current === "laptop",
     isDesktop: current === "desktop",
     width,
   };

@@ -75,6 +75,10 @@ export const S = {
   root: _root,
   rootTablet: { ..._root, maxWidth: 768 },
   rootTabletLandscape: { ..._root, maxWidth: 1024 },
+  rootLaptop: { ..._root, maxWidth: 1280 },
+  rootDesktop: { ..._root, maxWidth: 1360 },
+  rootNavLaptop: { ..._root, maxWidth: 1280, margin: "0 auto" },
+  rootNavDesktop: { ..._root, maxWidth: 1360, margin: "0 auto" },
   page: {
     display: "flex",
     flexDirection: "column",
@@ -173,6 +177,20 @@ export const S = {
   grid: _grid,
   gridTablet: { ..._grid, gridTemplateColumns: "repeat(4, 1fr)", gap: 14, padding: 20 },
   gridTabletLandscape: { ..._grid, gridTemplateColumns: "repeat(5, 1fr)", gap: 16, padding: 24 },
+  gridLaptop: {
+    ..._grid,
+    gridTemplateColumns: "repeat(5, minmax(150px, 1fr))",
+    gap: 16,
+    padding: "28px 32px",
+    alignContent: "start",
+  },
+  gridDesktop: {
+    ..._grid,
+    gridTemplateColumns: "repeat(6, minmax(150px, 1fr))",
+    gap: 18,
+    padding: "32px 36px",
+    alignContent: "start",
+  },
 
   // Subcategory grid
   subcategoryGrid: {
@@ -208,6 +226,8 @@ export const S = {
   tableCard: _tableCard,
   tableCardTablet: { ..._tableCard, gap: 6, padding: "22px 10px" },
   tableCardTabletLandscape: { ..._tableCard, gap: 8, padding: "26px 12px" },
+  tableCardLaptop: { ..._tableCard, gap: 8, padding: "24px 12px", minHeight: 88 },
+  tableCardDesktop: { ..._tableCard, gap: 8, padding: "24px 12px", minHeight: 88 },
   tableDot: {
     width: 8,
     height: 8,
