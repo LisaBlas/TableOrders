@@ -1,5 +1,4 @@
 import { useState, useMemo } from "react";
-import camidiLogo from "../assets/camidi_logo.jpg";
 import { TABLES, STATUS_CONFIG } from "../data/constants";
 import { getTableStatus, getItemDestination } from "../utils/helpers";
 import { useApp } from "../contexts/AppContext";
@@ -12,7 +11,7 @@ import { TableCard } from "../components/TableCard";
 import { SwapSheet } from "../components/SwapSheet";
 import { Modal } from "../components/Modal";
 import { S } from "../styles/appStyles";
-import { LogoutIcon, SalesIcon, BarChartIcon } from "../components/icons";
+import { LogoutIcon, GearIcon } from "../components/icons";
 import type { TableId, TableConfig, TableEntry } from "../types";
 
 const DESTINATION_ORDER = ["bar", "counter", "kitchen"] as const;
@@ -52,11 +51,6 @@ function resolveGridStyles(bp: { isTablet: boolean; isTabletLandscape: boolean; 
   };
 }
 
-const todayLabel = new Date().toLocaleDateString("en-GB", {
-  weekday: "short",
-  day: "numeric",
-  month: "short",
-});
 
 export function TablesView() {
   const { setView, setActiveTable, showToast } = useApp();
@@ -120,90 +114,46 @@ export function TablesView() {
 
   return (
     <div style={S.page}>
-      <header style={styles.header}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <img src={camidiLogo} alt="Käserei Camidi" style={{ height: 42, objectFit: "contain", borderRadius: 4 }} />
-          <span style={{ fontWeight: 700, fontSize: 18, letterSpacing: "-0.3px" }}>
-            {todayLabel}
-          </span>
-        </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          {isAdmin && (
+      {!styles.isWide && (
+        <header style={{ ...styles.header, justifyContent: "flex-end" }}>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            {isAdmin && (
+              <button
+                style={{
+                  background: "none",
+                  border: "1.5px solid #ddd",
+                  borderRadius: 8,
+                  padding: "7px",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#555",
+                }}
+                onClick={() => setView("admin")}
+              >
+                <GearIcon size={16} color="#555" />
+              </button>
+            )}
             <button
               style={{
                 background: "none",
-                border: "1.5px solid #ddd",
+                border: "1.5px solid #ccc",
                 borderRadius: 8,
-                fontSize: 14,
-                fontWeight: 600,
+                padding: "7px",
                 cursor: "pointer",
-                padding: "7px 10px",
-                lineHeight: 1,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
                 color: "#555",
               }}
-              onClick={() => setView("admin")}
+              onClick={() => setShowLogoutModal(true)}
             >
-              Menu
+              <LogoutIcon size={16} color="#555" />
             </button>
-          )}
-          <button
-            style={{
-              background: "none",
-              border: "1.5px solid #ddd",
-              borderRadius: 8,
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: "pointer",
-              padding: "7px 10px",
-              lineHeight: 1,
-              display: "flex",
-              alignItems: "center",
-              gap: 5,
-              color: "#555",
-            }}
-            onClick={() => setView("dailySales")}
-          >
-            <SalesIcon size={15} color="#555" />
-            Shift
-          </button>
-          <button
-            style={{
-              background: "none",
-              border: "1.5px solid #ddd",
-              borderRadius: 8,
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: "pointer",
-              padding: "7px 10px",
-              lineHeight: 1,
-              display: "flex",
-              alignItems: "center",
-              gap: 5,
-              color: "#555",
-            }}
-            onClick={() => setView("analytics")}
-          >
-            <BarChartIcon size={15} color="#555" />
-            Sales Trends
-          </button>
-          <button
-            style={{
-              background: "none",
-              border: "1.5px solid #ccc",
-              borderRadius: 8,
-              padding: "7px",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "#555",
-            }}
-            onClick={() => setShowLogoutModal(true)}
-          >
-            <LogoutIcon size={16} color="#555" />
-          </button>
-        </div>
-      </header>
+          </div>
+        </header>
+      )}
 
       <div style={{ ...styles.grid, paddingBottom: swap.isActive ? 160 : styles.isBig ? 20 : 16 }}>
         {(() => {
