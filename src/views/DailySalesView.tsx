@@ -5,7 +5,7 @@ import { S } from "../styles/appStyles";
 import { colors, radii } from "../styles/tokens";
 import { BillCard } from "../components/BillCard";
 import { SalesSummary } from "../components/SalesSummary";
-import { BackIcon, CalendarIcon } from "../components/icons";
+import { CalendarIcon } from "../components/icons";
 import { todayBerlinDate } from "../services/directusBills";
 import { aggregateDailySales, comparePosEntries, isMissingPosId, type PosEntry } from "../utils/salesAggregation";
 
@@ -252,12 +252,9 @@ export function DailySalesView() {
   };
 
   return (
-    <div style={{ ...S.page, height: "100dvh", minHeight: 0, overflow: "hidden" }}>
+    <div style={{ ...S.page, height: "100%", minHeight: 0, overflow: "hidden" }}>
       <header style={headerStyle}>
-        <button style={S.back} onClick={() => app.setView("tables")}>
-          <BackIcon size={22} />
-        </button>
-        <span style={S.headerTitle}>Daily Sales</span>
+        <span style={{ fontWeight: 700, fontSize: 18, letterSpacing: "-0.3px" }}>Daily Sales</span>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <div style={{ position: "relative" }}>
             <button

@@ -9,7 +9,9 @@ import { AppProvider, useApp } from "./contexts/AppContext";
 import { TableProvider } from "./contexts/TableContext";
 import { SplitProvider, useSplit } from "./contexts/SplitContext";
 import { useBreakpoint } from "./hooks/useBreakpoint";
+import { AppNav } from "./components/AppNav";
 import { TablesView } from "./views/TablesView";
+import type { View } from "./types";
 import { OrderView } from "./views/OrderView";
 import { TicketView } from "./views/TicketView";
 import { SplitEqualView } from "./views/SplitEqualView";
@@ -187,51 +189,77 @@ function Router() {
 
   const rootStyle = isDesktop || isTabletLandscape ? S.rootTabletLandscape : isTablet ? S.rootTablet : S.root;
 
+  const NAV_VIEWS: View[] = ["tables", "dailySales", "analytics"];
+  const isNavView = NAV_VIEWS.includes(view);
+  const isWide = isDesktop || isTabletLandscape;
+  const useSidebar = isNavView && isWide;
+  const useBottomBar = isNavView && !isWide;
+
+  const outerStyle: React.CSSProperties = isNavView
+    ? {
+        ...rootStyle,
+        display: "flex",
+        flexDirection: useSidebar ? "row" : "column",
+        height: "100dvh",
+        overflow: "hidden",
+      }
+    : rootStyle;
+
+  const contentStyle: React.CSSProperties = isNavView
+    ? { flex: 1, overflowY: "auto", minHeight: 0, minWidth: 0 }
+    : {};
+
+  const syncBanner = syncError && !IS_DEMO_MODE && (
+    <div
+      style={{
+        background: "#b45309",
+        color: "#fff",
+        padding: "6px 12px",
+        fontSize: 13,
+        textAlign: "center",
+        fontWeight: 500,
+      }}
+    >
+      Sync offline — table changes may not save
+    </div>
+  );
+
   return (
-    <div style={rootStyle}>
-      {IS_DEMO_MODE && <DemoBanner />}
-      {syncError && !IS_DEMO_MODE && (
-        <div
-          style={{
-            background: "#b45309",
-            color: "#fff",
-            padding: "6px 12px",
-            fontSize: 13,
-            textAlign: "center",
-            fontWeight: 500,
-          }}
-        >
-          Sync offline — table changes may not save
-        </div>
-      )}
-      {toast && <Toast message={toast} />}
+    <div style={outerStyle}>
+      {useSidebar && <AppNav />}
+      <div style={contentStyle}>
+        {IS_DEMO_MODE && <DemoBanner />}
+        {syncBanner}
+        {toast && <Toast message={toast} />}
 
-      {conflicts.length > 0 && (
-        <ConflictResolutionModal
-          conflict={conflicts[0]}
-          conflictIndex={1}
-          totalConflicts={conflicts.length}
-          onResolve={(resolution) => resolveConflict(conflicts[0], resolution)}
-        />
-      )}
+        {conflicts.length > 0 && (
+          <ConflictResolutionModal
+            conflict={conflicts[0]}
+            conflictIndex={1}
+            totalConflicts={conflicts.length}
+            onResolve={(resolution) => resolveConflict(conflicts[0], resolution)}
+          />
+        )}
 
-      {view === "tables" && <TablesView />}
-      {view === "order" && <OrderView />}
-      {view === "ticket" && <TicketView />}
-      {view === "split" && <SplitRouter />}
-      {view === "splitConfirm" && <SplitConfirmView />}
-      {view === "splitDone" && <SplitDoneView />}
-      {view === "dailySales" && (
-        <ErrorBoundary inline>
-          <DailySalesView />
-        </ErrorBoundary>
-      )}
-      {view === "analytics" && (
-        <ErrorBoundary inline>
-          <AnalyticsView />
-        </ErrorBoundary>
-      )}
-      {view === "admin" && <AdminView />}
+        {view === "tables" && <TablesView />}
+        {view === "order" && <OrderView />}
+        {view === "ticket" && <TicketView />}
+        {view === "split" && <SplitRouter />}
+        {view === "splitConfirm" && <SplitConfirmView />}
+        {view === "splitDone" && <SplitDoneView />}
+        {view === "dailySales" && (
+          <ErrorBoundary inline>
+            <DailySalesView />
+          </ErrorBoundary>
+        )}
+        {view === "analytics" && (
+          <ErrorBoundary inline>
+            <AnalyticsView />
+          </ErrorBoundary>
+        )}
+        {view === "admin" && <AdminView />}
+      </div>
+      {useBottomBar && <AppNav />}
     </div>
   );
 }

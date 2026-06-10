@@ -5,7 +5,6 @@ import { useTable } from "../contexts/TableContext";
 import { useBreakpoint } from "../hooks/useBreakpoint";
 import { S } from "../styles/appStyles";
 import { colors, radii } from "../styles/tokens";
-import { BackIcon } from "../components/icons";
 import { PeriodSelector } from "../components/analytics/PeriodSelector";
 import { KpiSummary } from "../components/analytics/KpiSummary";
 import { RevenueTrendChart } from "../components/analytics/RevenueTrendChart";
@@ -149,14 +148,7 @@ export function AnalyticsView() {
 
       {/* Header */}
       <div style={header}>
-        <button
-          onClick={() => setView("tables")}
-          style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "flex" }}
-        >
-          <BackIcon />
-        </button>
-        <span style={S.headerTitle}>Sales Trends</span>
-        <div style={{ width: 32 }} />
+        <span style={{ fontWeight: 700, fontSize: 18, letterSpacing: "-0.3px" }}>Sales Trends</span>
       </div>
 
       {/* Loading skeletons */}
