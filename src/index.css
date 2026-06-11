@@ -1,3 +1,55 @@
+:root, [data-theme="light"] {
+  --c-fg:            #1a1a1a;
+  --c-bg:            #f5f4f0;
+  --c-surface:       #ffffff;
+  --c-border:        #ebe9e3;
+  --c-subtle:        #555555;
+  --c-muted:         #888888;
+  --c-faint:         #999999;
+  --c-dimmed:        #aaaaaa;
+  --c-dark:          #333333;
+  --c-secondary:     #666666;
+  --c-success:       #2d5a35;
+  --c-success-bg:    #e8f3e9;
+  --c-danger:        #c0392b;
+  --c-danger-bg:     #fde8e8;
+  --c-warning-text:  #7a5500;
+  --c-warning-bg:    #fff8ed;
+  --c-warning-border:#f0d9a0;
+  --c-chip-bg:       #f0f0ee;
+  --c-input-bg:      #fafaf8;
+  --c-divider:       #d4d2ca;
+  --c-overlay:       rgba(0,0,0,0.5);
+  --c-info:          #3498db;
+  --c-info-bg:       #e8f4fc;
+}
+
+[data-theme="dark"] {
+  --c-fg:            #e8e6e0;
+  --c-bg:            #1a1918;
+  --c-surface:       #242220;
+  --c-border:        #383632;
+  --c-subtle:        #b0ae9a;
+  --c-muted:         #807e70;
+  --c-faint:         #6a685c;
+  --c-dimmed:        #585650;
+  --c-dark:          #d0cec0;
+  --c-secondary:     #9a9888;
+  --c-success:       #5aad65;
+  --c-success-bg:    #1a2e1c;
+  --c-danger:        #e05c50;
+  --c-danger-bg:     #2e1a1a;
+  --c-warning-text:  #c09040;
+  --c-warning-bg:    #221c0e;
+  --c-warning-border:#504028;
+  --c-chip-bg:       #2c2a28;
+  --c-input-bg:      #1e1c1a;
+  --c-divider:       #383632;
+  --c-overlay:       rgba(0,0,0,0.72);
+  --c-info:          #5a9ec0;
+  --c-info-bg:       #162028;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -9,7 +61,7 @@ body {
   font-family: 'DM Sans', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: #f5f4f0;
+  background: var(--c-bg);
 }
 
 button {
@@ -19,8 +71,8 @@ button {
 
 /* Green flash feedback on tap/click */
 button:active {
-  background: #e8f3e9 !important;
-  border-color: #2d5a35 !important;
+  background: var(--c-success-bg) !important;
+  border-color: var(--c-success) !important;
   transform: scale(0.97);
   transition: all 0.05s ease-out; /* Fast activation */
 }

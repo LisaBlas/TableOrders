@@ -8,8 +8,10 @@ import { MenuProvider, useMenu } from "./contexts/MenuContext";
 import { AppProvider, useApp } from "./contexts/AppContext";
 import { TableProvider } from "./contexts/TableContext";
 import { SplitProvider, useSplit } from "./contexts/SplitContext";
+import { UIProvider, useUI, TEXT_SCALE_ZOOM } from "./contexts/UIContext";
 import { useBreakpoint } from "./hooks/useBreakpoint";
 import { AppNav } from "./components/AppNav";
+import { ProfileMenu } from "./components/ProfileMenu";
 import { TablesView } from "./views/TablesView";
 import type { View } from "./types";
 import { OrderView } from "./views/OrderView";
@@ -27,6 +29,7 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ConflictResolutionModal } from "./components/ConflictResolutionModal";
 import { useTable } from "./contexts/TableContext";
 import { S } from "./styles/appStyles";
+import { colors } from "./styles/tokens";
 
 function SplashScreen() {
   return (
@@ -121,6 +124,22 @@ function LoadingScreen() {
   );
 }
 
+function MobileTopBar() {
+  return (
+    <div style={{
+      height: 52,
+      padding: "0 16px",
+      display: "flex",
+      alignItems: "center",
+      background: colors.surface,
+      borderBottom: `1px solid ${colors.border}`,
+      flexShrink: 0,
+    }}>
+      <ProfileMenu />
+    </div>
+  );
+}
+
 function Router() {
   const { view, toast, setView } = useApp();
   const { menuLoading } = useMenu();
@@ -128,6 +147,7 @@ function Router() {
   const { syncError, conflicts, resolveConflict } = useTable();
   const { isTabletLandscape, isTablet, isLaptop, isDesktop } = useBreakpoint();
   const { state: splitState, dispatch: splitDispatch } = useSplit();
+  const { textScale } = useUI();
 
   const [splashDone, setSplashDone] = useState(false);
   const splashStartedRef = useRef(false);
@@ -242,9 +262,12 @@ function Router() {
     </div>
   );
 
+  const zoom = TEXT_SCALE_ZOOM[textScale];
+
   return (
-    <div style={outerStyle}>
+    <div style={{ ...outerStyle, zoom } as React.CSSProperties}>
       {useSidebar && <AppNav />}
+      {useBottomBar && isNavView && <MobileTopBar />}
       <div style={contentStyle}>
         {IS_DEMO_MODE && <DemoBanner />}
         {syncBanner}
@@ -301,6 +324,7 @@ export default function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
+    <UIProvider>
     <ErrorBoundary>
       <MenuProvider>
         <AuthProvider>
@@ -314,6 +338,7 @@ export default function App() {
         </AuthProvider>
       </MenuProvider>
     </ErrorBoundary>
+    </UIProvider>
     </QueryClientProvider>
   );
 }

@@ -11,7 +11,6 @@ import { TableCard } from "../components/TableCard";
 import { SwapSheet } from "../components/SwapSheet";
 import { Modal } from "../components/Modal";
 import { S } from "../styles/appStyles";
-import { LogoutIcon, GearIcon } from "../components/icons";
 import type { TableId, TableConfig, TableEntry } from "../types";
 
 const DESTINATION_ORDER = ["bar", "counter", "kitchen"] as const;
@@ -60,13 +59,12 @@ function resolveGridStyles(bp: { isTablet: boolean; isTabletLandscape: boolean; 
 
 export function TablesView() {
   const { setView, setActiveTable, showToast } = useApp();
-  const { logout, isAdmin } = useAuth();
+  const { isAdmin } = useAuth();
   const { orders, seatedTables, seatTable, sentBatches, markedBatches, swapTables, dynamicTables, addDynamicTable, resolveTableDisplayId } = useTable();
   const bp = useBreakpoint();
   const styles = resolveGridStyles(bp);
 
   const [seatConfirmTable, setSeatConfirmTable] = useState<TableId | null>(null);
-  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showNewTableModal, setShowNewTableModal] = useState(false);
   const [newTableName, setNewTableName] = useState("");
   const [newTableLocation, setNewTableLocation] = useState<"inside" | "outside">("inside");
@@ -120,46 +118,6 @@ export function TablesView() {
 
   return (
     <div style={S.page}>
-      {!styles.isWide && (
-        <header style={{ ...styles.header, justifyContent: "flex-end" }}>
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            {isAdmin && (
-              <button
-                style={{
-                  background: "none",
-                  border: "1.5px solid #ddd",
-                  borderRadius: 8,
-                  padding: "7px",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#555",
-                }}
-                onClick={() => setView("admin")}
-              >
-                <GearIcon size={16} color="#555" />
-              </button>
-            )}
-            <button
-              style={{
-                background: "none",
-                border: "1.5px solid #ccc",
-                borderRadius: 8,
-                padding: "7px",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#555",
-              }}
-              onClick={() => setShowLogoutModal(true)}
-            >
-              <LogoutIcon size={16} color="#555" />
-            </button>
-          </div>
-        </header>
-      )}
 
       <div style={{ ...styles.grid, paddingBottom: swap.isActive ? 160 : styles.isBig ? 20 : 16 }}>
         {(() => {
@@ -292,20 +250,6 @@ export function TablesView() {
         />
       )}
 
-      {showLogoutModal && (
-        <Modal
-          title="Log Out"
-          onClose={() => setShowLogoutModal(false)}
-          onConfirm={() => {
-            logout();
-            setShowLogoutModal(false);
-            showToast("Logged out");
-          }}
-          confirmText="Log Out"
-        >
-          <div style={S.modalMessage}>Are you sure you want to log out?</div>
-        </Modal>
-      )}
     </div>
   );
 }
