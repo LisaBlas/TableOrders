@@ -11,7 +11,6 @@ export function SalesSummary({ paidBills }: SalesSummaryProps) {
   const billsWithGutschein = paidBills.filter((bill) => bill.gutschein && bill.gutschein > 0);
   const totalGutschein = billsWithGutschein.reduce((sum, bill) => sum + (bill.gutschein || 0), 0);
   const totalRevenue = paidBills.reduce((sum, bill) => sum + bill.total, 0);
-  const averageBill = paidBills.length > 0 ? totalRevenue / paidBills.length : 0;
   const tipSign = totalTips >= 0 ? "+" : "";
   const hasVouchers = totalGutschein > 0;
 
@@ -24,13 +23,11 @@ export function SalesSummary({ paidBills }: SalesSummaryProps) {
       tone: totalTips >= 0 ? colors.success : colors.danger,
     },
     { label: "Tables", value: String(paidBills.length), sub: "Paid bills" },
-    hasVouchers
-      ? {
-          label: "Vouchers",
-          value: `-${totalGutschein.toFixed(2)}\u20ac`,
-          sub: `${billsWithGutschein.length} bill${billsWithGutschein.length !== 1 ? "s" : ""}`,
-        }
-      : { label: "Avg Bill", value: `${averageBill.toFixed(2)}\u20ac`, sub: "Per table" },
+    ...(hasVouchers ? [{
+      label: "Vouchers",
+      value: `-${totalGutschein.toFixed(2)}\u20ac`,
+      sub: `${billsWithGutschein.length} bill${billsWithGutschein.length !== 1 ? "s" : ""}`,
+    }] : []),
   ];
 
   return (
@@ -49,7 +46,7 @@ export function SalesSummary({ paidBills }: SalesSummaryProps) {
           background: colors.border,
         }}
       >
-        {tiles.map((tile) => (
+        {tiles.map((tile, idx) => (
           <div
             key={tile.label}
             style={{
@@ -60,6 +57,7 @@ export function SalesSummary({ paidBills }: SalesSummaryProps) {
               flexDirection: "column",
               justifyContent: "space-between",
               gap: 4,
+              ...(tiles.length % 2 !== 0 && idx === tiles.length - 1 ? { gridColumn: "1 / -1" } : {}),
             }}
           >
             <span style={{ fontSize: 11, color: colors.muted, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em" }}>

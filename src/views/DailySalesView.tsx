@@ -174,6 +174,7 @@ export function DailySalesView() {
 
     return (
       <>
+        <SalesSummary paidBills={paidBills} />
         {(addedItemsCount > 0 || remainingItemsCount > 0) && (
           <div
             style={{
@@ -301,11 +302,11 @@ export function DailySalesView() {
               <button
                 style={{ ...S.tab, ...(dailySalesTab === "chronological" ? S.tabActive : {}) }}
                 onClick={() => setDailySalesTab("chronological")}
-              >Tables</button>
+              >Timeline</button>
               <button
                 style={{ ...S.tab, ...(dailySalesTab === "total" ? S.tabActive : {}) }}
                 onClick={() => setDailySalesTab("total")}
-              >Articles Sold</button>
+              >Sales</button>
               <div style={{ ...S.tabIndicator, transform: dailySalesTab === "total" ? "translateX(100%)" : "translateX(0)" }} />
             </div>
           </div>
@@ -323,9 +324,6 @@ export function DailySalesView() {
               transition: "transform 0.3s ease-out",
             }}>
               <div style={{ ...billsListStyle, width: "50%", height: "100%", flex: "none" }}>
-                <div style={{ gridColumn: "1 / -1" }}>
-                  <SalesSummary paidBills={paidBills} />
-                </div>
                 {[...paidBills].reverse().map((bill, reverseIdx) => {
                   const billIndex = paidBills.length - 1 - reverseIdx;
                   return (
