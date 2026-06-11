@@ -14,7 +14,7 @@ import { WeekdayPattern } from "../components/analytics/WeekdayPattern";
 import { InsightStrip } from "../components/analytics/InsightStrip";
 import { PeakHoursChart } from "../components/analytics/PeakHoursChart";
 import { TopTablesTable } from "../components/analytics/TopTablesTable";
-import { fetchBillsByDateRange, todayBerlinDate } from "../services/directusBills";
+import { fetchBillsByDateRange, todayBusinessDate } from "../services/directusBills";
 import {
   type AnalyticsPeriod,
   addDays,
@@ -56,7 +56,7 @@ export function AnalyticsView() {
   const isWide = isDesktop || isTabletLandscape;
   const kpiWide = isTablet || isWide;
 
-  const today = todayBerlinDate();
+  const today = todayBusinessDate();
 
   const [period, setPeriod] = useState<AnalyticsPeriod>("last7");
   const [customStart, setCustomStart] = useState(() => addDays(today, -6));

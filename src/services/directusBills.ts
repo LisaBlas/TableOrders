@@ -2,6 +2,7 @@ import type { Bill, EqualSplitData, ItemSplitData, OrderItem } from "../types";
 import { IS_DEMO_MODE } from "../demo";
 import * as demo from "../demo/demoServices";
 import { directusFetch } from "./directusFetch";
+import { BUSINESS_DAY_START_HOUR, TIMEZONE } from "../config/appConfig";
 
 function getHeaders(): HeadersInit {
   return { "Content-Type": "application/json" };
@@ -46,21 +47,22 @@ function splitGuestCount(splitData: Bill["splitData"]): number | null {
   return splitData.payments.length;
 }
 
-export function todayBerlinDate(): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin" }).format(new Date());
+// Returns the current business date. Bills before BUSINESS_DAY_START_HOUR belong to the previous business day.
+export function todayBusinessDate(): string {
+  const shifted = new Date(Date.now() - BUSINESS_DAY_START_HOUR * 3_600_000);
+  return new Intl.DateTimeFormat("en-CA", { timeZone: TIMEZONE }).format(shifted);
 }
 
-// Returns UTC bounds for a full calendar day in Europe/Berlin time.
-function berlinDayBoundsUTC(berlinDate: string): { gte: string; lte: string } {
+// Returns UTC bounds for a business day: [BUSINESS_DAY_START_HOUR today, BUSINESS_DAY_START_HOUR tomorrow).
+// Probes each day's noon separately to handle DST transitions correctly.
+function businessDayBoundsUTC(berlinDate: string): { gte: string; lte: string } {
   const [year, month, day] = berlinDate.split("-").map(Number);
-  // Probe noon UTC to find the Berlin UTC offset (1 = CET, 2 = CEST)
-  const noonUTC = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
-  const berlinNoonHour = Number(
-    new Intl.DateTimeFormat("en-US", { timeZone: "Europe/Berlin", hour: "numeric", hour12: false }).format(noonUTC)
-  );
-  const offsetHours = berlinNoonHour - 12;
-  const gte = new Date(Date.UTC(year, month - 1, day, -offsetHours, 0, 0, 0));
-  const lte = new Date(Date.UTC(year, month - 1, day, 23 - offsetHours, 59, 59, 999));
+  const berlinOffset = (noonUTC: Date) =>
+    Number(new Intl.DateTimeFormat("en-US", { timeZone: TIMEZONE, hour: "numeric", hour12: false }).format(noonUTC)) - 12;
+  const off0 = berlinOffset(new Date(Date.UTC(year, month - 1, day,     12, 0, 0)));
+  const off1 = berlinOffset(new Date(Date.UTC(year, month - 1, day + 1, 12, 0, 0)));
+  const gte = new Date(Date.UTC(year, month - 1, day,     BUSINESS_DAY_START_HOUR - off0, 0, 0, 0));
+  const lte = new Date(Date.UTC(year, month - 1, day + 1, BUSINESS_DAY_START_HOUR - off1, 0, 0, -1));
   return { gte: gte.toISOString(), lte: lte.toISOString() };
 }
 
@@ -105,8 +107,8 @@ export async function fetchBillsByDateRange(startDate: string, endDate: string):
     const results = await Promise.all(days.map((d) => demo.fetchBillsByDate(d)));
     return results.flat();
   }
-  const { gte } = berlinDayBoundsUTC(startDate);
-  const { lte } = berlinDayBoundsUTC(endDate);
+  const { gte } = businessDayBoundsUTC(startDate);
+  const { lte } = businessDayBoundsUTC(endDate);
 
   const res = await directusFetch(
     `/items/bills`
@@ -125,7 +127,7 @@ export async function fetchBillsByDateRange(startDate: string, endDate: string):
 
 export async function fetchBillsByDate(berlinDate: string): Promise<Bill[]> {
   if (IS_DEMO_MODE) return demo.fetchBillsByDate(berlinDate);
-  const { gte, lte } = berlinDayBoundsUTC(berlinDate);
+  const { gte, lte } = businessDayBoundsUTC(berlinDate);
 
   const res = await directusFetch(
     `/items/bills`

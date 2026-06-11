@@ -6,7 +6,7 @@ import { colors, radii } from "../styles/tokens";
 import { BillCard } from "../components/BillCard";
 import { SalesSummary } from "../components/SalesSummary";
 import { CalendarIcon } from "../components/icons";
-import { todayBerlinDate } from "../services/directusBills";
+import { todayBusinessDate } from "../services/directusBills";
 import { aggregateDailySales, comparePosEntries, isMissingPosId, type PosEntry } from "../utils/salesAggregation";
 
 type ArticleSortMode = "category" | "posId";
@@ -33,7 +33,7 @@ export function DailySalesView() {
   const touchStartY = useRef(0);
   const [articleSortMode, setArticleSortMode] = useState<ArticleSortMode>("category");
 
-  const today = todayBerlinDate();
+  const today = todayBusinessDate();
   const dateLabel = selectedDate === today
     ? "Today"
     : (() => {

@@ -1,5 +1,6 @@
 import type { Bill, TableId } from "../types";
-import { todayBerlinDate } from "../services/directusBills";
+import { todayBusinessDate } from "../services/directusBills";
+import { BUSINESS_DAY_START_HOUR } from "../config/appConfig";
 
 // ── Date helpers ────────────────────────────────────────────────────────────
 
@@ -18,8 +19,9 @@ export function daysBetween(startStr: string, endStr: string): number {
   return Math.round((end - start) / 86_400_000) + 1;
 }
 
-function berlinDateFromTimestamp(iso: string): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin" }).format(new Date(iso));
+function businessDateFromTimestamp(iso: string): string {
+  const shifted = new Date(new Date(iso).getTime() - BUSINESS_DAY_START_HOUR * 3_600_000);
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin" }).format(shifted);
 }
 
 // ── Revenue / covers ────────────────────────────────────────────────────────
@@ -53,7 +55,7 @@ export function getPeriodBounds(
   customStart?: string,
   customEnd?: string,
 ): PeriodBounds {
-  const today = todayBerlinDate();
+  const today = todayBusinessDate();
 
   if (period === "last7") {
     const start = addDays(today, -6);
@@ -154,7 +156,7 @@ export function buildDayTimeline(bills: Bill[], start: string, end: string): Day
   const map = new Map<string, DayData>();
 
   for (const bill of bills) {
-    const date = berlinDateFromTimestamp(bill.timestamp);
+    const date = businessDateFromTimestamp(bill.timestamp);
     const rev = billRevenue(bill);
     const existing = map.get(date);
     if (existing) {

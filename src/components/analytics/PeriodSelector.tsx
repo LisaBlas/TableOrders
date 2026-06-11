@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { AnalyticsPeriod, DateRange } from "../../utils/analytics";
 import { colors, radii } from "../../styles/tokens";
-import { todayBerlinDate } from "../../services/directusBills";
+import { todayBusinessDate } from "../../services/directusBills";
 
 interface Props {
   period: AnalyticsPeriod;
@@ -79,7 +79,7 @@ export function PeriodSelector({
   onCustomRangeChange,
   embedded = false,
 }: Props) {
-  const today = todayBerlinDate();
+  const today = todayBusinessDate();
   const [draftStart, setDraftStart] = useState(customStart);
   const [draftEnd, setDraftEnd] = useState(customEnd);
   const [calendarOpen, setCalendarOpen] = useState(false);

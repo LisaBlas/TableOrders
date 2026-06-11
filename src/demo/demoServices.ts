@@ -2,16 +2,16 @@ import type { TableSession } from "../services/directusSessions";
 import type { Bill } from "../types";
 import { MENU, MIN_QTY_2_IDS } from "../data/constants";
 import { DEMO_SESSIONS_KEY, DEMO_BILLS_KEY } from "./index";
+import { BUSINESS_DAY_START_HOUR } from "../config/appConfig";
 
-function berlinDayBoundsUTC(berlinDate: string): { gte: string; lte: string } {
+function businessDayBoundsUTC(berlinDate: string): { gte: string; lte: string } {
   const [year, month, day] = berlinDate.split("-").map(Number);
-  const noonUTC = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
-  const berlinNoonHour = Number(
-    new Intl.DateTimeFormat("en-US", { timeZone: "Europe/Berlin", hour: "numeric", hour12: false }).format(noonUTC)
-  );
-  const offsetHours = berlinNoonHour - 12;
-  const gte = new Date(Date.UTC(year, month - 1, day, -offsetHours, 0, 0, 0));
-  const lte = new Date(Date.UTC(year, month - 1, day, 23 - offsetHours, 59, 59, 999));
+  const berlinOffset = (noonUTC: Date) =>
+    Number(new Intl.DateTimeFormat("en-US", { timeZone: "Europe/Berlin", hour: "numeric", hour12: false }).format(noonUTC)) - 12;
+  const off0 = berlinOffset(new Date(Date.UTC(year, month - 1, day,     12, 0, 0)));
+  const off1 = berlinOffset(new Date(Date.UTC(year, month - 1, day + 1, 12, 0, 0)));
+  const gte = new Date(Date.UTC(year, month - 1, day,     BUSINESS_DAY_START_HOUR - off0, 0, 0, 0));
+  const lte = new Date(Date.UTC(year, month - 1, day + 1, BUSINESS_DAY_START_HOUR - off1, 0, 0, -1));
   return { gte: gte.toISOString(), lte: lte.toISOString() };
 }
 
@@ -66,7 +66,7 @@ export async function deleteSession(directusId: number): Promise<{ success: bool
 }
 
 export async function fetchBillsByDate(berlinDate: string): Promise<Bill[]> {
-  const { gte, lte } = berlinDayBoundsUTC(berlinDate);
+  const { gte, lte } = businessDayBoundsUTC(berlinDate);
   const gteMs = new Date(gte).getTime();
   const lteMs = new Date(lte).getTime();
   return readBills().filter((b) => {

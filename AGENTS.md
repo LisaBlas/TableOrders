@@ -133,7 +133,7 @@ src/
 - Bills are never deleted — persistent record for accounting and analytics.
 - Table sessions are deleted when a table closes, and table close is not
   reversible in-app.
-- Berlin timezone is intentionally hardcoded for day boundaries.
+- A "business day" runs from `BUSINESS_DAY_START_HOUR` (5am Berlin) to 4:59:59am the next day. Bills before 5am belong to the previous business day. The cutoff is defined in `appConfig.ts` and applied in `directusBills.ts` (`todayBusinessDate`, `businessDayBoundsUTC`) and `analytics.ts` (`businessDateFromTimestamp`). Berlin timezone is hardcoded.
 - Admin menu edits write directly to Directus `menu_items` and
   `menu_item_variants` through `directusAdmin.ts`. When leaving `AdminView`,
   dirty menu edits call `MenuContext.reloadMenu()` so the order flow sees the
@@ -205,7 +205,7 @@ src/
   management.
 - Polling-based sync instead of WebSockets.
 - Manual conflict resolution model with local/remote/merge choices; no OT/CRDT.
-- Berlin timezone and table count are not configurable.
+- Berlin timezone and table count are not configurable. Business day cutoff (`BUSINESS_DAY_START_HOUR`) is a single constant in `appConfig.ts`.
 
 ## Cloudflare Worker
 The `worker/` directory is no longer in use. Auth and CORS are handled directly

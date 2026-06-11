@@ -1,6 +1,9 @@
 export const RESTAURANT_NAME = "Käserei Camidi";
 export const TIMEZONE = "Europe/Berlin";
 export const LOCALE = "en-GB";
+// Orders before this hour (Berlin time) belong to the previous business day,
+// allowing shifts that run past midnight.
+export const BUSINESS_DAY_START_HOUR = 5;
 export const LONG_PRESS_MS = 500;
 export const DEBOUNCE_DELAY_MS = 500;
 export const POLL_INTERVAL_MS = 2000;

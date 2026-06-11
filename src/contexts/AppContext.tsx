@@ -6,7 +6,7 @@ import {
   createBillInDirectus,
   patchBill,
   patchBillItem,
-  todayBerlinDate,
+  todayBusinessDate,
 } from "../services/directusBills";
 import type { View, Bill, DailySalesTab, TableId } from "../types";
 import RetryModal from "../components/RetryModal";
@@ -67,11 +67,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [editingBillId, setEditingBillId] = useState<string | null>(null);
   const [billSnapshot, setBillSnapshot] = useState<Bill | null>(null);
   const [deletingBillIndex, setDeletingBillIndex] = useState<number | null>(null);
-  const [selectedDate, setSelectedDate] = useState<string>(todayBerlinDate);
+  const [selectedDate, setSelectedDate] = useState<string>(todayBusinessDate);
   const [failedBill, setFailedBill] = useState<{ bill: Bill; error: string } | null>(null);
 
   const BILLS_KEY = ["bills", selectedDate];
-  const isToday = selectedDate === todayBerlinDate();
+  const isToday = selectedDate === todayBusinessDate();
 
   const { data: rawPaidBills = [] } = useQuery<Bill[]>({
     queryKey: BILLS_KEY,
@@ -113,7 +113,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Add a new paid bill: optimistic add → create in Directus → update cache with IDs.
   // Always targets today's cache key regardless of the selected date in Daily Sales.
   const addPaidBill = useCallback((bill: Bill, onSuccess?: () => void) => {
-    const todayKey = ["bills", todayBerlinDate()];
+    const todayKey = ["bills", todayBusinessDate()];
 
     // Backstop: generate tempId if missing (race-condition fix)
     const tempId = bill.tempId ?? crypto.randomUUID();

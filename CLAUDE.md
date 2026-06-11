@@ -184,14 +184,14 @@ Key shapes:
 - **Table close is irreversible in-app** — paid bills remain in Daily Sales/POS workflow; mistaken closes are handled manually by marking the bill as added to POS and recreating the table
 - **Bill edit mode** — mutations are local-only until "Done"; Directus sync fires on exit; Cancel restores snapshot
 - **Item-level POS crossing** — increment/decrement `crossed_qty` for individual items; syncs to Directus via `patchBillItem`
-- **Date picker** — view historical bills by Berlin timezone calendar day
+- **Date picker** — view historical bills by business day; a day runs 5am–4:59:59am (Berlin time), so late-night bills are attributed to the shift they belong to
 - **Responsive layouts** — `useBreakpoint()` hook provides mobile/tablet/tabletLandscape/desktop breakpoints; adaptive grid/list views
 
 ## Limitations & Trade-offs
 - **Simple credentials** — Two Directus users (`camidi`, `admin`); no per-user roles beyond staff/admin, no multi-tenant support
 - **No backend** — orders copied to clipboard instead of sent to kitchen system
 - **No print integration** — clipboard export only
-- **Berlin timezone hardcoded** — `todayBerlinDate()` and `berlinDayBoundsUTC()` assume Europe/Berlin; not configurable
+- **Berlin timezone hardcoded** — `todayBusinessDate()` and `businessDayBoundsUTC()` assume Europe/Berlin; not configurable
 - **2-second polling overhead** — Table sessions refetch every 2s; could be optimized with WebSockets for lower latency
 - **500ms debounce on writes** — Balance between responsiveness and API load; may feel sluggish on slow connections
 - **Manual conflict resolution only** — Dirty local table sessions are tracked with base/local/operation metadata in localStorage and conflicts prompt the user to choose local, remote, or merge before retrying. No OT/CRDT; normal online operation still uses a 3s local-ownership grace period around confirmed writes
@@ -211,7 +211,7 @@ Key shapes:
 11. **Tax calculation** — Configurable tax rates per item/category
 12. **WebSocket sync** — Replace polling with WebSockets for lower latency
 13. **User management** — Multi-user auth with roles (admin, staff, viewer)
-14. **Timezone configuration** — Make timezone configurable instead of hardcoded Berlin
+14. **Timezone configuration** — Make timezone configurable instead of hardcoded Berlin; `BUSINESS_DAY_START_HOUR` is already a config constant and the utility functions are parameterization-ready for a future `restaurants` collection
 
 ## Development Commands
 ```bash
@@ -292,7 +292,7 @@ Collections: `categories`, `menu_items`, `menu_item_variants`, `bills`, `bill_it
 - localStorage keys in use: `authToken` (auth), `paidBills` (offline bill fallback), `table_orders_client_id` (stable sync client id), `table_sessions_cache` (offline table state), `table_sessions_dirty` (dirty upsert/delete records with base/local snapshots), `table_sessions_sync_meta` (last synced base hashes), `dynamic_tables` (user-created table slots)
 - `syncError` boolean exposed from `TableContext` — sourced from `useDirectusSync` → `useQuery` `isError` on the sessions poll
 - `ErrorBoundary` accepts `inline` prop: when true renders a compact "Something went wrong / Try again" card that resets boundary state instead of a full-page reload screen
-- Berlin timezone: `todayBerlinDate()` + `berlinDayBoundsUTC()` (DST-aware); bills filtered by Berlin calendar day, not UTC
+- Business day: `todayBusinessDate()` + `businessDayBoundsUTC()` (DST-aware); a "day" runs from `BUSINESS_DAY_START_HOUR` (5am) to 4:59:59am next day in Berlin time; bills before 5am belong to the previous business day
 - Responsive breakpoints defined in `useBreakpoint()`: mobile < 768px, tablet 768-1023px, tabletLandscape 1024-1439px, desktop >= 1440px
 - Offline-sync: when refresh loses local orders, verify cached session validation — numeric item IDs can cause valid-looking localStorage sessions to be silently rejected
 - Implementation rules (ref snapshot timing, conflict detection gates, table cleanup) → [`docs/SYSTEM_INVARIANTS.md`](docs/SYSTEM_INVARIANTS.md)
