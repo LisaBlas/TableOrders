@@ -218,6 +218,7 @@ function Router() {
         display: "flex",
         flexDirection: useSidebar ? "row" : "column",
         height: "100dvh",
+        minHeight: "100dvh",
         overflow: "hidden",
       }
     : rootStyle;
