@@ -1,4 +1,5 @@
 import { S } from "../styles/appStyles";
+import { colors } from "../styles/tokens";
 import { EditIcon, ReopenIcon, TrashIcon } from "./icons";
 import type { Bill } from "../types";
 
@@ -22,7 +23,7 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
   });
 
   const cardStyle = (bill.addedToPOS || allItemsCrossed)
-    ? { ...S.billCard, background: "#e8f4fc", border: "1px solid #c2dcf5" }
+    ? { ...S.billCard, background: colors.infoBg, border: `1px solid ${colors.info}` }
     : S.billCard;
 
   const splitGuestCount = bill.splitData
@@ -37,7 +38,7 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "baseline", gap: "8px", flexWrap: "wrap" as const }}>
             <span style={S.billTableNum}>Table {bill.tableId}</span>
-            <span style={{ fontSize: 12, color: "#888" }}>
+            <span style={{ fontSize: 12, color: colors.muted }}>
               {new Date(bill.timestamp).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
             </span>
             {(bill.addedToPOS || allItemsCrossed) && (
@@ -47,7 +48,7 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
           <div style={{ ...S.billMeta, marginTop: 2 }}>
             {bill.paymentMode === "full"
               ? bill.gutschein
-                ? <span style={{ color: "#2d7a3a", fontWeight: 600 }}>Full payment (Voucher: {bill.gutschein.toFixed(2)}€)</span>
+                ? <span style={{ color: colors.success, fontWeight: 600 }}>Full payment (Voucher: {bill.gutschein.toFixed(2)}€)</span>
                 : "Full payment"
               : bill.paymentMode === "equal"
               ? `Split ${splitGuestCount ?? 0} ways`
@@ -55,12 +56,12 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
               ? "Split by item"
               : `Split by item (${splitGuestCount} guest${splitGuestCount > 1 ? 's' : ''})`}
             {bill.paymentMode !== "full" && bill.gutschein && bill.gutschein > 0 && (
-              <div style={{ color: "#2d7a3a", fontWeight: 600 }}>
+              <div style={{ color: colors.success, fontWeight: 600 }}>
                 Voucher: -{bill.gutschein.toFixed(2)}€
               </div>
             )}
             {bill.tip !== undefined && (
-              <div style={{ color: bill.tip >= 0 ? "#2d5a35" : "#c0392b" }}>
+              <div style={{ color: bill.tip >= 0 ? colors.success : colors.danger }}>
                 Tip: {bill.tip >= 0 ? `+${bill.tip.toFixed(2)}€` : `${bill.tip.toFixed(2)}€`}
               </div>
             )}
@@ -78,10 +79,10 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
           </div>
         )}
       </div>
-      <div style={{ height: 0, borderTop: "2px dashed #d4d2ca", margin: "10px 0 8px" }} />
+      <div style={{ height: 0, borderTop: `2px dashed ${colors.divider}`, margin: "10px 0 8px" }} />
       <div style={S.billItemsList}>
         {bill.items.length === 0 ? (
-          <div style={{ padding: "20px", textAlign: "center" as const, color: "#999", fontSize: 14, fontStyle: "italic" }}>
+          <div style={{ padding: "20px", textAlign: "center" as const, color: colors.faint, fontSize: 14, fontStyle: "italic" }}>
             No items in this bill
           </div>
         ) : (() => {
@@ -122,7 +123,7 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
                     fontSize: 10,
                     fontWeight: 700,
                     letterSpacing: 1,
-                    color: "#3498db",
+                    color: colors.info,
                     textTransform: "uppercase" as const,
                     marginTop: 8,
                     marginBottom: 2
@@ -132,12 +133,12 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
                   {crossedItems.map((item, idx) => (
                     <div key={`crossed-${item.directusId || item.id}-${idx}`} style={isEditing && !bill.addedToPOS ? S.billItemEditable : S.billItem}>
                       {isEditing && !bill.addedToPOS && (
-                        <button style={{ ...S.billItemRemoveBtn, background: "#2d7a3a", color: "#fff" }} onClick={() => onRestoreItem(item.id)} title="Un-cross one">+</button>
+                        <button style={{ ...S.billItemRemoveBtn, background: colors.success, color: "#fff" }} onClick={() => onRestoreItem(item.id)} title="Un-cross one">+</button>
                       )}
                       <span style={{
                         ...S.billItemName,
                         textDecoration: "line-through",
-                        color: "#3498db"
+                        color: colors.info
                       }}>
                         <span style={S.billItemQty}>{item.displayQty}×</span>
                         {item.name}
@@ -145,7 +146,7 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
                       <span style={{
                         ...S.billItemPrice,
                         textDecoration: "line-through",
-                        color: "#3498db"
+                        color: colors.info
                       }}>
                         {(item.price * item.displayQty).toFixed(2)}€
                       </span>
@@ -159,7 +160,7 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
       </div>
       <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "baseline", marginTop: 8, gap: "8px" }}>
         {bill.gutschein && bill.gutschein > 0 && (
-          <span style={{ fontSize: 13, color: "#c0392b", fontWeight: 600 }}>(-{bill.gutschein.toFixed(2)}€)</span>
+          <span style={{ fontSize: 13, color: colors.danger, fontWeight: 600 }}>(-{bill.gutschein.toFixed(2)}€)</span>
         )}
         <span style={S.billTotal}>{bill.total.toFixed(2)}€</span>
       </div>

@@ -3,33 +3,34 @@ import { useSplit } from "../contexts/SplitContext";
 import { useBreakpoint } from "../hooks/useBreakpoint";
 import { BackIcon } from "../components/icons";
 import { S } from "../styles/appStyles";
+import { colors } from "../styles/tokens";
 
 function getSplitItemStyles(selected: boolean, isGutschein?: boolean) {
   if (selected && isGutschein) {
     return {
-      background: "#f0faf4",
-      border: "1.5px solid #4ade80",
-      checkBg: "#16a34a",
+      background: colors.successBg,
+      border: `1.5px solid ${colors.success}`,
+      checkBg: colors.success,
     };
   }
   if (selected && !isGutschein) {
     return {
-      background: "#f0f7f1",
-      border: "1.5px solid #a3c4a8",
-      checkBg: "#2d5a35",
+      background: colors.successBg,
+      border: `1.5px solid ${colors.divider}`,
+      checkBg: colors.success,
     };
   }
   if (!selected && isGutschein) {
     return {
-      background: "#f6fef8",
-      border: "1.5px solid #86efac",
-      checkBg: "#e8e8e6",
+      background: colors.surface,
+      border: `1.5px solid ${colors.successBg}`,
+      checkBg: colors.chipBg,
     };
   }
   return {
-    background: "#fff",
-    border: "1.5px solid #ebe9e3",
-    checkBg: "#e8e8e6",
+    background: colors.surface,
+    border: `1.5px solid ${colors.border}`,
+    checkBg: colors.chipBg,
   };
 }
 
@@ -111,8 +112,8 @@ export function SplitItemView() {
                   background: styles.checkBg,
                   color: selected ? "#fff" : "transparent",
                 }}>✓</span>
-                <span style={{ ...S.splitItemName, ...(isGutschein ? { color: "#16a34a", fontWeight: 600 } : {}) }}>{item.name}</span>
-                <span style={{ ...S.splitItemPrice, ...(isGutschein ? { color: "#16a34a" } : {}) }}>
+                <span style={{ ...S.splitItemName, ...(isGutschein ? { color: colors.success, fontWeight: 600 } : {}) }}>{item.name}</span>
+                <span style={{ ...S.splitItemPrice, ...(isGutschein ? { color: colors.success } : {}) }}>
                   {isGutschein ? `−${Math.abs(item.price).toFixed(2)}€` : `${item.price.toFixed(2)}€`}
                 </span>
               </button>
@@ -126,7 +127,7 @@ export function SplitItemView() {
               <span style={S.orderBarChip}>
                 {state.selected.size} item{state.selected.size > 1 ? "s" : ""} selected
               </span>
-              <span style={{ ...S.orderBarChip, background: "#e8f3e9", color: "#2d5a35" }}>
+              <span style={{ ...S.orderBarChip, background: colors.successBg, color: colors.success }}>
                 Remaining after: {(remainingTotal - selectedTotal).toFixed(2)}€
               </span>
             </div>
@@ -168,7 +169,7 @@ export function SplitItemView() {
           <div style={isDesktop ? S.billActionsCardLandscape : S.billActionsCard}>
             {state.payments.length > 0 && (
               <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: "#6a6862", marginBottom: 8 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: colors.muted, marginBottom: 8 }}>
                   Progress
                 </div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
@@ -205,8 +206,8 @@ export function SplitItemView() {
                       background: styles.checkBg,
                       color: selected ? "#fff" : "transparent",
                     }}>✓</span>
-                    <span style={{ ...S.splitItemName, ...(isGutschein ? { color: "#16a34a", fontWeight: 600 } : {}) }}>{item.name}</span>
-                    <span style={{ ...S.splitItemPrice, ...(isGutschein ? { color: "#16a34a" } : {}) }}>
+                    <span style={{ ...S.splitItemName, ...(isGutschein ? { color: colors.success, fontWeight: 600 } : {}) }}>{item.name}</span>
+                    <span style={{ ...S.splitItemPrice, ...(isGutschein ? { color: colors.success } : {}) }}>
                       {isGutschein ? `−${Math.abs(item.price).toFixed(2)}€` : `${item.price.toFixed(2)}€`}
                     </span>
                   </button>
@@ -220,13 +221,13 @@ export function SplitItemView() {
         <div style={isDesktop ? S.billActionsColumnLandscape : S.billActionsColumn}>
           <div style={isDesktop ? S.billActionsCardLandscape : S.billActionsCard}>
             <div style={S.billActionsLabel}>Selection</div>
-            <div style={{ fontSize: 14, color: state.selected.size > 0 ? "#6a6862" : "#b5b2ac", marginBottom: 8 }}>
+            <div style={{ fontSize: 14, color: state.selected.size > 0 ? colors.muted : colors.dimmed, marginBottom: 8 }}>
               {state.selected.size > 0
                 ? `${state.selected.size} item${state.selected.size > 1 ? "s" : ""} selected`
                 : "No items selected"
               }
             </div>
-            <div style={{ fontSize: 14, color: state.selected.size > 0 ? "#2d5a35" : "#b5b2ac", fontWeight: 600 }}>
+            <div style={{ fontSize: 14, color: state.selected.size > 0 ? colors.success : colors.dimmed, fontWeight: 600 }}>
               Remaining after: {(remainingTotal - selectedTotal).toFixed(2)}€
             </div>
           </div>

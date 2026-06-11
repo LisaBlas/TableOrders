@@ -5,6 +5,7 @@ import { useSplit } from "../contexts/SplitContext";
 import { useBreakpoint } from "../hooks/useBreakpoint";
 import { calculateItemSplitTip, createItemSplitTableBill } from "../utils/billFactory";
 import { S } from "../styles/appStyles";
+import { colors } from "../styles/tokens";
 
 export function SplitDoneView() {
   const app = useApp();
@@ -73,7 +74,7 @@ export function SplitDoneView() {
           {hasConfirmedPayments && (
             <div style={{
               display: "flex", justifyContent: "space-between",
-              fontSize: 15, color: totalTip >= 0 ? "#2d5a35" : "#c0392b",
+              fontSize: 15, color: totalTip >= 0 ? colors.success : colors.danger,
               marginTop: 8, fontWeight: 600,
             }}>
               <span>Total tip</span>
@@ -128,7 +129,7 @@ export function SplitDoneView() {
             {hasConfirmedPayments && (
               <div style={{
                 display: "flex", justifyContent: "space-between",
-                fontSize: 15, color: totalTip >= 0 ? "#2d5a35" : "#c0392b",
+                fontSize: 15, color: totalTip >= 0 ? colors.success : colors.danger,
                 marginTop: 8, fontWeight: 600,
               }}>
                 <span>Total tip</span>

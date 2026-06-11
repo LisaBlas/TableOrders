@@ -8,7 +8,7 @@ import { MenuProvider, useMenu } from "./contexts/MenuContext";
 import { AppProvider, useApp } from "./contexts/AppContext";
 import { TableProvider } from "./contexts/TableContext";
 import { SplitProvider, useSplit } from "./contexts/SplitContext";
-import { UIProvider, useUI, TEXT_SCALE_ZOOM, DARK_VARS } from "./contexts/UIContext";
+import { UIProvider, useUI, TEXT_SCALE_ZOOM } from "./contexts/UIContext";
 import { useBreakpoint } from "./hooks/useBreakpoint";
 import { AppNav } from "./components/AppNav";
 import { ProfileMenu } from "./components/ProfileMenu";
@@ -107,8 +107,8 @@ function LoadingScreen() {
           style={{
             width: "40px",
             height: "40px",
-            border: "3px solid #f3f3f3",
-            borderTop: "3px solid #000",
+            border: `3px solid ${colors.chipBg}`,
+            borderTop: `3px solid ${colors.fg}`,
             borderRadius: "50%",
             animation: "spin 1s linear infinite",
           }}
@@ -256,7 +256,7 @@ function Router() {
   const syncBanner = syncError && !IS_DEMO_MODE && (
     <div
       style={{
-        background: "#b45309",
+        background: colors.warningText,
         color: "#fff",
         padding: "6px 12px",
         fontSize: 13,
@@ -268,10 +268,8 @@ function Router() {
     </div>
   );
 
-  const themeVars = darkMode ? DARK_VARS : {};
-
   return (
-    <div style={{ ...outerStyle, zoom, ...themeVars } as React.CSSProperties}>
+    <div style={{ ...outerStyle, zoom } as React.CSSProperties}>
       {useSidebar && <AppNav />}
       {useBottomBar && isNavView && <MobileTopBar />}
       <div style={contentStyle}>

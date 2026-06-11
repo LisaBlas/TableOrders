@@ -6,6 +6,7 @@ import { useBreakpoint } from "../hooks/useBreakpoint";
 import { createEqualSplitTableBill } from "../utils/billFactory";
 import { BackIcon } from "../components/icons";
 import { S } from "../styles/appStyles";
+import { colors } from "../styles/tokens";
 
 const MAX_EQUAL_SPLIT_GUESTS = 20;
 
@@ -80,7 +81,7 @@ export function SplitEqualView() {
         {gutschein > 0 && (
           <div style={S.equalTotalLine}>
             <span style={S.equalTotalLabel}>Gutschein</span>
-            <span style={{ ...S.equalTotalAmt, color: "#22c55e" }}>−{gutschein.toFixed(2)}€</span>
+            <span style={{ ...S.equalTotalAmt, color: colors.success }}>−{gutschein.toFixed(2)}€</span>
           </div>
         )}
         <div style={S.divider} />
@@ -217,7 +218,7 @@ export function SplitEqualView() {
             {gutschein > 0 && (
               <div style={S.equalTotalLine}>
                 <span style={S.equalTotalLabel}>Gutschein</span>
-                <span style={{ ...S.equalTotalAmt, color: "#22c55e" }}>−{gutschein.toFixed(2)}€</span>
+                <span style={{ ...S.equalTotalAmt, color: colors.success }}>−{gutschein.toFixed(2)}€</span>
               </div>
             )}
             <div style={S.divider} />

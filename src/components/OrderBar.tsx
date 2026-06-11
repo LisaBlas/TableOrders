@@ -4,6 +4,7 @@ import { useTable } from "../contexts/TableContext";
 import { groupByDestination, DESTINATIONS, DEST_LABELS } from "../utils/batchGrouping";
 import { batchMarkId } from "../utils/batchMarks";
 import { S } from "../styles/appStyles";
+import { colors } from "../styles/tokens";
 import type { OrderItem, Batch, TableId, MenuItem, MenuItemVariant } from "../types";
 
 interface OrderBarProps {
@@ -47,7 +48,7 @@ export function OrderBar({ tableId, unsent, batches, expanded, onToggleExpand, o
 
   const tableMarks = table.markedBatches[String(tableId)];
   const allMarked = batches.length > 0 && batches.every((batch) => tableMarks?.has(batchMarkId(batch)));
-  const statusDotColor = allMarked ? "#52b87a" : "#e05252";
+  const statusDotColor = allMarked ? colors.success : colors.danger;
 
   return (
     <div style={{ ...S.orderBar, ...barAnimStyle }} onAnimationEnd={handleAnimationEnd}>
@@ -80,7 +81,7 @@ export function OrderBar({ tableId, unsent, batches, expanded, onToggleExpand, o
               const actualBatchIdx = batches.length - 1 - batchIdx;
               const markId = batchMarkId(batch);
               const isMarked = tableMarks?.has(markId) || false;
-              const accentColor = isMarked ? "#52b87a" : "#e05252";
+              const accentColor = isMarked ? colors.success : colors.danger;
               const sectionStyle = { ...S.sentSection, ...(isMarked ? S.sentSectionMarked : S.sentSectionPending) };
               const batchByDest = groupByDestination(batch.items);
               const ts = typeof batch.timestamp === "string" ? new Date(batch.timestamp) : batch.timestamp;
@@ -117,7 +118,7 @@ export function OrderBar({ tableId, unsent, batches, expanded, onToggleExpand, o
                         <div key={o.id} style={S.sentItem}>
                           <span>
                             {o.qty}× {o.name}
-                            {o.note && <span style={{ fontSize: 11, color: "#888", fontStyle: "italic", marginLeft: 4 }}>({o.note})</span>}
+                            {o.note && <span style={{ fontSize: 11, color: colors.muted, fontStyle: "italic", marginLeft: 4 }}>({o.note})</span>}
                           </span>
                           <span style={S.sentPrice}>{(o.price * o.qty).toFixed(2)}€</span>
                         </div>
@@ -138,7 +139,7 @@ export function OrderBar({ tableId, unsent, batches, expanded, onToggleExpand, o
                   <div style={S.orderBarItemInfo}>
                     <div style={S.orderBarItemName}>{o.name}</div>
                     {o.note && (
-                      <div style={{ fontSize: 11, color: "#888", fontStyle: "italic", marginTop: 1 }}>
+                      <div style={{ fontSize: 11, color: colors.muted, fontStyle: "italic", marginTop: 1 }}>
                         {o.note}
                       </div>
                     )}

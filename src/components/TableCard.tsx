@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import type { TableId, StatusConfig } from "../types";
 import { S } from "../styles/appStyles";
+import { swapColors } from "../styles/tokens";
 
 const DESTINATION_EMOJI: Record<string, string> = { bar: "🍷", counter: "🧀", kitchen: "🍽️" };
 
@@ -9,17 +10,17 @@ type SwapStatus = "none" | "source" | "target" | "dimmed";
 function getSwapStyles(swapStatus: SwapStatus, cfg: StatusConfig) {
   if (swapStatus === "source") {
     return {
-      bg: "#fffbeb",
-      border: "2px solid #f59e0b",
-      statusColor: "#f59e0b",
+      bg: swapColors.sourceBg,
+      border: `2px solid ${swapColors.sourceBorder}`,
+      statusColor: swapColors.sourceBorder,
       statusLabel: "moving",
     };
   }
   if (swapStatus === "target") {
     return {
-      bg: "#eff6ff",
-      border: "2px solid #3b82f6",
-      statusColor: "#3b82f6",
+      bg: swapColors.targetBg,
+      border: `2px solid ${swapColors.targetBorder}`,
+      statusColor: swapColors.targetBorder,
       statusLabel: "selected",
     };
   }
@@ -89,12 +90,12 @@ export function TableCard({
       onClick={handlers.onClick}
     >
       {swapStatus === "source" && (
-        <span style={{ fontSize: 10, fontWeight: 700, color: "#f59e0b", letterSpacing: "0.3px", marginBottom: 2 }}>
+        <span style={{ fontSize: 10, fontWeight: 700, color: swapColors.sourceBorder, letterSpacing: "0.3px", marginBottom: 2 }}>
           MOVING
         </span>
       )}
       {swapStatus === "target" && (
-        <span style={{ fontSize: 10, fontWeight: 700, color: "#3b82f6", letterSpacing: "0.3px", marginBottom: 2 }}>
+        <span style={{ fontSize: 10, fontWeight: 700, color: swapColors.targetBorder, letterSpacing: "0.3px", marginBottom: 2 }}>
           DESTINATION
         </span>
       )}

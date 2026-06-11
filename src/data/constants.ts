@@ -776,10 +776,10 @@ export const MENU: Record<string, MenuItem[]> = {
 };
 
 export const STATUS_CONFIG: Record<TableStatus, StatusConfig> = {
-  open:        { label: "Open",      dot: "#5b9bd5", bg: "#f0f6fd", border: "#b8d4ef", text: "#1a4a7a" },
-  seated:      { label: "Seated",    dot: "#f5c84a", bg: "#fffdf0", border: "#f0e0a0", text: "#7a5c00" },
-  unconfirmed: { label: "Ordered",   dot: "#e05252", bg: "#fdf5f5", border: "#f0bfbf", text: "#7a1a1a" },
-  confirmed:   { label: "Confirmed", dot: "#52b87a", bg: "#f4fbf6", border: "#b8e6c8", text: "#1a5c35" },
+  open:        { label: "Open",      dot: "var(--c-status-open-dot)",        bg: "var(--c-status-open-bg)",        border: "var(--c-status-open-border)",        text: "var(--c-status-open-text)" },
+  seated:      { label: "Seated",    dot: "var(--c-status-seated-dot)",      bg: "var(--c-status-seated-bg)",      border: "var(--c-status-seated-border)",      text: "var(--c-status-seated-text)" },
+  unconfirmed: { label: "Ordered",   dot: "var(--c-status-unconfirmed-dot)", bg: "var(--c-status-unconfirmed-bg)", border: "var(--c-status-unconfirmed-border)", text: "var(--c-status-unconfirmed-text)" },
+  confirmed:   { label: "Confirmed", dot: "var(--c-status-confirmed-dot)",   bg: "var(--c-status-confirmed-bg)",   border: "var(--c-status-confirmed-border)",   text: "var(--c-status-confirmed-text)" },
 };
 
 export const FOOD_SUBCATEGORIES: Subcategory[] = [

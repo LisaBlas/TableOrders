@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { colors } from "../styles/tokens";
 
 interface RetryModalProps {
   message: string;
@@ -12,7 +13,7 @@ export default function RetryModal({ message, onRetry }: RetryModalProps) {
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(0,0,0,0.7)",
+    backgroundColor: colors.overlay,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -20,7 +21,7 @@ export default function RetryModal({ message, onRetry }: RetryModalProps) {
   };
 
   const modalStyle: CSSProperties = {
-    backgroundColor: "#fff",
+    backgroundColor: colors.surface,
     borderRadius: "12px",
     padding: "24px",
     maxWidth: "400px",
@@ -32,12 +33,12 @@ export default function RetryModal({ message, onRetry }: RetryModalProps) {
     fontSize: "18px",
     fontWeight: 600,
     marginBottom: "12px",
-    color: "#333",
+    color: colors.dark,
   };
 
   const messageStyle: CSSProperties = {
     fontSize: "14px",
-    color: "#666",
+    color: colors.secondary,
     marginBottom: "24px",
     lineHeight: 1.5,
   };
@@ -50,7 +51,7 @@ export default function RetryModal({ message, onRetry }: RetryModalProps) {
     fontWeight: 600,
     cursor: "pointer",
     transition: "all 0.2s",
-    backgroundColor: "#4CAF50",
+    backgroundColor: colors.success,
     color: "#fff",
     width: "100%",
   };
@@ -60,12 +61,7 @@ export default function RetryModal({ message, onRetry }: RetryModalProps) {
       <div style={modalStyle}>
         <div style={titleStyle}>⚠️ Bill Not Saved</div>
         <div style={messageStyle}>{message}</div>
-        <button
-          style={retryButtonStyle}
-          onClick={onRetry}
-          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#45a049"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#4CAF50"; }}
-        >
+        <button style={retryButtonStyle} onClick={onRetry}>
           Retry
         </button>
       </div>

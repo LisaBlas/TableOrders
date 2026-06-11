@@ -1,4 +1,5 @@
 import { S } from "../styles/appStyles";
+import { wineColors, colors } from "../styles/tokens";
 import { useLongPress } from "../hooks/useLongPress";
 import { LONG_PRESS_MS } from "../config/appConfig";
 import type { MenuItem, OrderItem } from "../types";
@@ -34,11 +35,11 @@ export function MenuItemCard({ item, unsent, showCategory, onTap, onLongPress }:
   const displayName = item.shortName || item.name;
 
   const WINE_COLORS: Record<string, string> = {
-    white: "#e8c84a",
-    red: "#c0392b",
-    sparkling: "#999",
-    natural: "#7c3aed",
-    rosé: "#e88ea0",
+    white: wineColors.white,
+    red: wineColors.red,
+    sparkling: wineColors.sparkling,
+    natural: wineColors.natural,
+    rosé: wineColors.rose,
   };
   const wineColor = item.wineType ? WINE_COLORS[item.wineType] : undefined;
 
@@ -73,7 +74,7 @@ export function MenuItemCard({ item, unsent, showCategory, onTap, onLongPress }:
       )}
       <div style={S.menuCardName}>{displayName}</div>
       {showCategory && item.category && (
-        <div style={{ fontSize: 9, color: "#999", marginTop: 2 }}>{item.category}</div>
+        <div style={{ fontSize: 9, color: colors.faint, marginTop: 2 }}>{item.category}</div>
       )}
     </button>
   );

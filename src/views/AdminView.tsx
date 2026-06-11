@@ -216,7 +216,7 @@ function AvailabilityToggle({
         height: 26,
         borderRadius: 13,
         border: "none",
-        background: available ? colors.success : "#ccc",
+        background: available ? colors.success : colors.border,
         cursor: disabled ? "default" : "pointer",
         position: "relative",
         transition: "background 0.2s",

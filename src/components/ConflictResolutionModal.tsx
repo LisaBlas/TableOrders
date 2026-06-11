@@ -1,5 +1,6 @@
 import { useTable } from "../contexts/TableContext";
 import { S } from "../styles/appStyles";
+import { colors } from "../styles/tokens";
 import type { SessionConflict } from "../utils/conflictDetection";
 
 interface ConflictResolutionModalProps {
@@ -28,7 +29,7 @@ export function ConflictResolutionModal({
           Sync Conflict [{conflictIndex} of {totalConflicts}]
         </div>
 
-        <div style={{ fontSize: 14, marginBottom: 16, color: "#666" }}>
+        <div style={{ fontSize: 14, marginBottom: 16, color: colors.secondary }}>
           Table {resolveTableDisplayId(tableId)} was modified on multiple devices while offline. Choose which version to keep:
         </div>
 
@@ -44,13 +45,13 @@ export function ConflictResolutionModal({
                   {local.orders.map((item, idx) => (
                     <div key={idx} style={itemRowStyle}>
                       <span>{item.name}</span>
-                      <span style={{ color: "#666", fontSize: 13 }}>
+                      <span style={{ color: colors.secondary, fontSize: 13 }}>
                         {item.qty}× €{item.price.toFixed(2)}
                       </span>
                     </div>
                   ))}
                   {local.gutschein ? (
-                    <div style={{ ...itemRowStyle, color: "#e67e22" }}>
+                    <div style={{ ...itemRowStyle, color: colors.warningText }}>
                       <span>Gutschein</span>
                       <span>-€{local.gutschein.toFixed(2)}</span>
                     </div>
@@ -58,7 +59,7 @@ export function ConflictResolutionModal({
                 </>
               )}
               {local.sent_batches.length > 0 && (
-                <div style={{ marginTop: 8, fontSize: 12, color: "#999" }}>
+                <div style={{ marginTop: 8, fontSize: 12, color: colors.faint }}>
                   {local.sent_batches.length} batch(es) sent
                 </div>
               )}
@@ -81,13 +82,13 @@ export function ConflictResolutionModal({
                   {remote.orders.map((item, idx) => (
                     <div key={idx} style={itemRowStyle}>
                       <span>{item.name}</span>
-                      <span style={{ color: "#666", fontSize: 13 }}>
+                      <span style={{ color: colors.secondary, fontSize: 13 }}>
                         {item.qty}× €{item.price.toFixed(2)}
                       </span>
                     </div>
                   ))}
                   {remote.gutschein ? (
-                    <div style={{ ...itemRowStyle, color: "#e67e22" }}>
+                    <div style={{ ...itemRowStyle, color: colors.warningText }}>
                       <span>Gutschein</span>
                       <span>-€{remote.gutschein.toFixed(2)}</span>
                     </div>
@@ -95,7 +96,7 @@ export function ConflictResolutionModal({
                 </>
               )}
               {remote.sent_batches.length > 0 && (
-                <div style={{ marginTop: 8, fontSize: 12, color: "#999" }}>
+                <div style={{ marginTop: 8, fontSize: 12, color: colors.faint }}>
                   {remote.sent_batches.length} batch(es) sent
                 </div>
               )}
@@ -113,7 +114,7 @@ export function ConflictResolutionModal({
             Keep Local
           </button>
           <button
-            style={{ ...S.modalConfirmBtn, background: "#3498db" }}
+            style={{ ...S.modalConfirmBtn, background: colors.info }}
             onClick={() => onResolve("merge")}
           >
             Merge Both
@@ -137,7 +138,7 @@ const conflictHeaderStyle = {
   fontWeight: 600,
   fontSize: 14,
   paddingBottom: 8,
-  borderBottom: "1px solid #ddd",
+  borderBottom: `1px solid ${colors.border}`,
 };
 
 const conflictContentStyle = {
@@ -157,12 +158,12 @@ const totalRowStyle = {
   ...itemRowStyle,
   marginTop: 8,
   paddingTop: 8,
-  borderTop: "1px solid #eee",
+  borderTop: `1px solid ${colors.border}`,
   fontSize: 15,
 };
 
 const emptyStateStyle = {
-  color: "#999",
+  color: colors.faint,
   fontStyle: "italic" as const,
   fontSize: 13,
 };
@@ -170,8 +171,8 @@ const emptyStateStyle = {
 const statusBadgeStyle = {
   display: "inline-block",
   padding: "2px 8px",
-  background: "#fff3cd",
-  border: "1px solid #ffc107",
+  background: colors.warningBg,
+  border: `1px solid ${colors.warningBorder}`,
   borderRadius: 4,
   fontSize: 11,
   fontWeight: 600,
