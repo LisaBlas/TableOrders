@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useApp } from "../contexts/AppContext";
 import { useUI, type TextScale } from "../contexts/UIContext";
-import { GearIcon, LogoutIcon, SunIcon, MoonIcon } from "./icons";
+import { GearIcon, LogoutIcon, SunIcon, MoonIcon, BarChartIcon } from "./icons";
 import { Modal } from "./Modal";
 import { colors, radii } from "../styles/tokens";
 
@@ -188,6 +188,13 @@ export function ProfileMenu() {
             {isAdmin && (
               <>
                 <div style={DIVIDER} />
+                <button
+                  style={ROW_BTN}
+                  onClick={() => { setView("analytics"); setOpen(false); }}
+                >
+                  <BarChartIcon size={15} color={colors.subtle} />
+                  <span style={{ color: colors.fg }}>Analytics</span>
+                </button>
                 <button
                   style={ROW_BTN}
                   onClick={() => { setView("admin"); setOpen(false); }}

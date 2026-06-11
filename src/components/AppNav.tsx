@@ -45,6 +45,11 @@ export function AppNav() {
 
   if (!NAV_VIEWS.includes(view)) return null;
 
+  const mobileOnlyTabs: NavTab[] = [
+    { id: "tables", label: "Floor", Icon: GridIcon },
+    { id: "dailySales", label: "Sales", Icon: SalesIcon },
+  ];
+
   const tabs: NavTab[] = [
     { id: "tables", label: "Floor", Icon: GridIcon },
     { id: "dailySales", label: "Sales", Icon: SalesIcon },
@@ -104,7 +109,7 @@ export function AppNav() {
         flexShrink: 0,
       }}
     >
-      {tabs.map(({ id, label, Icon }) => {
+      {mobileOnlyTabs.map(({ id, label, Icon }) => {
         const active = view === id;
         return (
           <button
