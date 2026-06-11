@@ -127,9 +127,12 @@ export const S = {
     fontSize: 14,
     color: colors.subtle,
     cursor: "pointer",
-    padding: 0,
+    padding: 4,
+    width: 34,
+    height: 34,
     display: "flex",
     alignItems: "center",
+    justifyContent: "center",
   },
   ticketBtn: {
     background: "none",
@@ -137,9 +140,17 @@ export const S = {
     fontSize: 14,
     color: colors.subtle,
     cursor: "pointer",
-    padding: 0,
+    padding: 4,
+    width: 34,
+    height: 34,
     display: "flex",
     alignItems: "center",
+    justifyContent: "center",
+  },
+  headerSpacer: {
+    width: 34,
+    height: 34,
+    flexShrink: 0,
   },
   selectAllBtn: {
     background: "none",
@@ -2070,19 +2081,6 @@ export const S = {
     fontSize: 14,
     fontWeight: 600,
     color: colors.subtle,
-  },
-
-  // Bill view header
-  billViewHeader: {
-    position: "sticky",
-    top: 0,
-    zIndex: 100,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: "18px 20px 12px",
-    background: colors.surface,
-    borderBottom: `1px solid ${colors.border}`,
   },
 
   // Mark button for sent batches

@@ -1,8 +1,10 @@
 import { useApp } from "../contexts/AppContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useBreakpoint } from "../hooks/useBreakpoint";
-import { SalesIcon, BarChartIcon, GearIcon, LogoutIcon, GridIcon } from "./icons";
+import { SalesIcon, BarChartIcon, GearIcon, GridIcon } from "./icons";
+import { ProfileMenu } from "./ProfileMenu";
 import { colors, radii } from "../styles/tokens";
+import { SHELL_VIEWS } from "../navigation";
 import type { View } from "../types";
 
 type NavTab = {
@@ -10,8 +12,6 @@ type NavTab = {
   label: string;
   Icon: React.FC<{ size?: number; color?: string }>;
 };
-
-const NAV_VIEWS: View[] = ["tables", "dailySales", "analytics"];
 
 const itemStyle = (active: boolean): React.CSSProperties => ({
   display: "flex",
@@ -31,19 +31,13 @@ const itemStyle = (active: boolean): React.CSSProperties => ({
   letterSpacing: "0.01em",
 });
 
-const ghostItemStyle: React.CSSProperties = {
-  ...itemStyle(false),
-  background: "transparent",
-  color: colors.muted,
-};
-
 export function AppNav() {
   const { view, setView } = useApp();
-  const { isAdmin, logout } = useAuth();
+  const { isAdmin } = useAuth();
   const { isTabletLandscape, isLaptop, isDesktop } = useBreakpoint();
   const isWide = isDesktop || isLaptop || isTabletLandscape;
 
-  if (!NAV_VIEWS.includes(view)) return null;
+  if (!SHELL_VIEWS.includes(view)) return null;
 
   const mobileOnlyTabs: NavTab[] = [
     { id: "tables", label: "Floor", Icon: GridIcon },
@@ -54,6 +48,7 @@ export function AppNav() {
     { id: "tables", label: "Floor", Icon: GridIcon },
     { id: "dailySales", label: "Sales", Icon: SalesIcon },
     ...(isAdmin ? [{ id: "analytics" as View, label: "Analytics", Icon: BarChartIcon }] : []),
+    ...(isAdmin ? [{ id: "admin" as View, label: "Menu", Icon: GearIcon }] : []),
   ];
 
   if (isWide) {
@@ -82,18 +77,10 @@ export function AppNav() {
           );
         })}
 
-        {isAdmin && (
-          <button onClick={() => setView("admin")} style={ghostItemStyle}>
-            <GearIcon size={18} color={colors.muted} />
-            Menu
-          </button>
-        )}
-        <button onClick={logout} style={ghostItemStyle}>
-          <LogoutIcon size={18} color={colors.muted} />
-          Logout
-        </button>
-
         <div style={{ flex: 1 }} />
+        <div style={{ paddingTop: 12 }}>
+          <ProfileMenu placement="right-end" />
+        </div>
       </nav>
     );
   }

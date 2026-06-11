@@ -67,7 +67,7 @@ export function TicketView() {
           <BackIcon size={22} />
         </button>
         <span style={S.headerTitle}>Table {table.resolveTableDisplayId(tableId)} — Bill</span>
-        <span />
+        <span style={S.headerSpacer} />
       </header>
       <div style={ticketStyle}>
         <Receipt tableId={tableId} items={ticketItems} />

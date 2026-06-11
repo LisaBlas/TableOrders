@@ -14,6 +14,7 @@ import {
   type AdminCategory,
 } from "../services/directusAdmin";
 import { colors, radii } from "../styles/tokens";
+import { S } from "../styles/appStyles";
 import {
   FOOD_SUBCATEGORIES,
   DRINKS_SUBCATEGORIES,
@@ -1486,8 +1487,10 @@ const SECTION_ORDER = ["Food", "Wines", "Drinks", "Shop"] as const;
 export function AdminView() {
   const { setView, showToast } = useApp();
   const { reloadMenu } = useMenu();
-  const { isMobile, isTablet } = useBreakpoint();
-  const isTableView = !isMobile && !isTablet;
+  const { isMobile, isTablet, isTabletLandscape, isLaptop, isDesktop } = useBreakpoint();
+  const isWideShell = isDesktop || isLaptop || isTabletLandscape;
+  const isTableView = isWideShell;
+  const headerStyle = isTablet || isWideShell ? S.headerTablet : S.header;
 
   const [items, setItems] = useState<AdminMenuItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1645,28 +1648,21 @@ export function AdminView() {
         background: colors.bg,
         fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
         ...(isTableView
-          ? { height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden" }
-          : { minHeight: "100vh" }),
+          ? { height: "100%", minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }
+          : { minHeight: "100%" }),
       }}
     >
       {/* ── Header ── */}
       <header
         style={{
-          flexShrink: 0,
+          ...headerStyle,
           zIndex: 10,
-          background: colors.surface,
-          borderBottom: `1px solid ${colors.border}`,
-          display: "flex",
-          alignItems: "center",
-          padding: "0 16px",
-          height: 56,
-          gap: 12,
         }}
       >
-        <button onClick={handleBack} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "flex", color: colors.fg }}>
+        <button onClick={handleBack} style={S.back}>
           <BackIcon size={22} />
         </button>
-        <span style={{ fontWeight: 700, fontSize: 17, flex: 1 }}>Menu</span>
+        <span style={S.headerTitle}>Menu</span>
         <span style={{ fontSize: 12, color: colors.muted, fontWeight: 500 }}>Admin</span>
       </header>
 

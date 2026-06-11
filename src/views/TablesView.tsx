@@ -10,6 +10,7 @@ import { useTableSwap } from "../hooks/useTableSwap";
 import { TableCard } from "../components/TableCard";
 import { SwapSheet } from "../components/SwapSheet";
 import { Modal } from "../components/Modal";
+import { ProfileMenu } from "../components/ProfileMenu";
 import { S } from "../styles/appStyles";
 import type { TableId, TableConfig, TableEntry } from "../types";
 
@@ -118,6 +119,13 @@ export function TablesView() {
 
   return (
     <div style={S.page}>
+      <header style={styles.header}>
+        {styles.isWide ? (
+          <span style={{ fontWeight: 700, fontSize: 18, letterSpacing: "-0.3px" }}>Floor</span>
+        ) : (
+          <ProfileMenu />
+        )}
+      </header>
 
       <div style={{ ...styles.grid, paddingBottom: swap.isActive ? 160 : styles.isBig ? 20 : 16 }}>
         {(() => {

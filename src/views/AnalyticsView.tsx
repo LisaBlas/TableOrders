@@ -5,6 +5,7 @@ import { useTable } from "../contexts/TableContext";
 import { useBreakpoint } from "../hooks/useBreakpoint";
 import { S } from "../styles/appStyles";
 import { colors, radii } from "../styles/tokens";
+import { BackIcon } from "../components/icons";
 import { PeriodSelector } from "../components/analytics/PeriodSelector";
 import { KpiSummary } from "../components/analytics/KpiSummary";
 import { RevenueTrendChart } from "../components/analytics/RevenueTrendChart";
@@ -148,7 +149,15 @@ export function AnalyticsView() {
 
       {/* Header */}
       <div style={header}>
-        <span style={{ fontWeight: 700, fontSize: 18, letterSpacing: "-0.3px" }}>Sales Trends</span>
+        <button
+          onClick={() => setView("tables")}
+          style={S.back}
+          aria-label="Back to floor"
+        >
+          <BackIcon size={22} />
+        </button>
+        <span style={S.headerTitle}>Sales Trends</span>
+        <span style={S.headerSpacer} />
       </div>
 
       {/* Loading skeletons */}

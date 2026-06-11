@@ -11,9 +11,8 @@ import { SplitProvider, useSplit } from "./contexts/SplitContext";
 import { UIProvider, useUI, TEXT_SCALE_ZOOM } from "./contexts/UIContext";
 import { useBreakpoint } from "./hooks/useBreakpoint";
 import { AppNav } from "./components/AppNav";
-import { ProfileMenu } from "./components/ProfileMenu";
 import { TablesView } from "./views/TablesView";
-import type { View } from "./types";
+import { MOBILE_BOTTOM_NAV_VIEWS, SHELL_VIEWS } from "./navigation";
 import { OrderView } from "./views/OrderView";
 import { TicketView } from "./views/TicketView";
 import { SplitEqualView } from "./views/SplitEqualView";
@@ -124,22 +123,6 @@ function LoadingScreen() {
   );
 }
 
-function MobileTopBar() {
-  return (
-    <div style={{
-      height: 52,
-      padding: "0 16px",
-      display: "flex",
-      alignItems: "center",
-      background: colors.surface,
-      borderBottom: `1px solid ${colors.border}`,
-      flexShrink: 0,
-    }}>
-      <ProfileMenu />
-    </div>
-  );
-}
-
 function Router() {
   const { view, toast, setView } = useApp();
   const { menuLoading } = useMenu();
@@ -227,11 +210,10 @@ function Router() {
 
   const zoom = TEXT_SCALE_ZOOM[textScale];
 
-  const NAV_VIEWS: View[] = ["tables", "dailySales", "analytics"];
-  const isNavView = NAV_VIEWS.includes(view);
+  const isNavView = SHELL_VIEWS.includes(view);
   const isWide = isDesktop || isLaptop || isTabletLandscape;
   const useSidebar = isNavView && isWide;
-  const useBottomBar = isNavView && !isWide;
+  const useBottomBar = MOBILE_BOTTOM_NAV_VIEWS.includes(view) && !isWide;
   const navRootStyle = isDesktop ? S.rootNavDesktop : isLaptop ? S.rootNavLaptop : rootStyle;
 
   // When zoom != 1, the container's nominal height must be 100dvh/zoom so
@@ -271,7 +253,6 @@ function Router() {
   return (
     <div style={{ ...outerStyle, zoom } as React.CSSProperties}>
       {useSidebar && <AppNav />}
-      {useBottomBar && isNavView && <MobileTopBar />}
       <div style={contentStyle}>
         {IS_DEMO_MODE && <DemoBanner />}
         {syncBanner}

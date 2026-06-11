@@ -28,7 +28,7 @@ const DIVIDER: React.CSSProperties = {
   margin: "3px 0",
 };
 
-export function ProfileMenu() {
+export function ProfileMenu({ placement = "bottom-start" }: { placement?: "bottom-start" | "right-end" }) {
   const { isAdmin, logout } = useAuth();
   const { setView, showToast } = useApp();
   const { darkMode, toggleDarkMode, textScale, setTextScale } = useUI();
@@ -81,8 +81,9 @@ export function ProfileMenu() {
           <div
             style={{
               position: "absolute",
-              top: "calc(100% + 8px)",
-              left: 0,
+              ...(placement === "right-end"
+                ? { left: "calc(100% + 8px)", bottom: 0 }
+                : { top: "calc(100% + 8px)", left: 0 }),
               width: 224,
               background: colors.surface,
               border: `1px solid ${colors.border}`,
@@ -91,7 +92,7 @@ export function ProfileMenu() {
               zIndex: 500,
               overflow: "hidden",
               animation: "scaleIn 0.12s ease-out",
-              transformOrigin: "top left",
+              transformOrigin: placement === "right-end" ? "bottom left" : "top left",
             }}
           >
             {/* Username row */}
