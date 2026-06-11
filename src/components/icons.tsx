@@ -26,6 +26,26 @@ export const BackIcon: React.FC<IconProps> = ({
   </svg>
 );
 
+export const PlusIcon: React.FC<IconProps> = ({
+  size = 20,
+  color = 'currentColor',
+  style
+}) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={color}
+    strokeWidth="2.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    style={style}
+  >
+    <path d="M12 5v14M5 12h14" />
+  </svg>
+);
+
 export const BillIcon: React.FC<IconProps> = ({
   size = 20,
   color = 'currentColor',

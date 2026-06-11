@@ -122,12 +122,12 @@ GET /items/menu_items
 ---
 
 ### `bills`
-**Purpose:** Paid bills (analytics source of truth, soft-deleted)
+**Purpose:** Paid bills (analytics source of truth, never deleted)
 
 ```typescript
 {
   id: uuid (PK),
-  table_id: number,       // Table number (1-11)
+  table_id: string,       // Static table id or temporary ext-* table id
   total: decimal,         // Final bill total (after gutschein)
   gutschein: decimal,     // Discount amount (nullable)
   tip: decimal,           // Tip amount (nullable)
@@ -148,11 +148,11 @@ GET /items/menu_items
 **Berlin Timezone Filtering:**
 ```javascript
 // Get today's bills (Berlin timezone)
-const { start, end } = berlinDayBoundsUTC('2026-04-24');
+const { gte, lte } = businessDayBoundsUTC('2026-04-24');
 const bills = await directus.request(
   readItems('bills', {
     filter: {
-      timestamp: { _between: [start, end] }
+      timestamp: { _between: [gte, lte] }
     },
     fields: ['*', 'items.*']
   })
@@ -210,7 +210,7 @@ const posEntries = billItems.reduce((acc, item) => {
 ```typescript
 {
   id: number (PK),
-  table_id: string,       // "1", "2", ..., "11"
+  table_id: string,       // Static table id or temporary ext-* table id
   seated: boolean,        // Is table seated?
   gutschein: decimal,     // Gutschein amount (nullable)
   orders: json,           // OrderItem[] (full order state)
@@ -369,11 +369,11 @@ GET /items/menu_items
 
 ### Get Today's Revenue (Berlin Timezone)
 ```javascript
-const { start, end } = berlinDayBoundsUTC('2026-04-24');
+const { gte, lte } = businessDayBoundsUTC('2026-04-24');
 const bills = await directus.request(
   readItems('bills', {
     filter: {
-      timestamp: { _between: [start, end] }
+      timestamp: { _between: [gte, lte] }
     },
     aggregate: { sum: ['total'] }
   })
@@ -408,11 +408,11 @@ const sessionsMap = sessions.reduce((acc, session) => {
 
 ### Aggregate POS Entries (Daily Sales)
 ```javascript
-const { start, end } = berlinDayBoundsUTC('2026-04-24');
+const { gte, lte } = businessDayBoundsUTC('2026-04-24');
 const bills = await directus.request(
   readItems('bills', {
     filter: {
-      timestamp: { _between: [start, end] }
+      timestamp: { _between: [gte, lte] }
     },
     fields: ['items.*']
   })
@@ -441,7 +441,7 @@ const posEntries = bills.flatMap(b => b.items).reduce((acc, item) => {
 3. **Delete `table_sessions` only on table close** — Not on app restart
 4. **Use optimistic updates** — Add `tempId` prefix, replace with `directusId` on success
 5. **Respect 3-second grace period** — Don't overwrite local state during debounce window
-6. **Filter bills by Berlin timezone** — Use `berlinDayBoundsUTC()`, not naive UTC
+6. **Filter bills by Berlin business day** — Use `businessDayBoundsUTC()`, not naive UTC
 
 ---
 
@@ -472,7 +472,9 @@ const posEntries = bills.flatMap(b => b.items).reduce((acc, item) => {
 **Debounce Delays:**
 - Table state writes: 500ms
 
-**Timezone:** Europe/Berlin (hardcoded in `todayBerlinDate()` and `berlinDayBoundsUTC()`)
+**Timezone:** Europe/Berlin. Business days run from
+`BUSINESS_DAY_START_HOUR` to the next day's cutoff and are handled by
+`todayBusinessDate()` / `businessDayBoundsUTC()`.
 
 **Auto-Generated Fields:**
 - `date_created` — Set on insert

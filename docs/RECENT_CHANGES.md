@@ -10,7 +10,7 @@ Full codebase analysis vs docs. Updated CLAUDE.md:
 - Added 4 undocumented utils: batchGrouping, batchMarks, conflictDetection, sessionStorage
 - Added `tokens.ts` to styles
 - Corrected `constants.js` / `helpers.js` → `constants.ts` / `helpers.ts`
-- Corrected table count (was "11 hardcoded", now accurate: 13 inside + 6 outside + dynamic)
+- Corrected obsolete table-count memory; current permanent list is flat and temporary overflow tables are dynamic
 - Added Key Behaviors: custom items, order destination routing, MIN_QTY_2_IDS, dynamic tables
 - Added `dynamic_tables` to localStorage keys list
 - Updated MenuContext description to include `minQty2Ids`

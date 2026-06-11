@@ -24,7 +24,9 @@ Table IDs are reused across sessions. When a table is closed, the following must
 
 ## SI-4: Never commit secrets or `.env` to git
 
-`.env` files are `chmod 600`. The Directus static token lives in `.env` and must never appear in source or git history.
+`.env` files must never appear in source or git history. The client should use
+`VITE_DIRECTUS_URL` only; Directus auth is user/JWT based and no static Directus
+token should be added to `.env`, source, or service files.
 
 ## SI-5: Always pull before changes, deploy after push
 

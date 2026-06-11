@@ -7,21 +7,13 @@ export type TableId = number | string;
 export interface TableEntry {
   id: TableId;
   label: string;
-  isDivider?: never;
 }
 
-export interface TableDivider {
-  isDivider: true;
-  label: string;
-  id?: never;
-}
-
-export type TableConfig = TableEntry | TableDivider;
+export type TableConfig = TableEntry;
 
 export interface DynamicTable {
   id: string;
   label: string;
-  location: "inside" | "outside";
 }
 
 export type TableStatus = "open" | "seated" | "unconfirmed" | "confirmed";

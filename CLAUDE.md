@@ -1,300 +1,186 @@
-# TableOrders — Restaurant Order Management System
+# CLAUDE.md
 
-## Project Overview
-Mobile-first React app for restaurant table management, order taking, and bill processing.
-Built for speed and simplicity — optimized for multi-device, front-of-house use with real-time synchronization.
+This session-memory file is intentionally mirrored with its counterpart. Keep
+both files aligned: they are first-session project memory for coding agents, not
+changelogs or task lists. Detailed rules for what belongs here live in
+`docs/DOCUMENTATION_MEMORY_RULES.md`.
 
-**Architectural role:** This app is an order coordination layer, not a fiscal POS. It sits between waitstaff and an external POS system (e.g. a scale-integrated cheese POS). Staff use it to take orders and track tables during service; at end of shift they manually enter daily sales into the real POS, which handles tax calculation and legal receipts. The app's "receipts" are internal working documents for staff, not fiscal documents issued to customers. This means VAT calculation, legal receipt formatting, and fiscal compliance are out of scope.
+## Project Summary
+TableOrders is a mobile-first React restaurant order management app for table
+status, order taking, bill splitting, daily sales, POS-crossing workflows,
+analytics, temporary table overflow, and admin-only menu maintenance. It is an
+operational front-of-house tool optimized for speed, clarity, and reliable
+multi-device coordination through Directus-backed polling sync.
 
-## Core Features
-1. **Authentication** — Directus-native login; username typed by staff is mapped to `{username}@camidi.com` and validated against Directus. JWT stored in localStorage, role resolved from Directus user's role name.
-2. **Floor Management** — Visual table grid with real-time status (Open, Seated, Ordered, Confirmed)
-3. **Table Swap** — Long-press any table to enter swap mode; tap a second table to exchange all state (orders, batches, gutschein, seated status) between both tables
-4. **Order Taking** — Category-based menu with qty controls, unsent/sent order tracking
-5. **Sent Batch Tracking** — Each sent batch is shown in a collapsible slider; batches are individually mark/unmark-able as delivered
-6. **Bill Generation** — Per-table tickets with copy-to-clipboard for kitchen/payment
-7. **Bill Splitting** — Two modes:
-   - Equal split: divide total by guest count
-   - Item split: per-item selection, round-by-round payment tracking
-8. **Table Closing** — Receipt summary with category subtotals, destructive confirmation
-9. **Daily Sales Tracking** — Persistent record of all paid bills with revenue totals, accessible from homepage
-10. **POS Integration** — Item-level crossing tracker (mark items as entered into POS), aggregated POS view by item
-11. **Historical Date Picker** — View sales for any past date, not just today
-12. **Responsive Design** — Adaptive layouts for mobile, tablet portrait, tablet landscape, desktop
-13. **Multi-Device Sync** — Real-time table state synchronization across devices via Directus polling
-14. **In-App Menu Admin** — Admin-only menu editor for availability, item details, variants, and new item creation
-15. **Analytics Dashboard** — Sales Trends view (`AnalyticsView`) with KPI summary, revenue trend chart, item revenue mix, top items, weekday pattern, and period comparison; backed by `bills` + `bill_items` in Directus
+TableOrders is an order coordination layer, not a fiscal POS. Staff use it to
+take orders and track tables during service, then manually enter sales into the
+real POS at shift end. The app's receipts are internal working documents, so VAT
+calculation, legal receipt formatting, and fiscal compliance are out of scope.
 
-## Tech Stack
-- **React 18** with TypeScript (Vite)
-- **Inline styles** — `S` object in `appStyles.js`; design tokens (colors, radii) in `tokens.ts`
-- **State** — React Context (AuthContext + AppContext + TableContext + MenuContext + SplitContext), TanStack Query for server state
-- **Directus CMS** — headless CMS for menu data, menu admin writes, paid bills, and table sessions (SQLite, REST API)
-  - **Authentication** — Directus-native. `AuthContext` calls `POST /auth/login` on Directus directly, then `GET /users/me?fields=role.name` to resolve the app role. JWT sent as `Authorization: Bearer` on all subsequent requests. No Worker proxy; CORS enabled on Directus server.
-- **Real-time Sync** — 2-second polling for table sessions, 5-second polling for bills (today only)
-- **DM Sans** font (Google Fonts)
+## Tech Stack And Architecture
+- React 18 + TypeScript on Vite; the codebase is mixed TS/JS.
+- State is primarily React Context: `AuthContext`, `AppContext`,
+  `TableContext`, `MenuContext`, `SplitContext`, and `UIContext`.
+- TanStack Query handles Directus server state and polling.
+- Styling uses inline JS objects in `src/styles/appStyles.js` plus CSS custom
+  properties from `src/index.css` and tokens in `src/styles/tokens.ts`. Do not
+  introduce CSS-in-JS libraries or broad CSS rewrites.
+- Directus at `https://cms.blasalviz.com` stores menu items, variants, paid
+  bills, bill items, and table sessions. CORS is configured on Directus;
+  `VITE_DIRECTUS_URL` points to the instance.
+- Auth is Directus-native: typed usernames are mapped to
+  `{username}@camidi.com`, `/auth/login` returns a JWT stored as
+  `sessionToken`, and `/users/me?fields=role.name` resolves `staff` or `admin`.
+  The JWT is sent as `Authorization: Bearer` on Directus requests.
 
-## Project Structure
-```
-src/
-├── main.jsx                      # Entry point
-├── index.css                     # Global reset
-├── App.tsx                       # Root: auth guard + view routing + QueryClientProvider + context providers
-├── config/
-│   └── appConfig.ts              # Central runtime constants (LONG_PRESS_MS, DEBOUNCE_DELAY_MS, POLL_INTERVAL_MS, OWNERSHIP_GRACE_MS, MAX_RETRIES, RESTAURANT_NAME, TIMEZONE)
-├── contexts/
-│   ├── AuthContext.tsx           # Authentication state + token management
-│   ├── AppContext.tsx            # Global UI state + all paid-bill actions (syncs to Directus)
-│   ├── TableContext.tsx          # All table/order state and actions (syncs to Directus table_sessions); exposes dynamicTables + addDynamicTable + resolveTableDisplayId
-│   ├── MenuContext.tsx           # Live menu from Directus, falls back to constants.ts; exposes menu + minQty2Ids
-│   └── SplitContext.tsx          # Split payment state machine
-├── hooks/
-│   ├── useTableOrder.ts          # Derived order state for a specific table
-│   ├── useLocalStorage.ts        # Persistent state hook
-│   ├── useMenuItems.ts           # Filtered/grouped menu items for OrderView
-│   ├── useBreakpoint.ts          # Responsive breakpoint detection (mobile/tablet/desktop)
-│   ├── useDirectusSync.ts        # Polling + debounced writes + conflict resolution for table sessions; exposes syncError
-│   ├── useTableClose.ts          # Close flow logic (payment, tip, cleanupTable)
-│   ├── useTableSwap.ts           # Long-press swap state machine
-│   ├── useLongPress.ts           # Generic long-press hook (500ms threshold)
-│   ├── useBillEdit.ts            # Bill edit mode helpers
-│   └── useSubcategoryState.ts    # Subcategory expand/collapse state for menu
-├── services/
-│   ├── directusMenu.ts           # fetchMenu() — GET menu_items from Directus
-│   ├── directusAdmin.ts          # In-app admin menu CRUD for menu_items and menu_item_variants
-│   ├── directusBills.ts          # fetchBillsByDate, createBillInDirectus, patchBill/Item
-│   └── directusSessions.ts       # fetchTableSessions, upsertSession, deleteSession (real-time table state)
-├── views/
-│   ├── LoginView.tsx             # Authentication form
-│   ├── TablesView.tsx            # Floor grid, table swap (long-press), status legend
-│   ├── AdminView.tsx             # Admin-only in-app menu editor backed by Directus
-│   ├── OrderView.tsx             # Menu + order bar + sent batches
-│   ├── TicketView.tsx            # Bill view
-│   ├── DailySalesView.tsx        # Revenue summary (reads from Directus bills collection) + POS aggregation view
-│   ├── SplitItemView.tsx         # Item-by-item split
-│   ├── SplitEqualView.tsx        # Equal split
-│   ├── SplitConfirmView.tsx      # Guest payment confirmation
-│   └── SplitDoneView.tsx         # Final split summary
-├── components/
-│   ├── TableCard.tsx             # Individual table card (status, swap highlighting, destination dot)
-│   ├── OrderBar.tsx              # Collapsible bottom slider (unsent items / sent batches)
-│   ├── SentBatchCard.tsx         # Sent batch list (used in bill view)
-│   ├── BillView.tsx              # Full bill breakdown
-│   ├── BillHeader.tsx            # Bill header: brand, date, edit toggle, gutschein button
-│   ├── BillCard.tsx              # Per-bill card in daily sales (supports edit mode + item crossing)
-│   ├── BillTab.tsx               # Bill tab controls
-│   ├── Modal.tsx                 # Generic confirm modal
-│   ├── Toast.tsx                 # Auto-dismiss notification
-│   ├── ErrorBoundary.tsx         # Error boundary — full-page (default) or inline card (inline prop)
-│   ├── ConflictResolutionModal.tsx # 3-way conflict UI (local / remote / merge)
-│   ├── RetryModal.tsx            # Non-dismissible retry modal for write failures
-│   ├── SwapSheet.tsx             # Swap confirmation bottom sheet
-│   ├── CustomItemModal.tsx       # Freeform custom item creation (name, price, qty)
-│   ├── GutscheinModal.tsx        # Voucher amount input modal
-│   ├── PaymentPanel.tsx          # Payment amount input with tip display
-│   ├── SplitOptions.tsx          # Split mode selector buttons (equal / by item)
-│   ├── MenuItemCard.tsx          # Menu grid item
-│   ├── MenuItemRow.tsx           # Menu list item
-│   ├── MenuGrid.tsx              # Responsive menu grid component (subcategory grouping)
-│   ├── NoteBottomSheet.tsx       # Item note input
-│   ├── VariantBottomSheet.tsx    # Item variant picker
-│   ├── Receipt.tsx               # Printable receipt
-│   ├── SalesSummary.tsx          # Daily sales summary stats
-│   └── icons.tsx                 # SVG icon components (BackIcon, BillIcon, SalesIcon)
-├── components/analytics/
-│   ├── KpiSummary.tsx            # 5-tile KPI grid (Revenue, Avg Bill, Avg Tip, Tables, Covers) with comparison label
-│   ├── PeriodSelector.tsx        # Period chips (Last 7/30/Month/Custom) + date range context row
-│   ├── RevenueTrendChart.tsx     # Interactive daily bar chart; auto-selects last day with revenue; shows peak label
-│   ├── CategoryBreakdown.tsx     # Item Revenue Mix horizontal bar chart (Food/Wines/Drinks/Shop)
-│   ├── TopItemsTable.tsx         # Top items by revenue or qty with % of item revenue suffix
-│   ├── WeekdayPattern.tsx        # Avg revenue by weekday; shows ×N sample count at ≥28 days
-│   └── InsightStrip.tsx          # Deterministic insight row (revenue delta, best day, top category)
-├── data/
-│   └── constants.ts              # Tables config (TABLES), static menu (MENU), STATUS_CONFIG, subcategory lists, MIN_QTY_2_IDS
-├── utils/
-│   ├── helpers.ts                # getTableStatus, getItemDestination, expandItems, consolidateItems
-│   ├── batchGrouping.ts          # groupByDestination — splits order items into bar/counter/kitchen groups
-│   ├── batchMarks.ts             # createBatchId, batchMarkId, normalizeMarkedBatchIds (legacy number→string migration)
-│   ├── conflictDetection.ts      # detectDirtySessionConflicts, mergeSessions (3-way merge)
-│   ├── sessionStorage.ts         # Full localStorage session layer: cache, dirty records, sync meta, sessionHash
-│   ├── migration.ts              # Legacy bill migration (adds posId to pre-Directus bills)
-│   ├── billFactory.ts            # Bill creation factories (createFullTableBill, createEqualSplitTableBill, etc.)
-│   ├── salesAggregation.ts       # POS entry aggregation for Daily Sales view
-│   ├── analytics.ts              # Analytics aggregation: KPI, timeline, category, top items, weekday, insights
-│   └── fetchWithRetry.ts         # Exponential backoff retry helper (used by MenuContext)
-├── styles/
-│   ├── appStyles.js              # All inline style definitions (S object) + responsive variants
-│   └── tokens.ts                 # Design tokens: colors palette + border radii
-└── types/
-    └── index.ts                  # Shared TypeScript types (Bill, OrderItem, TableSession, DynamicTable, Destination, etc.)
-```
-
-## Data Model
-→ Full schemas, query patterns, and integrity rules: [`docs/DIRECTUS_SCHEMA.md`](docs/DIRECTUS_SCHEMA.md)
-
-Key shapes:
-- **`table_sessions`** — active table state (orders, sentBatches, markedBatches, gutschein, seated); deleted on close
-- **`bills` + `bill_items`** — one record per payment, never deleted; `bill_items.crossed_qty` tracks POS entries
-- **`OrderItem`** — `qty` (total ordered) / `sentQty` (sent to kitchen); unsent = `qty - sentQty > 0`; `destination` field routes to bar/counter/kitchen
-- **`Batch.id`** — stable string ID, never positional; `markedBatches` keyed by these
-- **Split Payment** — `splitRemaining` expands qty > 1 into individual units; `splitPayments` records per-guest totals
-- **`tempId`** — optimistic bill prefix (client-only); replaced with `directusId` on Directus write
-- **`appConfig.ts`** — single source of truth for all timing/retry constants; change here, not inline
-
-## Views (State Machine)
-- `login` — Authentication form (blocks app until logged in)
-- `tables` — Floor overview, table grid, daily sales button
-- `order` — Menu selection, order building, send to kitchen
-- `ticket` — Bill view, split options, close table (close confirmation is a Modal inside this view, not a separate route)
-- `split` — Equal or item-based split flow
-- `splitConfirm` — Guest payment confirmation (item split only)
-- `splitDone` — Final split summary
-- `dailySales` — Revenue summary, list of all paid bills, aggregated POS view, date picker
-- `admin` — Admin-only in-app menu editor for Directus `menu_items` and `menu_item_variants`
-- `analytics` — Sales Trends dashboard: period selector, KPI tiles with deltas, revenue trend, category mix, top items, weekday pattern, insight strip
-
-## Key Behaviors
-- **Authentication required** — App blocked until login with valid credentials
-- **Admin role** — `AuthContext.isAdmin` is set when Directus role name is `"admin"`; `TablesView` shows the Menu button only for admins, and `AdminView` is routed as `view === "admin"`
-- **Real-time multi-device sync** — Table state (orders, batches, gutschein, seated) synced to Directus every 500ms (debounced); fetched every 2 seconds
-- **Conflict resolution** — Dirty local table sessions store a last-synced base snapshot/hash; reconnect uses three-way comparison (base/local/remote) before prompting
-- **Conflict prompts are recovery-only** — Normal online table edits may create short-lived dirty local records for refresh safety, but conflict detection should only prompt during offline→online recovery or failed-write retry paths
-- **Optimistic bill creation** — Bills added to cache immediately with `tempId`; replaced with `directusId` on successful Directus write
-- **Split bill metadata** — Persisted in `bills.split_data` for both equal splits (`{ guests }`) and item splits (`{ payments }`); `split_guests` stores the durable guest count for both split modes
-- **`session_id` on bills** — All bills from the same table close share one UUID; generated in `SplitContext` on split initiation and at each non-split close site; `aggregateKpis` counts distinct session IDs so split bills don't inflate the Tables KPI; legacy bills without `session_id` each count as 1 table
-- **Unsent items** can be modified (qty +/-)
-- **Sent items** are locked, shown in batch history
-- **Custom items** — staff can add freeform items (name, price, qty) via `addCustomItem`; IDs prefixed `custom-{timestamp}`, never clash with menu IDs
-- **Order destination routing** — `getItemDestination` auto-assigns each item to bar / counter / kitchen based on category/subcategory/id prefix; shown as emoji on `TableCard`; used in clipboard export grouping
-- **MIN_QTY_2_IDS** — Cheese Plate, Raclette, Fondue, Fondue Alkoholfrei enforce a minimum qty of 2 per order; set is exported from `constants.ts` and passed through `MenuContext.minQty2Ids`
-- **Dynamic tables** — `addDynamicTable(label, location)` creates ad-hoc tables beyond the hardcoded list; persisted to localStorage key `dynamic_tables`; `resolveTableDisplayId` resolves display names for both static and dynamic tables
-- **Table swap** — long-press (500ms) activates swap mode; tap destination table; all state swapped bidirectionally (orders, sentBatches, markedBatches, gutscheinAmounts, seated status)
-- **Batch colour coding** — sent batch sections show a red left-border accent when pending delivery, green when marked; the collapsed slider shows a matching status dot
-- **Marked batches** are keyed by stable `Batch.id` strings, with legacy timestamp fallback; never store positional batch indices
-- **Split by item** expands qty > 1 into individual units for granular splitting
-- **Clipboard integration** for order/ticket export (no kitchen backend)
-- **Toast notifications** (2s auto-dismiss) for user feedback
-- **Paid bills saved** to Directus automatically when table closes — cross-device, persistent
-- **Menu loaded from Directus** on app start; retried up to 3x (800ms exponential backoff) before falling back to static constants.ts
-- **In-app menu admin** — `AdminView` fetches all `menu_items` with nested variants/category, groups them as Food/Wines/Drinks/Shop, supports search and collapsible sections, and writes through `directusAdmin.ts`
-- **Admin menu writes** — availability toggles are optimistic with rollback on failure; edit modal patches item fields (`name`, `short_name`, `subcategory`, `pos_id`, `min_qty`, simple `price`) and variant prices, can delete variants, and can add variants
-- **New admin items** — new menu items are created available by default with `sort_order: 99`; simple items store `price` on `menu_items`, variant items create rows in `menu_item_variants`; Drinks default to 0,2/0,4 variants and Wines support bottle-only or glass-option variant sets
-- **Menu cache refresh after admin edits** — `AdminView` tracks a dirty flag and calls `MenuContext.reloadMenu()` when leaving back to tables so order-taking uses the edited Directus menu
-- **Offline indicator** — amber banner shown at the top of all views when the sessions polling query fails after TanStack Query's default retries (~7s of persistent failure)
-- **Table close is irreversible in-app** — paid bills remain in Daily Sales/POS workflow; mistaken closes are handled manually by marking the bill as added to POS and recreating the table
-- **Bill edit mode** — mutations are local-only until "Done"; Directus sync fires on exit; Cancel restores snapshot
-- **Item-level POS crossing** — increment/decrement `crossed_qty` for individual items; syncs to Directus via `patchBillItem`
-- **Date picker** — view historical bills by business day; a day runs 5am–4:59:59am (Berlin time), so late-night bills are attributed to the shift they belong to
-- **Responsive layouts** — `useBreakpoint()` hook provides mobile/tablet/tabletLandscape/desktop breakpoints; adaptive grid/list views
-
-## Limitations & Trade-offs
-- **Simple credentials** — Two Directus users (`camidi`, `admin`); no per-user roles beyond staff/admin, no multi-tenant support
-- **No backend** — orders copied to clipboard instead of sent to kitchen system
-- **No print integration** — clipboard export only
-- **Berlin timezone hardcoded** — `todayBusinessDate()` and `businessDayBoundsUTC()` assume Europe/Berlin; not configurable
-- **2-second polling overhead** — Table sessions refetch every 2s; could be optimized with WebSockets for lower latency
-- **500ms debounce on writes** — Balance between responsiveness and API load; may feel sluggish on slow connections
-- **Manual conflict resolution only** — Dirty local table sessions are tracked with base/local/operation metadata in localStorage and conflicts prompt the user to choose local, remote, or merge before retrying. No OT/CRDT; normal online operation still uses a 3s local-ownership grace period around confirmed writes
-- **Order IDs can be numeric** — Directus/static menu data may produce numeric `OrderItem.id` values. Session cache validators must accept string or number IDs; hash/canonical comparison can normalize IDs to strings
-
-## Future Improvements (if productionizing)
-1. ~~**Persistence**~~ — ✅ Done via Directus (bills + menu + table sessions)
-2. ~~**Menu editor**~~ — ✅ Done via in-app `AdminView` backed by Directus
-3. ~~**Auth**~~ — ✅ Done (basic token auth; could add roles/permissions)
-4. ~~**Responsive design**~~ — ✅ Done (mobile/tablet/desktop breakpoints)
-5. ~~**Analytics dashboard**~~ — ✅ Done (`AnalyticsView` + `src/components/analytics/` + `src/utils/analytics.ts`)
-6. **Kitchen integration** — WebSocket or polling for order status updates (replace clipboard export)
-7. **Receipt printing** — browser print API or thermal printer integration
-8. **Multi-table view** — Batch operations, server-assigned tables
-9. **Payment integration** — Stripe Terminal, Square POS
-10. **Shift management** — Open/close shifts, cash reconciliation
-11. **Tax calculation** — Configurable tax rates per item/category
-12. **WebSocket sync** — Replace polling with WebSockets for lower latency
-13. **User management** — Multi-user auth with roles (admin, staff, viewer)
-14. **Timezone configuration** — Make timezone configurable instead of hardcoded Berlin; `BUSINESS_DAY_START_HOUR` is already a config constant and the utility functions are parameterization-ready for a future `restaurants` collection
-
-## Development Commands
+## Commands
 ```bash
-npm ci             # Install dependencies (use this, not npm install — respects lockfile exactly)
-npm run dev        # Start dev server (localhost:3000)
-npm run build      # Production build
-npm run build:demo # Static demo build using .env.demo / VITE_DEMO_MODE=true; outputs dist-demo with /TableOrders/demo/ base
-npm.cmd run build  # Windows PowerShell fallback when npm.ps1 is blocked
-npm.cmd exec tsc -- --noEmit  # Type-check without building
-npm run preview    # Preview production build
-npm test           # Run unit tests (vitest)
-```
-
-## Environment Setup
-Create a `.env` file in the project root:
-```env
-VITE_DIRECTUS_URL=https://cms.blasalviz.com
-```
-
-No token in the client. Auth uses Directus user JWTs — credentials live in Directus, not in `.env`.
-
-Demo builds use `.env.demo`:
-```env
-VITE_DEMO_MODE=true
-```
-When `VITE_DEMO_MODE=true`, Directus service modules use `src/demo/demoServices.ts` localStorage-backed mocks instead of HTTP calls, seed state through `initDemoState()`, bypass login in `AuthContext`, and show `DemoBanner`.
-Deploy the demo to GitHub Pages with `npm run deploy:demo`; `predeploy:demo` rebuilds `dist-demo`, then publishes it to the `demo/` subfolder so production remains at `/TableOrders/` and demo runs at `/TableOrders/demo/`.
-
-## Cloudflare Worker (`worker/`)
-No longer in use. The `worker/` directory can be deleted. CORS is configured
-on Directus directly (`CORS_ENABLED=true`, `CORS_ORIGIN=https://lisablas.github.io`).
-
-## Agent Rules
-- **Always `git pull origin main` before making any code changes**, regardless of whether the request comes from the terminal or Slack. Never skip this step.
-- After changes are committed and pushed, always run `npm run deploy` to publish to GitHub Pages.
-- Hard system rules (ref snapshot timing, conflict detection gating, table cleanup) → [`docs/SYSTEM_INVARIANTS.md`](docs/SYSTEM_INVARIANTS.md)
-
-## Deployment Workflow (GitHub Pages)
-```bash
-# 1. Pull latest source code
-git pull origin main
-
-# 2. Make your changes to source files
-# (edit src/*, data/*, etc.)
-
-# 3. Commit to main
-git add .
-git commit -m "Your changes"
-git push origin main
-
-# 4. Build + deploy to gh-pages (one command)
+npm ci
+npm run dev
+npm run build
+npm run build:demo
+npm run preview
 npm run deploy
+npm run deploy:demo
+npm test
+npm.cmd run build
+npm.cmd exec tsc -- --noEmit
 ```
 
-## Design Principles
-- **Responsive-first** — Mobile (0-767px), tablet portrait (768-1023px), tablet landscape (1024-1439px), desktop (1440px+)
-- **Speed over flexibility** — Inline styles, hardcoded config for fast iteration
-- **Clarity over cleverness** — Direct state updates, explicit view switching
-- **Reversible actions** — Confirm destructive operations (close table)
-- **Real-time sync** — Multi-device coordination via polling (eventual consistency model)
+Notes:
+- Use `npm ci`, not `npm install`, unless the user explicitly approves
+  dependency changes.
+- Vite dev server defaults to `localhost:3000`.
+- `npm run deploy` builds production and publishes `dist` to GitHub Pages.
+- `npm run deploy:demo` publishes `dist-demo` to the `demo/` subfolder.
+- Run `npm run build` before considering code changes complete unless the task
+  is docs-only. Use `npm.cmd` on PowerShell if `npm.ps1` is blocked.
 
-## Directus Schema
-→ Full schemas: [`docs/DIRECTUS_SCHEMA.md`](docs/DIRECTUS_SCHEMA.md)
+## Deployment And Safety Rules
+- Before source changes, pull latest `main` with `git pull origin main` when the
+  working tree allows it. Do not overwrite or revert unrelated dirty work.
+- Ask before installing dependencies, deleting files, clearing data, touching
+  secrets/auth/production data, committing, pushing, or deploying.
+- After an approved commit and push to `main`, run `npm run deploy`.
+- Avoid changing generated `dist/` or `dist-demo/` unless the task is deployment
+  or build-artifact related.
+- Keep docs and implementation aligned. If sync, deployment, data model, auth,
+  demo mode, or table-management behavior changes, update both session-memory
+  files together.
 
-Collections: `categories`, `menu_items`, `menu_item_variants`, `bills`, `bill_items`, `table_sessions`
-- Bills: **never deleted** — persistent record for accounting and analytics
-- Table sessions: **deleted on close** — no historical tracking
+## Durable App Behavior
+- Core views are `login`, `tables`, `order`, `ticket`, `split`,
+  `splitConfirm`, `splitDone`, `dailySales`, `analytics`, and `admin`.
+- Shell navigation applies to `tables`, `dailySales`, `analytics`, and `admin`.
+  Wide layouts use a left sidebar; mobile shows a bottom nav only for Floor and
+  Sales. Admin-only Analytics and Menu entries live in the sidebar on wide
+  screens and in `ProfileMenu` on mobile.
+- `UIContext` persists dark mode and text size in `ui_dark_mode` and
+  `ui_text_scale`. Dark mode sets `data-theme` on `<html>`; text size uses
+  app-level zoom values from `TEXT_SCALE_ZOOM`, with container height adjusted
+  to avoid zoom clipping.
+- `ScreenHeader` centralizes top bars. On shell views, wide layouts suppress
+  redundant back/profile controls because navigation lives in the sidebar.
+- `TABLES` is a flat hardcoded list of 18 permanent tables: 1-4, MUT, 10-15,
+  ToGo, A, B, C, Left, Mid, Right. The old Inside/Outside grouping is removed.
+- Staff can add temporary overflow tables during service. They are local-only in
+  `dynamic_tables`, use `ext-*` ids, are resolved through
+  `resolveTableDisplayId`, and are removed when the table closes. Permanent
+  table setup is a future admin/Directus feature; see
+  `docs/TABLE_MANAGEMENT_DECISION.md`.
+- Table swap uses a 500ms long press and swaps orders, sent batches, marked
+  batches, Gutschein amounts, and seated status.
+- Sent items are locked; only unsent quantities can be edited. Item splits
+  expand quantities into individual units for granular payment.
+- Clipboard export is the current kitchen/payment integration.
+- Status colors come from `STATUS_CONFIG` and are reused for table status,
+  batch status, and swap highlights.
 
-## Notes
-- Restaurant name ("Käserei Camidi") is defined in two places: hardcoded directly in `BillHeader.tsx`; imported from `appConfig.ts` (`RESTAURANT_NAME`) in `Receipt.tsx`. Both must be updated if the name changes — `BillTab.tsx` itself contains neither (it renders `BillHeader`)
-- Tables defined in `constants.ts` (`TABLES` array): Inside — 1, 2, 3, 4, MUT, 10–15, ToGo (13 slots); Outside — A, B, C, Left, Mid, Right (6 slots); plus user-created dynamic tables via `addDynamicTable`
-- Euro currency symbol hardcoded (€)
-- Menu categories: Food, Drinks, Wines, Shop — "Wines" view combines wines by glass (from `Drinks` key, filtered by `bottleSubcategory`) and static bottles (from `Wines` key); `useMenuItems` handles the merge
-- Status colors defined in `STATUS_CONFIG` (`constants.ts`): open=blue, seated=yellow, unconfirmed=red, confirmed=green — reused in batch colouring and swap mode highlights
-- Table swap uses long-press (500ms threshold, `LONG_PRESS_MS` in `appConfig.ts`) — `longFiredRef` guards normal taps but is bypassed in swap mode to allow target selection
-- `AppContext` exposes named bill action functions (`addPaidBill`, `markBillAddedToPOS`, `removePaidBillItem`, `restorePaidBillItem`, etc.) — do not manipulate `paidBills` directly
-- Auth uses Directus native login; `AuthContext` maps typed username to `{username}@camidi.com`, calls Directus `/auth/login`, resolves role via `/users/me?fields=role.name`. localStorage keys: `sessionToken` (Directus JWT), `authRole` (`"staff"` or `"admin"`)
-- localStorage keys in use: `authToken` (auth), `paidBills` (offline bill fallback), `table_orders_client_id` (stable sync client id), `table_sessions_cache` (offline table state), `table_sessions_dirty` (dirty upsert/delete records with base/local snapshots), `table_sessions_sync_meta` (last synced base hashes), `dynamic_tables` (user-created table slots)
-- `syncError` boolean exposed from `TableContext` — sourced from `useDirectusSync` → `useQuery` `isError` on the sessions poll
-- `ErrorBoundary` accepts `inline` prop: when true renders a compact "Something went wrong / Try again" card that resets boundary state instead of a full-page reload screen
-- Business day: `todayBusinessDate()` + `businessDayBoundsUTC()` (DST-aware); a "day" runs from `BUSINESS_DAY_START_HOUR` (5am) to 4:59:59am next day in Berlin time; bills before 5am belong to the previous business day
-- Responsive breakpoints defined in `useBreakpoint()`: mobile < 768px, tablet 768-1023px, tabletLandscape 1024-1439px, desktop >= 1440px
-- Offline-sync: when refresh loses local orders, verify cached session validation — numeric item IDs can cause valid-looking localStorage sessions to be silently rejected
-- Implementation rules (ref snapshot timing, conflict detection gates, table cleanup) → [`docs/SYSTEM_INVARIANTS.md`](docs/SYSTEM_INVARIANTS.md)
-- Sync architecture decisions and edge cases → [`docs/MEMORY.md`](docs/MEMORY.md)
-- Recent changes log → [`docs/RECENT_CHANGES.md`](docs/RECENT_CHANGES.md)
+## Data, Sync, And Bills
+- Table sessions live in Directus `table_sessions`; orders write with a 500ms
+  debounce and sessions poll every 2 seconds.
+- Bills poll every 5 seconds for the selected business day. Bills are never
+  deleted; table sessions are deleted on close, and close is irreversible
+  in-app.
+- A business day runs from `BUSINESS_DAY_START_HOUR` (5am Berlin) to 4:59:59am
+  the next day. The cutoff is defined in `appConfig.ts` and applied in
+  `directusBills.ts`, `analytics.ts`, and demo services. Berlin timezone is
+  hardcoded.
+- Dirty table state stores a last-synced base snapshot/hash and uses
+  three-way base/local/remote comparison on offline or failed-write recovery.
+  Normal online edits must not open conflict modals just because local differs
+  from the last poll.
+- Menu/order item IDs may be numeric from Directus/static data. Local cache and
+  conflict validators must accept string and number IDs; normalize only for
+  hashing/comparison.
+- Bills are optimistic: temporary client IDs are replaced by Directus IDs after
+  writes succeed.
+- Bills carry `session_id`; all bills from one table close share one UUID.
+  Analytics counts distinct session IDs so split bills do not inflate the
+  Tables KPI; legacy bills without `session_id` each count as 1 table.
+- Split metadata is persisted in `bills.split_data`; `split_guests` stores the
+  durable guest count for equal and item splits.
+- Marked batches are stable string batch IDs, not positional array indices.
+  Legacy numeric marks are migrated on read.
+- Paid bills should be modified through named `AppContext` actions, not by
+  mutating `paidBills` directly. Bill edit mode is local until "Done"; "Cancel"
+  restores the snapshot.
+
+## Menu, Admin, Analytics, And Demo
+- Menu data loads from Directus on app start, retries, then falls back to static
+  constants. Admin edits write through `directusAdmin.ts`; leaving `AdminView`
+  after dirty edits calls `MenuContext.reloadMenu()`.
+- `AdminView` groups menu items as Food, Wines, Drinks, Shop; supports search,
+  collapse, optimistic availability toggles with rollback, item edits, variant
+  price edits/additions/deletions, and new item creation.
+- Simple menu items store `price` on `menu_items`; variant items use
+  `menu_item_variants`. New items default to `available: true` and
+  `sort_order: 99`.
+- Daily Sales has Timeline and Sales tabs. The Sales tab contains revenue/POS
+  summaries and an article crossing view sortable by category or POS ID.
+- Analytics reads `bills` and `bill_items` over period ranges and computes KPI
+  deltas, revenue timeline, category mix, top items, weekday pattern, peak
+  hours, top tables, and deterministic insight text. Table labels must go
+  through `resolveTableDisplayId` so dynamic table names render correctly.
+- Demo mode is enabled by `VITE_DEMO_MODE=true`. Directus services route to
+  `src/demo/demoServices.ts`, login is bypassed, `DemoBanner` is shown, and
+  localStorage-backed seed sessions/bills reset after 10 minutes or via the demo
+  reset action.
+
+## Focused Docs
+- Directus schemas and query assumptions: `docs/DIRECTUS_SCHEMA.md`.
+- Hard sync/system invariants: `docs/SYSTEM_INVARIANTS.md`.
+- Durable sync architecture notes: `docs/MEMORY.md`.
+- Documentation memory rules: `docs/DOCUMENTATION_MEMORY_RULES.md`.
+- Table-management direction: `docs/TABLE_MANAGEMENT_DECISION.md`.
+- Recent historical notes: `docs/RECENT_CHANGES.md`.
+
+## Implementation Guidelines
+- Keep the app mobile-first and touch-friendly.
+- Preserve existing context/service boundaries before adding abstractions.
+- Preserve optimistic update, rollback, snapshot, and retry behavior.
+- Prefer focused changes over broad cleanup. This app is used operationally.
+- Confirm destructive user actions in UI, especially closing tables and clearing
+  sales.
+- Be careful with Directus field names. They mirror production collections:
+  `categories`, `menu_items`, `menu_item_variants`, `bills`, `bill_items`, and
+  `table_sessions`.
+
+## Verification
+- Primary verification for code changes: `npm run build`.
+- Type-check with `npm.cmd exec tsc -- --noEmit`.
+- Unit tests run with `npm test` and cover bill factories, session storage,
+  conflict detection, batch marks, `TableContext`, and `useDirectusSync`.
+- For UI behavior changes, run `npm run dev` and manually check affected flows
+  at mobile and tablet/desktop widths.
+- For sync, bill creation, POS crossing, clearing sales, split payments, or demo
+  mode, verify the relevant service calls/cache updates and localStorage keys.
+
+## Known Limitations
+- No kitchen backend, print integration, payment integration, or shift
+  management.
+- Polling-based sync instead of WebSockets.
+- Manual conflict resolution only; no OT/CRDT.
+- Berlin timezone and permanent table list are not configurable.
+- The Cloudflare Worker proxy is no longer in use. Do not add it back without
+  changing `VITE_DIRECTUS_URL` and the auth flow.

@@ -65,7 +65,7 @@ interface TableContextValue {
   toggleMarkBatch: (tableId: TableId, batchId: MarkedBatchId) => void;
   swapTables: (fromTableId: TableId, toTableId: TableId) => void;
   dynamicTables: DynamicTable[];
-  addDynamicTable: (label: string, location: "inside" | "outside") => void;
+  addDynamicTable: (label: string) => void;
   resolveTableDisplayId: (tableId: TableId) => string;
 }
 
@@ -391,9 +391,9 @@ export function TableProvider({ children }: { children: ReactNode }) {
     return key;
   }, [dynamicTables]);
 
-  const addDynamicTable = useCallback((label: string, location: "inside" | "outside") => {
+  const addDynamicTable = useCallback((label: string) => {
     const id = `ext-${label.replace(/\s+/g, "-").toLowerCase()}-${Date.now()}`;
-    setDynamicTables((prev) => [...prev, { id, label, location }]);
+    setDynamicTables((prev) => [...prev, { id, label }]);
   }, [setDynamicTables]);
 
   const cleanupTable = useCallback((tableId: TableId) => {

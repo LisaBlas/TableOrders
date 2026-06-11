@@ -11,6 +11,7 @@ import { TableCard } from "../components/TableCard";
 import { SwapSheet } from "../components/SwapSheet";
 import { Modal } from "../components/Modal";
 import { ScreenHeader } from "../components/ScreenHeader";
+import { PlusIcon } from "../components/icons";
 import { S } from "../styles/appStyles";
 import type { TableId, TableConfig, TableEntry } from "../types";
 
@@ -68,20 +69,9 @@ export function TablesView() {
   const [seatConfirmTable, setSeatConfirmTable] = useState<TableId | null>(null);
   const [showNewTableModal, setShowNewTableModal] = useState(false);
   const [newTableName, setNewTableName] = useState("");
-  const [newTableLocation, setNewTableLocation] = useState<"inside" | "outside">("inside");
 
   const allTables = useMemo((): TableConfig[] => {
-    const result = [...TABLES] as TableConfig[];
-    const insideDynamic = dynamicTables.filter((t) => t.location === "inside");
-    const outsideDynamic = dynamicTables.filter((t) => t.location === "outside");
-    if (insideDynamic.length > 0) {
-      const outsideIdx = result.findIndex((t) => t.isDivider && t.label === "Outside");
-      result.splice(outsideIdx >= 0 ? outsideIdx : result.length, 0, ...insideDynamic);
-    }
-    if (outsideDynamic.length > 0) {
-      result.push(...outsideDynamic);
-    }
-    return result;
+    return [...TABLES, ...dynamicTables] as TableConfig[];
   }, [dynamicTables]);
 
   const swap = useTableSwap(swapTables);
@@ -119,45 +109,28 @@ export function TablesView() {
 
   return (
     <div style={S.page}>
-      <ScreenHeader title={styles.isWide ? "Floor" : ""} left={styles.isWide ? "none" : "profile"} />
+      <ScreenHeader
+        title={styles.isWide ? "Floor" : ""}
+        left={styles.isWide ? "none" : "profile"}
+        right={
+          <button
+            onClick={() => {
+              setNewTableName("");
+              setShowNewTableModal(true);
+            }}
+            style={S.back}
+            aria-label="Create new table"
+            title="Create new table"
+          >
+            <PlusIcon size={22} />
+          </button>
+        }
+      />
 
       <div style={{ ...styles.grid, paddingBottom: swap.isActive ? 160 : styles.isBig ? 20 : 16 }}>
         {(() => {
           let cardIndex = 0;
           return allTables.map((t) => {
-            if (t.isDivider) {
-              const loc = t.label.toLowerCase() as "inside" | "outside";
-              return (
-                <div key={t.label} style={{ ...S.sentDivider, gridColumn: "1 / -1", margin: "8px 0 4px" }}>
-                  <div style={{ width: 22, flexShrink: 0 }} />
-                  <div style={S.sentDividerLine} />
-                  <span style={S.sentDividerText}>{t.label}</span>
-                  <div style={S.sentDividerLine} />
-                  <button
-                    onClick={() => { setNewTableName(""); setNewTableLocation(loc); setShowNewTableModal(true); }}
-                    style={{
-                      background: "none",
-                      border: "1.5px solid #ccc",
-                      borderRadius: 6,
-                      width: 22,
-                      height: 22,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      cursor: "pointer",
-                      color: "#999",
-                      fontSize: 16,
-                      lineHeight: 1,
-                      padding: 0,
-                      flexShrink: 0,
-                    }}
-                  >
-                    +
-                  </button>
-                </div>
-              );
-            }
-
             const status = getTableStatus(t.id, orders, seatedTables, sentBatches, markedBatches);
             const destinations = status === "unconfirmed" ? getTableDestinations(t.id, orders, sentBatches) : [];
             const staggerIndex = cardIndex++;
@@ -195,12 +168,12 @@ export function TablesView() {
 
       {showNewTableModal && (
         <Modal
-          title={`New ${newTableLocation} table`}
+          title="New table"
           onClose={() => setShowNewTableModal(false)}
           onConfirm={() => {
             const name = newTableName.trim();
             if (!name) return;
-            addDynamicTable(name, newTableLocation);
+            addDynamicTable(name);
             setShowNewTableModal(false);
           }}
           confirmText="Add Table"
@@ -213,7 +186,7 @@ export function TablesView() {
               onChange={(e) => setNewTableName(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && newTableName.trim()) {
-                  addDynamicTable(newTableName.trim(), newTableLocation);
+                  addDynamicTable(newTableName.trim());
                   setShowNewTableModal(false);
                 }
               }}

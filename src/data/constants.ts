@@ -1,7 +1,6 @@
 import type { TableConfig, MenuItem, StatusConfig, Subcategory, TableStatus } from "../types";
 
 export const TABLES: TableConfig[] = [
-  { isDivider: true, label: "Inside" },
   { id: 1, label: "Table 1" },
   { id: 2, label: "Table 2" },
   { id: 3, label: "Table 3" },
@@ -14,7 +13,6 @@ export const TABLES: TableConfig[] = [
   { id: 14, label: "Table 14" },
   { id: 15, label: "Table 15" },
   { id: "ToGo", label: "Fl. To Go" },
-  { isDivider: true, label: "Outside" },
   { id: "A", label: "A" },
   { id: "B", label: "B" },
   { id: "C", label: "C" },
