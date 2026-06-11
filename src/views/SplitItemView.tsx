@@ -1,7 +1,7 @@
 import { useApp } from "../contexts/AppContext";
 import { useSplit } from "../contexts/SplitContext";
 import { useBreakpoint } from "../hooks/useBreakpoint";
-import { BackIcon } from "../components/icons";
+import { ScreenHeader } from "../components/ScreenHeader";
 import { S } from "../styles/appStyles";
 import { colors } from "../styles/tokens";
 
@@ -52,32 +52,28 @@ export function SplitItemView() {
   };
 
   const hasCompletedPayments = state.payments.length > 0;
-  const headerStyle = isTablet || isTabletLandscape || isDesktop ? S.headerTablet : S.header;
   const isLargeScreen = isTablet || isTabletLandscape || isDesktop;
+  const handleBack = () => {
+    if (!hasCompletedPayments) {
+      dispatch({ type: "RESET" });
+      app.setView("order");
+    }
+  };
+  const selectAllButton = (
+    <button style={S.selectAllBtn} onClick={() => dispatch({ type: "SELECT_ALL" })}>All</button>
+  );
 
   // Mobile layout
   if (!isLargeScreen) {
     return (
       <div style={S.page}>
-        <header style={headerStyle}>
-          <button
-            style={{
-              ...S.back,
-              ...(hasCompletedPayments ? { opacity: 0.3, cursor: "not-allowed" } : {})
-            }}
-            onClick={() => {
-              if (!hasCompletedPayments) {
-                dispatch({ type: "RESET" });
-                app.setView("order");
-              }
-            }}
-            disabled={hasCompletedPayments}
-          >
-            <BackIcon size={22} />
-          </button>
-          <span style={S.headerTitle}>Guest {currentGuestNum}</span>
-          <button style={S.selectAllBtn} onClick={() => dispatch({ type: "SELECT_ALL" })}>All</button>
-        </header>
+        <ScreenHeader
+          title={`Guest ${currentGuestNum}`}
+          left="back"
+          onBack={handleBack}
+          backDisabled={hasCompletedPayments}
+          right={selectAllButton}
+        />
 
         {state.payments.length > 0 && (
           <div style={S.splitProgress}>
@@ -143,25 +139,13 @@ export function SplitItemView() {
   // Tablet+ layout (two-column)
   return (
     <div style={S.page}>
-      <header style={headerStyle}>
-        <button
-          style={{
-            ...S.back,
-            ...(hasCompletedPayments ? { opacity: 0.3, cursor: "not-allowed" } : {})
-          }}
-          onClick={() => {
-            if (!hasCompletedPayments) {
-              dispatch({ type: "RESET" });
-              app.setView("order");
-            }
-          }}
-          disabled={hasCompletedPayments}
-        >
-          <BackIcon size={22} />
-        </button>
-        <span style={S.headerTitle}>Guest {currentGuestNum}</span>
-        <button style={S.selectAllBtn} onClick={() => dispatch({ type: "SELECT_ALL" })}>All</button>
-      </header>
+      <ScreenHeader
+        title={`Guest ${currentGuestNum}`}
+        left="back"
+        onBack={handleBack}
+        backDisabled={hasCompletedPayments}
+        right={selectAllButton}
+      />
 
       <div style={isDesktop ? S.billContainerTabletLandscape : S.billContainerTablet}>
         {/* Left column: Item list */}

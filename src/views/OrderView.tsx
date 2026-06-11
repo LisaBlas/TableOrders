@@ -13,14 +13,14 @@ import { NoteBottomSheet } from "../components/NoteBottomSheet";
 import { OrderBar } from "../components/OrderBar";
 import { BillView } from "../components/BillView";
 import { CustomItemModal } from "../components/CustomItemModal";
-import { BackIcon, BillIcon } from "../components/icons";
+import { ScreenHeader } from "../components/ScreenHeader";
+import { BillIcon } from "../components/icons";
 import type { MenuCategory, MenuItem, MenuItemVariant } from "../types";
 
 export function OrderView() {
   const app = useApp();
   const table = useTable();
   const { menu: MENU } = useMenu();
-  const { isTablet, isTabletLandscape, isDesktop } = useBreakpoint();
   const tableId = app.activeTable!;
   const { unsent, sent, batches } = useTableOrder(tableId);
 
@@ -110,23 +110,21 @@ export function OrderView() {
     return <BillView tableId={tableId} sent={sent} onClose={() => app.setOrderViewTab('order')} />;
   }
 
-  // Responsive styles
-  const headerStyle = isTablet || isTabletLandscape || isDesktop ? S.headerTablet : S.header;
-
   return (
     <div style={{ ...S.page, height: "100vh", overflow: "hidden" }}>
-      <header style={headerStyle}>
-        <button style={S.back} onClick={() => {
+      <ScreenHeader
+        title={`Table ${table.resolveTableDisplayId(tableId)}`}
+        left="back"
+        onBack={() => {
           app.setOrderViewTab(null);
           app.setView("tables");
-        }}>
-          <BackIcon size={22} />
-        </button>
-        <span style={S.headerTitle}>Table {table.resolveTableDisplayId(tableId)}</span>
-        <button style={S.ticketBtn} onClick={() => app.setOrderViewTab('bill')}>
-          <BillIcon size={22} />
-        </button>
-      </header>
+        }}
+        right={
+          <button style={S.ticketBtn} onClick={() => app.setOrderViewTab('bill')} aria-label="Open bill">
+            <BillIcon size={22} />
+          </button>
+        }
+      />
 
       {/* Category Tabs */}
       <div style={S.tabs}>

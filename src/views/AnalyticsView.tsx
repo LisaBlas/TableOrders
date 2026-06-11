@@ -5,7 +5,7 @@ import { useTable } from "../contexts/TableContext";
 import { useBreakpoint } from "../hooks/useBreakpoint";
 import { S } from "../styles/appStyles";
 import { colors, radii } from "../styles/tokens";
-import { BackIcon } from "../components/icons";
+import { ScreenHeader } from "../components/ScreenHeader";
 import { PeriodSelector } from "../components/analytics/PeriodSelector";
 import { KpiSummary } from "../components/analytics/KpiSummary";
 import { RevenueTrendChart } from "../components/analytics/RevenueTrendChart";
@@ -99,7 +99,6 @@ export function AnalyticsView() {
     period === "thisMonth" ? "vs last month" :
     `vs prior ${daysBetween(current.start, current.end)} days`;
 
-  const header = isTablet || isWide ? S.headerTablet : S.header;
   const dashboardSummary = (
     <div
       style={{
@@ -147,18 +146,13 @@ export function AnalyticsView() {
         @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
       `}</style>
 
-      {/* Header */}
-      <div style={header}>
-        <button
-          onClick={() => setView("tables")}
-          style={S.back}
-          aria-label="Back to floor"
-        >
-          <BackIcon size={22} />
-        </button>
-        <span style={S.headerTitle}>Sales Trends</span>
-        <span style={S.headerSpacer} />
-      </div>
+      <ScreenHeader
+        title="Sales Trends"
+        left="back"
+        onBack={() => setView("tables")}
+        ariaLabel="Back to floor"
+        hideBackOnWide
+      />
 
       {/* Loading skeletons */}
       {loading && (

@@ -5,7 +5,7 @@ import { S } from "../styles/appStyles";
 import { colors, radii } from "../styles/tokens";
 import { BillCard } from "../components/BillCard";
 import { SalesSummary } from "../components/SalesSummary";
-import { ProfileMenu } from "../components/ProfileMenu";
+import { ScreenHeader } from "../components/ScreenHeader";
 import { CalendarIcon } from "../components/icons";
 import { todayBusinessDate } from "../services/directusBills";
 import { aggregateDailySales, comparePosEntries, isMissingPosId, type PosEntry } from "../utils/salesAggregation";
@@ -246,7 +246,6 @@ export function DailySalesView() {
   };
 
   const isWideShell = isDesktop || isLaptop || isTabletLandscape;
-  const headerStyle = isTablet || isWideShell ? S.headerTablet : S.header;
   const billsListStyle = isDesktop || isTabletLandscape ? S.billsListTabletLandscape : isTablet ? S.billsListTablet : S.billsList;
   const totalTabContainerStyle = {
     flex: 1,
@@ -256,12 +255,11 @@ export function DailySalesView() {
 
   return (
     <div style={{ ...S.page, height: "100%", minHeight: 0, overflow: "hidden" }}>
-      <header style={headerStyle}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
-          {!isWideShell && <ProfileMenu />}
-          <span style={{ fontWeight: 700, fontSize: 18, letterSpacing: "-0.3px", whiteSpace: "nowrap" }}>Daily Sales</span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <ScreenHeader
+        title="Daily Sales"
+        left={isWideShell ? "none" : "profile"}
+        right={
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <div style={{ position: "relative" }}>
             <button
               onClick={() => dateInputRef.current?.showPicker()}
@@ -292,8 +290,9 @@ export function DailySalesView() {
               style={{ position: "absolute", opacity: 0, pointerEvents: "none", width: 0, height: 0 }}
             />
           </div>
-        </div>
-      </header>
+          </div>
+        }
+      />
 
       {paidBills.length === 0 ? (
         <div style={S.emptyState}>

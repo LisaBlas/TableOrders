@@ -7,7 +7,7 @@ import { useBreakpoint } from "../hooks/useBreakpoint";
 import { createFullTableBill } from "../utils/billFactory";
 import { Receipt } from "../components/Receipt";
 import { SplitOptions } from "../components/SplitOptions";
-import { BackIcon } from "../components/icons";
+import { ScreenHeader } from "../components/ScreenHeader";
 import { S } from "../styles/appStyles";
 import type { OrderItem } from "../types";
 
@@ -53,22 +53,19 @@ export function TicketView() {
   };
 
   // Responsive styles
-  const headerStyle = isTablet || isTabletLandscape || isDesktop ? S.headerTablet : S.header;
   const ticketStyle = isTablet || isTabletLandscape || isDesktop ? S.ticketTablet : S.ticket;
 
   return (
     <div style={S.page}>
-      <header style={headerStyle}>
-        <button style={S.back} onClick={() => {
+      <ScreenHeader
+        title={`Table ${table.resolveTableDisplayId(tableId)} — Bill`}
+        left="back"
+        onBack={() => {
           app.setView("tables");
           setShowSplitOptions(false);
           setConfirmingClose(false);
-        }}>
-          <BackIcon size={22} />
-        </button>
-        <span style={S.headerTitle}>Table {table.resolveTableDisplayId(tableId)} — Bill</span>
-        <span style={S.headerSpacer} />
-      </header>
+        }}
+      />
       <div style={ticketStyle}>
         <Receipt tableId={tableId} items={ticketItems} />
       </div>

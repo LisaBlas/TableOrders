@@ -4,7 +4,7 @@ import { useTableOrder } from "../hooks/useTableOrder";
 import { useSplit } from "../contexts/SplitContext";
 import { useBreakpoint } from "../hooks/useBreakpoint";
 import { createEqualSplitTableBill } from "../utils/billFactory";
-import { BackIcon } from "../components/icons";
+import { ScreenHeader } from "../components/ScreenHeader";
 import { S } from "../styles/appStyles";
 import { colors } from "../styles/tokens";
 
@@ -47,32 +47,20 @@ export function SplitEqualView() {
     app.setView("tables");
   };
 
-  const headerStyle = isTablet || isTabletLandscape || isDesktop ? S.headerTablet : S.header;
   const isLargeScreen = isTablet || isTabletLandscape || isDesktop;
+  const splitTitle = `Equal Split — Table ${table.resolveTableDisplayId(tableId)}`;
+  const handleBack = () => {
+    if (!hasConfirmedPayments) {
+      dispatch({ type: "RESET" });
+      app.setView("order");
+    }
+  };
 
   // Mobile layout
   if (!isLargeScreen) {
     return (
       <div style={S.page}>
-        <header style={headerStyle}>
-          <button
-            style={{
-              ...S.back,
-              ...(hasConfirmedPayments ? { opacity: 0.3, cursor: "not-allowed" } : {})
-            }}
-            onClick={() => {
-              if (!hasConfirmedPayments) {
-                dispatch({ type: "RESET" });
-                app.setView("order");
-              }
-            }}
-            disabled={hasConfirmedPayments}
-          >
-            <BackIcon size={22} />
-          </button>
-          <span style={S.headerTitle}>Equal Split — Table {table.resolveTableDisplayId(tableId)}</span>
-          <span />
-        </header>
+        <ScreenHeader title={splitTitle} left="back" onBack={handleBack} backDisabled={hasConfirmedPayments} />
         <div style={S.equalCard}>
         <div style={S.equalTotalLine}>
           <span style={S.equalTotalLabel}>Bill total</span>
@@ -187,25 +175,7 @@ export function SplitEqualView() {
   // Tablet+ layout (two-column)
   return (
     <div style={S.page}>
-      <header style={headerStyle}>
-        <button
-          style={{
-            ...S.back,
-            ...(hasConfirmedPayments ? { opacity: 0.3, cursor: "not-allowed" } : {})
-          }}
-          onClick={() => {
-            if (!hasConfirmedPayments) {
-              dispatch({ type: "RESET" });
-              app.setView("order");
-            }
-          }}
-          disabled={hasConfirmedPayments}
-        >
-          <BackIcon size={22} />
-        </button>
-        <span style={S.headerTitle}>Equal Split — Table {table.resolveTableDisplayId(tableId)}</span>
-        <span />
-      </header>
+      <ScreenHeader title={splitTitle} left="back" onBack={handleBack} backDisabled={hasConfirmedPayments} />
 
       <div style={isDesktop ? S.billContainerTabletLandscape : S.billContainerTablet}>
         {/* Left column: Split details */}

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, type CSSProperties } from "react";
 import { useApp } from "../contexts/AppContext";
 import { useMenu } from "../contexts/MenuContext";
-import { BackIcon } from "../components/icons";
+import { ScreenHeader } from "../components/ScreenHeader";
 import { useBreakpoint } from "../hooks/useBreakpoint";
 import {
   fetchAllMenuItems,
@@ -1490,7 +1490,6 @@ export function AdminView() {
   const { isMobile, isTablet, isTabletLandscape, isLaptop, isDesktop } = useBreakpoint();
   const isWideShell = isDesktop || isLaptop || isTabletLandscape;
   const isTableView = isWideShell;
-  const headerStyle = isTablet || isWideShell ? S.headerTablet : S.header;
 
   const [items, setItems] = useState<AdminMenuItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1653,18 +1652,14 @@ export function AdminView() {
       }}
     >
       {/* ── Header ── */}
-      <header
-        style={{
-          ...headerStyle,
-          zIndex: 10,
-        }}
-      >
-        <button onClick={handleBack} style={S.back}>
-          <BackIcon size={22} />
-        </button>
-        <span style={S.headerTitle}>Menu</span>
-        <span style={{ fontSize: 12, color: colors.muted, fontWeight: 500 }}>Admin</span>
-      </header>
+      <ScreenHeader
+        title="Menu"
+        left="back"
+        onBack={handleBack}
+        hideBackOnWide
+        right={<span style={{ fontSize: 12, color: colors.muted, fontWeight: 500 }}>Admin</span>}
+        style={{ zIndex: 10 }}
+      />
 
       {/* ── Filter bar ── */}
       {!loading && !loadError && (

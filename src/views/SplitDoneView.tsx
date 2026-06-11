@@ -4,6 +4,7 @@ import { useTableOrder } from "../hooks/useTableOrder";
 import { useSplit } from "../contexts/SplitContext";
 import { useBreakpoint } from "../hooks/useBreakpoint";
 import { calculateItemSplitTip, createItemSplitTableBill } from "../utils/billFactory";
+import { ScreenHeader } from "../components/ScreenHeader";
 import { S } from "../styles/appStyles";
 import { colors } from "../styles/tokens";
 
@@ -36,18 +37,14 @@ export function SplitDoneView() {
     app.setView("tables");
   };
 
-  const headerStyle = isTablet || isTabletLandscape || isDesktop ? S.headerTablet : S.header;
   const isLargeScreen = isTablet || isTabletLandscape || isDesktop;
+  const title = `Bill Settled — Table ${table.resolveTableDisplayId(tableId)}`;
 
   // Mobile layout
   if (!isLargeScreen) {
     return (
       <div style={S.page}>
-        <header style={headerStyle}>
-          <span />
-          <span style={S.headerTitle}>Bill Settled — Table {table.resolveTableDisplayId(tableId)}</span>
-          <span />
-        </header>
+        <ScreenHeader title={title} />
         <div style={S.splitDoneCard}>
           <div style={S.splitDoneBadge}>✓</div>
           <div style={S.splitDoneTitle}>All paid</div>
@@ -94,11 +91,7 @@ export function SplitDoneView() {
   // Tablet+ layout (two-column)
   return (
     <div style={S.page}>
-      <header style={headerStyle}>
-        <span />
-        <span style={S.headerTitle}>Bill Settled — Table {table.resolveTableDisplayId(tableId)}</span>
-        <span />
-      </header>
+      <ScreenHeader title={title} />
 
       <div style={isDesktop ? S.billContainerTabletLandscape : S.billContainerTablet}>
         {/* Left column: Summary */}

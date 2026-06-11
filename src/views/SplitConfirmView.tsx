@@ -3,6 +3,7 @@ import { useTable } from "../contexts/TableContext";
 import { useSplit } from "../contexts/SplitContext";
 import { useBreakpoint } from "../hooks/useBreakpoint";
 import { Receipt } from "../components/Receipt";
+import { ScreenHeader } from "../components/ScreenHeader";
 import { S } from "../styles/appStyles";
 import type { ExpandedItem } from "../types";
 
@@ -92,19 +93,15 @@ export function SplitConfirmView() {
     app.setView("tables");
   };
 
-  const headerStyle = isTablet || isTabletLandscape || isDesktop ? S.headerTablet : S.header;
   const ticketStyle = isTablet || isTabletLandscape || isDesktop ? S.ticketTablet : S.ticket;
   const isLargeScreen = isTablet || isTabletLandscape || isDesktop;
+  const title = `Guest ${lastPayment.guestNum} — pays`;
 
   // Mobile layout
   if (!isLargeScreen) {
     return (
       <div style={S.page}>
-        <header style={headerStyle}>
-          <span style={{ width: 22, height: 22 }} />
-          <span style={S.headerTitle}>Guest {lastPayment.guestNum} — pays</span>
-          <span style={{ width: 22, height: 22 }} />
-        </header>
+        <ScreenHeader title={title} />
 
         <div style={ticketStyle}>
           <Receipt
@@ -210,11 +207,7 @@ export function SplitConfirmView() {
   // Tablet+ layout (two-column)
   return (
     <div style={S.page}>
-      <header style={headerStyle}>
-        <span style={{ width: 22, height: 22 }} />
-        <span style={S.headerTitle}>Guest {lastPayment.guestNum} — pays</span>
-        <span style={{ width: 22, height: 22 }} />
-      </header>
+      <ScreenHeader title={title} />
 
       <div style={isDesktop ? S.billContainerTabletLandscape : S.billContainerTablet}>
         {/* Left column: Receipt */}
