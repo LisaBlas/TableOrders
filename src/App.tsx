@@ -8,7 +8,7 @@ import { MenuProvider, useMenu } from "./contexts/MenuContext";
 import { AppProvider, useApp } from "./contexts/AppContext";
 import { TableProvider } from "./contexts/TableContext";
 import { SplitProvider, useSplit } from "./contexts/SplitContext";
-import { UIProvider, useUI, TEXT_SCALE_ZOOM } from "./contexts/UIContext";
+import { UIProvider, useUI, TEXT_SCALE_ZOOM, DARK_VARS } from "./contexts/UIContext";
 import { useBreakpoint } from "./hooks/useBreakpoint";
 import { AppNav } from "./components/AppNav";
 import { ProfileMenu } from "./components/ProfileMenu";
@@ -147,7 +147,7 @@ function Router() {
   const { syncError, conflicts, resolveConflict } = useTable();
   const { isTabletLandscape, isTablet, isLaptop, isDesktop } = useBreakpoint();
   const { state: splitState, dispatch: splitDispatch } = useSplit();
-  const { textScale } = useUI();
+  const { textScale, darkMode } = useUI();
 
   const [splashDone, setSplashDone] = useState(false);
   const splashStartedRef = useRef(false);
@@ -268,8 +268,10 @@ function Router() {
     </div>
   );
 
+  const themeVars = darkMode ? DARK_VARS : {};
+
   return (
-    <div style={{ ...outerStyle, zoom } as React.CSSProperties}>
+    <div style={{ ...outerStyle, zoom, ...themeVars } as React.CSSProperties}>
       {useSidebar && <AppNav />}
       {useBottomBar && isNavView && <MobileTopBar />}
       <div style={contentStyle}>
