@@ -225,6 +225,8 @@ function Router() {
           ? S.rootTablet
           : S.root;
 
+  const zoom = TEXT_SCALE_ZOOM[textScale];
+
   const NAV_VIEWS: View[] = ["tables", "dailySales", "analytics"];
   const isNavView = NAV_VIEWS.includes(view);
   const isWide = isDesktop || isLaptop || isTabletLandscape;
@@ -232,13 +234,17 @@ function Router() {
   const useBottomBar = isNavView && !isWide;
   const navRootStyle = isDesktop ? S.rootNavDesktop : isLaptop ? S.rootNavLaptop : rootStyle;
 
+  // When zoom != 1, the container's nominal height must be 100dvh/zoom so
+  // its rendered size (nominal × zoom) still fills exactly 100dvh.
+  const dvh = zoom === 1 ? "100dvh" : `calc(100dvh / ${zoom})`;
+
   const outerStyle: React.CSSProperties = isNavView
     ? {
         ...navRootStyle,
         display: "flex",
         flexDirection: useSidebar ? "row" : "column",
-        height: "100dvh",
-        minHeight: "100dvh",
+        height: dvh,
+        minHeight: dvh,
         overflow: "hidden",
       }
     : rootStyle;
@@ -261,8 +267,6 @@ function Router() {
       Sync offline — table changes may not save
     </div>
   );
-
-  const zoom = TEXT_SCALE_ZOOM[textScale];
 
   return (
     <div style={{ ...outerStyle, zoom } as React.CSSProperties}>
