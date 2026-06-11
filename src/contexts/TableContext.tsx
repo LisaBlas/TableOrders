@@ -7,6 +7,8 @@ import { useApp } from "./AppContext";
 import { useMenu } from "./MenuContext";
 import { useDirectusSync } from "../hooks/useDirectusSync";
 import { parseTableId } from "../services/directusSessions";
+import { fetchPermanentTables } from "../services/directusTables";
+import { TABLES } from "../data/constants";
 import {
   markSessionDirty,
   readDirtySessionRecords,
@@ -20,7 +22,7 @@ import type { SessionConflict } from "../utils/conflictDetection";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import type {
   Orders, OrderItem, SentBatches, Batch, GutscheinAmounts,
-  TableId, MenuItem, MenuItemVariant, MenuCategory, ExpandedItem, MarkedBatchId,
+  TableId, TableConfig, MenuItem, MenuItemVariant, MenuCategory, ExpandedItem, MarkedBatchId,
   DynamicTable,
 } from "../types";
 
@@ -64,6 +66,8 @@ interface TableContextValue {
   removePaidItems: (tableId: TableId, paidItems: ExpandedItem[]) => void;
   toggleMarkBatch: (tableId: TableId, batchId: MarkedBatchId) => void;
   swapTables: (fromTableId: TableId, toTableId: TableId) => void;
+  permanentTables: TableConfig[];
+  reloadTablesConfig: () => void;
   dynamicTables: DynamicTable[];
   addDynamicTable: (label: string) => void;
   resolveTableDisplayId: (tableId: TableId) => string;
@@ -118,6 +122,18 @@ export function TableProvider({ children }: { children: ReactNode }) {
   const [gutscheinAmounts, setGutscheinAmounts] = useState<GutscheinAmounts>(() => initialState.gutscheinAmounts);
   const [markedBatches, setMarkedBatches] = useState<Record<string, Set<MarkedBatchId>>>(() => initialState.markedBatches);
   const [dynamicTables, setDynamicTables] = useLocalStorage<DynamicTable[]>("dynamic_tables", []);
+  const [permanentTables, setPermanentTables] = useState<TableConfig[]>(TABLES);
+  const [tablesLoadKey, setTablesLoadKey] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchPermanentTables()
+      .then((tables) => { if (!cancelled && tables.length > 0) setPermanentTables(tables); })
+      .catch(() => { /* keep TABLES fallback */ });
+    return () => { cancelled = true; };
+  }, [tablesLoadKey]);
+
+  const reloadTablesConfig = useCallback(() => setTablesLoadKey((k) => k + 1), []);
 
   const seatedTables = useMemo(() => new Set<TableId>(seatedTablesArr), [seatedTablesArr]);
 
@@ -388,8 +404,8 @@ export function TableProvider({ children }: { children: ReactNode }) {
     if (key.startsWith("ext-")) {
       return dynamicTables.find((t) => t.id === key)?.label ?? key;
     }
-    return key;
-  }, [dynamicTables]);
+    return permanentTables.find((t) => String(t.id) === key)?.label ?? key;
+  }, [dynamicTables, permanentTables]);
 
   const addDynamicTable = useCallback((label: string) => {
     const id = `ext-${label.replace(/\s+/g, "-").toLowerCase()}-${Date.now()}`;
@@ -467,6 +483,7 @@ export function TableProvider({ children }: { children: ReactNode }) {
       sendOrder, addBillEditBatch, removeBillEditItems, restoreBillOrders, seatTable,
       applyGutschein, removeGutschein,
       cleanupTable, removePaidItems, toggleMarkBatch, swapTables,
+      permanentTables, reloadTablesConfig,
       dynamicTables, addDynamicTable, resolveTableDisplayId,
     }}>
       {children}

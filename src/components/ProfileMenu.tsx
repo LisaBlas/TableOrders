@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useApp } from "../contexts/AppContext";
 import { useUI, type TextScale } from "../contexts/UIContext";
-import { GearIcon, LogoutIcon, SunIcon, MoonIcon, BarChartIcon } from "./icons";
+import { GearIcon, LogoutIcon, SunIcon, MoonIcon, BarChartIcon, GridIcon } from "./icons";
 import { Modal } from "./Modal";
 import { colors, radii } from "../styles/tokens";
 
@@ -202,6 +202,13 @@ export function ProfileMenu({ placement = "bottom-start" }: { placement?: "botto
                 >
                   <GearIcon size={15} color={colors.subtle} />
                   <span style={{ color: colors.fg }}>Menu editor</span>
+                </button>
+                <button
+                  style={ROW_BTN}
+                  onClick={() => { setView("tableSetup"); setOpen(false); }}
+                >
+                  <GridIcon size={15} color={colors.subtle} />
+                  <span style={{ color: colors.fg }}>Table setup</span>
                 </button>
               </>
             )}

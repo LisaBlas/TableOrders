@@ -1,8 +1,7 @@
 import { useState, useMemo } from "react";
-import { TABLES, STATUS_CONFIG } from "../data/constants";
+import { STATUS_CONFIG } from "../data/constants";
 import { getTableStatus, getItemDestination } from "../utils/helpers";
 import { useApp } from "../contexts/AppContext";
-import { useAuth } from "../contexts/AuthContext";
 import { useTable } from "../contexts/TableContext";
 import { useBreakpoint } from "../hooks/useBreakpoint";
 import { useLongPress } from "../hooks/useLongPress";
@@ -13,7 +12,7 @@ import { Modal } from "../components/Modal";
 import { ScreenHeader } from "../components/ScreenHeader";
 import { PlusIcon } from "../components/icons";
 import { S } from "../styles/appStyles";
-import type { TableId, TableConfig, TableEntry } from "../types";
+import type { TableId, TableConfig } from "../types";
 
 const DESTINATION_ORDER = ["bar", "counter", "kitchen"] as const;
 
@@ -61,8 +60,7 @@ function resolveGridStyles(bp: { isTablet: boolean; isTabletLandscape: boolean; 
 
 export function TablesView() {
   const { setView, setActiveTable, showToast } = useApp();
-  const { isAdmin } = useAuth();
-  const { orders, seatedTables, seatTable, sentBatches, markedBatches, swapTables, dynamicTables, addDynamicTable, resolveTableDisplayId } = useTable();
+  const { orders, seatedTables, seatTable, sentBatches, markedBatches, swapTables, permanentTables, dynamicTables, addDynamicTable, resolveTableDisplayId } = useTable();
   const bp = useBreakpoint();
   const styles = resolveGridStyles(bp);
 
@@ -71,8 +69,8 @@ export function TablesView() {
   const [newTableName, setNewTableName] = useState("");
 
   const allTables = useMemo((): TableConfig[] => {
-    return [...TABLES, ...dynamicTables] as TableConfig[];
-  }, [dynamicTables]);
+    return [...permanentTables, ...dynamicTables] as TableConfig[];
+  }, [permanentTables, dynamicTables]);
 
   const swap = useTableSwap(swapTables);
   const { start: startLongPress, cancel: cancelLongPress, didFireRef: longFiredRef } =
@@ -139,12 +137,11 @@ export function TablesView() {
             const isTarget = swap.targetTable === t.id;
             const swapStatus = isSource ? "source" : isTarget ? "target" : swap.isActive ? "dimmed" : "none";
 
-            const isDynamic = String(t.id).startsWith("ext-");
             return (
               <TableCard
                 key={t.id}
                 tableId={t.id}
-                label={isDynamic ? (t as TableEntry).label : undefined}
+                label={t.label}
                 cfg={STATUS_CONFIG[status]}
                 swapStatus={swapStatus}
                 destinations={destinations}

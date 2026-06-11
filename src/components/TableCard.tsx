@@ -5,6 +5,14 @@ import { swapColors } from "../styles/tokens";
 
 const DESTINATION_EMOJI: Record<string, string> = { bar: "🍷", counter: "🧀", kitchen: "🍽️" };
 
+function tableLabelFontSize(label: string): number {
+  const len = label.length;
+  if (len <= 3) return 22;
+  if (len <= 6) return 17;
+  if (len <= 9) return 13;
+  return 11;
+}
+
 type SwapStatus = "none" | "source" | "target" | "dimmed";
 
 function getSwapStyles(swapStatus: SwapStatus, cfg: StatusConfig) {
@@ -100,7 +108,9 @@ export function TableCard({
         </span>
       )}
       {swapStatus === "none" && <span style={{ ...S.tableDot, background: cfg.dot }} />}
-      <span style={S.tableNum}>{label ?? tableId}</span>
+      <span style={{ ...S.tableNum, fontSize: tableLabelFontSize(label ?? String(tableId)) }}>
+        {label ?? tableId}
+      </span>
       <span style={{ ...S.tableStatus, color: statusColor }}>{statusLabel}</span>
       {destinations.length > 0 && (
         <span

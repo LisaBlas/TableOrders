@@ -22,6 +22,7 @@ import { SplitDoneView } from "./views/SplitDoneView";
 import { DailySalesView } from "./views/DailySalesView";
 import { AnalyticsView } from "./views/AnalyticsView";
 import { AdminView } from "./views/AdminView";
+import { TableSetupView } from "./views/TableSetupView";
 import LoginView from "./views/LoginView";
 import { Toast } from "./components/Toast";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -165,6 +166,8 @@ function Router() {
         setView('tables');
       } else if (v === 'admin') {
         setView('tables');
+      } else if (v === 'tableSetup') {
+        setView('tables');
       } else if (v === 'split') {
         if (ss.mode === 'equal') {
           splitDispatch({ type: 'RESET' });
@@ -284,6 +287,7 @@ function Router() {
           </ErrorBoundary>
         )}
         {view === "admin" && <AdminView />}
+        {view === "tableSetup" && <TableSetupView />}
       </div>
       {useBottomBar && <AppNav />}
     </div>
