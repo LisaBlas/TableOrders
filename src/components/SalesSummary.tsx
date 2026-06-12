@@ -41,7 +41,7 @@ export function SalesSummary({ paidBills }: SalesSummaryProps) {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+          gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
           gap: 1,
           background: colors.border,
         }}
@@ -51,22 +51,21 @@ export function SalesSummary({ paidBills }: SalesSummaryProps) {
             key={tile.label}
             style={{
               background: colors.surface,
-              padding: "12px 16px",
-              minHeight: 82,
+              padding: "10px 12px",
+              minHeight: 66,
               display: "flex",
               flexDirection: "column",
               justifyContent: "space-between",
               gap: 4,
-              ...(tiles.length % 2 !== 0 && idx === tiles.length - 1 ? { gridColumn: "1 / -1" } : {}),
             }}
           >
-            <span style={{ fontSize: 11, color: colors.muted, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            <span style={{ fontSize: 10, color: colors.muted, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0 }}>
               {tile.label}
             </span>
-            <span style={{ fontSize: tile.strong ? 24 : 20, fontWeight: 800, lineHeight: 1.05, color: tile.tone ?? colors.fg }}>
+            <span style={{ fontSize: tile.strong ? 19 : 17, fontWeight: 800, lineHeight: 1.05, color: tile.tone ?? colors.fg }}>
               {tile.value}
             </span>
-            <span style={{ fontSize: 12, color: colors.muted, lineHeight: 1.2 }}>
+            <span style={{ fontSize: 11, color: colors.muted, lineHeight: 1.15 }}>
               {tile.sub}
             </span>
           </div>

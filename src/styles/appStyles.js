@@ -67,7 +67,7 @@ const _billActionsCard = {
 const _billsList = {
   flex: 1,
   overflowY: "auto",
-  padding: "0 16px 100px",
+  padding: "14px 16px 100px",
 };
 
 export const S = {
@@ -1483,7 +1483,7 @@ export const S = {
   billsList: _billsList,
   billsListTablet: {
     ..._billsList,
-    padding: "0 20px 100px",
+    padding: "14px 20px 100px",
     display: "grid",
     gridTemplateColumns: "repeat(2, 1fr)",
     gap: 12,
@@ -1491,7 +1491,7 @@ export const S = {
   },
   billsListTabletLandscape: {
     ..._billsList,
-    padding: "0 24px 100px",
+    padding: "14px 24px 100px",
     display: "grid",
     gridTemplateColumns: "repeat(3, 1fr)",
     gap: 16,

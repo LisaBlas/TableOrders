@@ -10,7 +10,7 @@ import { CalendarIcon } from "../components/icons";
 import { todayBusinessDate } from "../services/directusBills";
 import { aggregateDailySales, comparePosEntries, isMissingPosId, type PosEntry } from "../utils/salesAggregation";
 
-type ArticleSortMode = "category" | "posId";
+type ArticleSortMode = "qty" | "posId";
 
 export function DailySalesView() {
   const app = useApp();
@@ -32,7 +32,7 @@ export function DailySalesView() {
   const dateInputRef = useRef<HTMLInputElement>(null);
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
-  const [articleSortMode, setArticleSortMode] = useState<ArticleSortMode>("category");
+  const [articleSortMode, setArticleSortMode] = useState<ArticleSortMode>("qty");
 
   const today = todayBusinessDate();
   const dateLabel = selectedDate === today
@@ -58,24 +58,33 @@ export function DailySalesView() {
   };
 
   const renderTotalTab = () => {
-    const { addedToPOSBills, withPosId, missingPosId, uncategorised } = aggregateDailySales(paidBills);
+    const { addedToPOSItems, withPosId, missingPosId, uncategorised } = aggregateDailySales(paidBills);
 
-    const addedItemsCount = addedToPOSBills.reduce((sum, bill) => {
-      return sum + bill.items.reduce((itemSum, item) => {
-        if (bill.addedToPOS) return itemSum + item.qty;
-        const crossedQty = item.crossedQty ?? (item.crossed ? item.qty : 0);
-        return itemSum + crossedQty;
-      }, 0);
-    }, 0);
+    const addedItemsCount = addedToPOSItems.reduce((sum, entry) => sum + entry.qty, 0);
 
-    const allCategoryItems = [...withPosId, ...missingPosId].sort(comparePosEntries);
     const allItems = [...withPosId, ...missingPosId, ...uncategorised].sort(comparePosEntries);
     const remainingItemsCount = allItems.reduce((sum, entry) => sum + entry.qty, 0);
-    const getArticleGroup = (item: PosEntry) => item.category === "Food" ? "Food" : "Drinks";
-    const groupedArticles = {
-      Food: allCategoryItems.filter((item) => getArticleGroup(item) === "Food"),
-      Drinks: allCategoryItems.filter((item) => getArticleGroup(item) === "Drinks"),
-    };
+    const excludedTableCount = paidBills.reduce((tables, bill) => {
+      const hasExcludedItems = bill.addedToPOS || bill.items.some((item) => {
+        const crossedQty = item.crossedQty ?? (item.crossed ? item.qty : 0);
+        return crossedQty > 0;
+      });
+      if (hasExcludedItems) tables.add(String(bill.tableId));
+      return tables;
+    }, new Set<string>()).size;
+    const CATEGORY_ORDER = ["Food", "Wines", "Drinks", "Shop"] as const;
+    const sortFn = articleSortMode === "qty"
+      ? (a: PosEntry, b: PosEntry) => b.qty - a.qty || a.posName.localeCompare(b.posName)
+      : comparePosEntries;
+    const categorisedItems = [...withPosId, ...missingPosId];
+    const knownCats = new Set(CATEGORY_ORDER as readonly string[]);
+    const categoryGroups = CATEGORY_ORDER.map(cat => ({
+      label: cat,
+      items: categorisedItems.filter(item => item.category === cat).sort(sortFn),
+    }));
+    const otherCategoryItems = categorisedItems
+      .filter(item => !knownCats.has(item.category ?? ""))
+      .sort(sortFn);
 
 
     const renderPosRow = (item: PosEntry, panelIsMissing = false) => {
@@ -176,68 +185,49 @@ export function DailySalesView() {
     return (
       <>
         <SalesSummary paidBills={paidBills} />
-        {(addedItemsCount > 0 || remainingItemsCount > 0) && (
-          <div
-            style={{
-              background: colors.surface,
-              border: `1px solid ${colors.border}`,
-              borderRadius: radii.lg,
-              padding: "12px 16px",
-              margin: "12px 0",
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 8,
-              alignItems: "center",
-              fontSize: 12,
-              color: colors.muted,
-            }}
-          >
-            {remainingItemsCount > 0 && (
-              <span style={{ background: colors.fg, color: colors.surface, borderRadius: radii.pill, padding: "4px 10px", fontWeight: 700 }}>
-                {remainingItemsCount} remaining
-              </span>
-            )}
-            {addedItemsCount > 0 && (
-              <span style={{ background: colors.successBg, color: colors.success, borderRadius: radii.pill, padding: "4px 10px", fontWeight: 700 }}>
-                {addedItemsCount} added
-              </span>
-            )}
-            <span>POS crossing status</span>
-          </div>
-        )}
 
-        {allItems.length > 0 && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-              <div>
+        {(allItems.length > 0 || addedToPOSItems.length > 0) && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 14 }}>
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+              <div style={{ minWidth: 0 }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: colors.fg }}>Articles Sold</div>
-                <div style={{ fontSize: 12, color: colors.muted, marginTop: 2 }}>{remainingItemsCount} items to cross</div>
+                <div style={{ fontSize: 12, color: colors.muted, marginTop: 2 }}>
+                  {remainingItemsCount > 0
+                    ? `${remainingItemsCount} item${remainingItemsCount !== 1 ? "s" : ""} to cross`
+                    : "All articles crossed"}
+                  {addedItemsCount > 0 && (
+                    <span style={{ display: "block", marginTop: 2 }}>
+                      {addedItemsCount} item{addedItemsCount !== 1 ? "s" : ""} excluded from {excludedTableCount} table{excludedTableCount !== 1 ? "s" : ""}
+                    </span>
+                  )}
+                </div>
               </div>
-              <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                {renderSortButton("category", "Category")}
-                {renderSortButton("posId", "POS ID")}
+              <div style={{ display: "flex", gap: 6, flexShrink: 0, flexWrap: "wrap", justifyContent: "flex-end" }}>
+                {allItems.length > 0 && renderSortButton("qty", "Sales")}
+                {allItems.length > 0 && renderSortButton("posId", "POS ID")}
               </div>
             </div>
-            {articleSortMode === "posId" ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                {renderPanel("All POS IDs", allItems)}
-              </div>
-            ) : (isDesktop || isTabletLandscape) ? (
-              <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
-                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 12 }}>
+            {allItems.length > 0 && (
+              (isDesktop || isTabletLandscape) ? (
+                <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+                  <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 12 }}>
+                    {uncategorised.length > 0 && renderPanel("Uncategorised", uncategorised, true)}
+                    {renderPanel("Food", categoryGroups[0].items)}
+                    {renderPanel("Wines", categoryGroups[1].items)}
+                  </div>
+                  <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 12 }}>
+                    {renderPanel("Drinks", categoryGroups[2].items)}
+                    {renderPanel("Shop", categoryGroups[3].items)}
+                    {otherCategoryItems.length > 0 && renderPanel("Other", otherCategoryItems)}
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                   {uncategorised.length > 0 && renderPanel("Uncategorised", uncategorised, true)}
-                  {renderPanel("Drinks", groupedArticles.Drinks)}
+                  {categoryGroups.map(g => renderPanel(g.label, g.items))}
+                  {otherCategoryItems.length > 0 && renderPanel("Other", otherCategoryItems)}
                 </div>
-                <div style={{ flex: 1 }}>
-                  {renderPanel("Food", groupedArticles.Food)}
-                </div>
-              </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                {uncategorised.length > 0 && renderPanel("Uncategorised", uncategorised, true)}
-                {renderPanel("Food", groupedArticles.Food)}
-                {renderPanel("Drinks", groupedArticles.Drinks)}
-              </div>
+              )
             )}
           </div>
         )}

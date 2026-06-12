@@ -53,6 +53,7 @@ export function isMissingPosId(id: string) {
 
 export function aggregateDailySales(paidBills: Bill[]) {
   const activeMap = new Map<string, PosEntry>();
+  const addedMap = new Map<string, PosEntry>();
 
   paidBills.forEach((bill) => {
     const billRemoved = !!bill.addedToPOS;
@@ -62,12 +63,15 @@ export function aggregateDailySales(paidBills: Bill[]) {
       const posName = item.posName || item.shortName || item.name;
       const crossedCount = item.crossedQty ?? (item.crossed ? item.qty : 0);
       const activeCount = billRemoved ? 0 : item.qty - crossedCount;
+      const addedCount = billRemoved ? item.qty : crossedCount;
 
       addToMap(activeMap, posId, posName, item, activeCount);
+      addToMap(addedMap, posId, posName, item, addedCount);
     });
   });
 
   const activeAll = sortPosEntries(activeMap);
+  const addedAll = sortPosEntries(addedMap);
 
   // Include bills that are fully marked as added OR have any crossed items
   const billsWithCrossedItems = paidBills.filter((bill) => {
@@ -80,6 +84,7 @@ export function aggregateDailySales(paidBills: Bill[]) {
 
   return {
     addedToPOSBills: billsWithCrossedItems,
+    addedToPOSItems: addedAll,
     withPosId: activeAll.filter((item) => !isMissingPosId(item.posId)),
     missingPosId: activeAll.filter((item) => isMissingPosId(item.posId) && !!item.category),
     uncategorised: activeAll.filter((item) => isMissingPosId(item.posId) && !item.category),
