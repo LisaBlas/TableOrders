@@ -78,10 +78,8 @@ const CHIP_INPUT: React.CSSProperties = {
   caretColor: colors.fg,
 };
 
-const REMOVE_BTN: React.CSSProperties = {
+const CORNER_BTN: React.CSSProperties = {
   position: "absolute",
-  top: 3,
-  right: 4,
   width: 18,
   height: 18,
   display: "flex",
@@ -91,7 +89,6 @@ const REMOVE_BTN: React.CSSProperties = {
   background: "none",
   padding: 0,
   cursor: "pointer",
-  color: colors.subtle,
   fontSize: 12,
   lineHeight: 1,
 };
@@ -109,6 +106,7 @@ export function TableSetupView() {
   const [newLabel, setNewLabel] = useState("");
   const [saving, setSaving] = useState(false);
   const [addFocused, setAddFocused] = useState(false);
+  const [swapSourceId, setSwapSourceId] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -131,6 +129,7 @@ export function TableSetupView() {
   const inactiveRecords = records.filter((r) => r.active === false);
 
   const startEdit = (r: PermanentTableRecord) => {
+    setSwapSourceId(null);
     setEditingId(r.id);
     setEditLabel(r.label);
   };
@@ -151,6 +150,54 @@ export function TableSetupView() {
     } finally {
       setSaving(false);
       setEditingId(null);
+    }
+  };
+
+  const executeSwap = async (a: PermanentTableRecord, b: PermanentTableRecord) => {
+    const sortA = a.sort ?? 0;
+    const sortB = b.sort ?? 0;
+    setRecords((prev) => prev.map((r) => {
+      if (r.id === a.id) return { ...r, sort: sortB };
+      if (r.id === b.id) return { ...r, sort: sortA };
+      return r;
+    }));
+    try {
+      await Promise.all([
+        patchPermanentTable(a.id, { sort: sortB }),
+        patchPermanentTable(b.id, { sort: sortA }),
+      ]);
+      reloadTablesConfig();
+    } catch {
+      showToast("Failed to reorder — refreshing");
+      load();
+    }
+  };
+
+  const handleChipClick = (r: PermanentTableRecord) => {
+    if (swapSourceId !== null) {
+      if (swapSourceId === r.id) {
+        setSwapSourceId(null);
+      } else {
+        const source = activeRecords.find((x) => x.id === swapSourceId);
+        if (source) executeSwap(source, r);
+        setSwapSourceId(null);
+      }
+      return;
+    }
+    startEdit(r);
+  };
+
+  const handleSwapBtn = (e: React.MouseEvent, r: PermanentTableRecord) => {
+    e.stopPropagation();
+    if (swapSourceId === r.id) {
+      setSwapSourceId(null);
+    } else if (swapSourceId !== null) {
+      const source = activeRecords.find((x) => x.id === swapSourceId);
+      if (source) executeSwap(source, r);
+      setSwapSourceId(null);
+    } else {
+      setEditingId(null);
+      setSwapSourceId(r.id);
     }
   };
 
@@ -200,6 +247,8 @@ export function TableSetupView() {
     }
   };
 
+  const isSwapMode = swapSourceId !== null;
+
   return (
     <div style={S.page}>
       <ScreenHeader
@@ -225,86 +274,118 @@ export function TableSetupView() {
                 </div>
               )}
 
-              {activeRecords.map((r) => (
+              {activeRecords.map((r) => {
+                const isSource = swapSourceId === r.id;
+                const isEditing = editingId === r.id;
+
+                return (
+                  <div
+                    key={r.id}
+                    style={{
+                      ...(isEditing ? CHIP_EDITING : CHIP),
+                      ...(isSource && {
+                        background: colors.infoBg,
+                        border: `1.5px solid ${colors.info}`,
+                      }),
+                      ...(isSwapMode && !isSource && !isEditing && {
+                        cursor: "pointer",
+                      }),
+                    }}
+                    onClick={() => { if (!isEditing) handleChipClick(r); }}
+                  >
+                    {isEditing ? (
+                      <input
+                        autoFocus
+                        maxLength={10}
+                        style={{ ...CHIP_INPUT, fontSize: 15, fontWeight: 600 }}
+                        value={editLabel}
+                        onChange={(e) => setEditLabel(e.target.value)}
+                        onBlur={() => commitEdit(r)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") commitEdit(r);
+                          if (e.key === "Escape") setEditingId(null);
+                        }}
+                      />
+                    ) : (
+                      <span style={{
+                        fontSize: chipFontSize(r.label),
+                        fontWeight: 700,
+                        color: isSource ? colors.info : colors.fg,
+                        lineHeight: 1.1,
+                        textAlign: "center",
+                        wordBreak: "break-all",
+                      }}>
+                        {r.label}
+                      </span>
+                    )}
+
+                    {/* ✕ deactivate — hidden in swap mode and while editing */}
+                    {!isEditing && !isSwapMode && (
+                      <button
+                        style={{ ...CORNER_BTN, top: 3, right: 4, color: colors.subtle }}
+                        disabled={saving}
+                        onClick={(e) => { e.stopPropagation(); deactivate(r); }}
+                        aria-label={`Remove ${r.label}`}
+                      >
+                        ✕
+                      </button>
+                    )}
+
+                    {/* ⇅ reorder — hidden while editing */}
+                    {!isEditing && (
+                      <button
+                        style={{
+                          ...CORNER_BTN,
+                          bottom: 3,
+                          left: 4,
+                          color: isSource ? colors.info : colors.subtle,
+                          fontSize: 13,
+                        }}
+                        onClick={(e) => handleSwapBtn(e, r)}
+                        aria-label={isSource ? "Cancel reorder" : "Reorder"}
+                      >
+                        ⇅
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+
+              {/* Add chip — hidden in swap mode */}
+              {!isSwapMode && (
                 <div
-                  key={r.id}
-                  style={editingId === r.id ? CHIP_EDITING : CHIP}
-                  onClick={() => { if (editingId !== r.id) startEdit(r); }}
-                >
-                  {editingId === r.id ? (
-                    <input
-                      autoFocus
-                      maxLength={10}
-                      style={{ ...CHIP_INPUT, fontSize: 15, fontWeight: 600 }}
-                      value={editLabel}
-                      onChange={(e) => setEditLabel(e.target.value)}
-                      onBlur={() => commitEdit(r)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") commitEdit(r);
-                        if (e.key === "Escape") setEditingId(null);
-                      }}
-                    />
-                  ) : (
-                    <span style={{
-                      fontSize: chipFontSize(r.label),
-                      fontWeight: 700,
-                      color: colors.fg,
-                      lineHeight: 1.1,
-                      textAlign: "center",
-                      wordBreak: "break-all",
-                    }}>
-                      {r.label}
-                    </span>
-                  )}
-
-                  {editingId !== r.id && (
-                    <button
-                      style={REMOVE_BTN}
-                      disabled={saving}
-                      onClick={(e) => { e.stopPropagation(); deactivate(r); }}
-                      aria-label={`Remove ${r.label}`}
-                    >
-                      ✕
-                    </button>
-                  )}
-                </div>
-              ))}
-
-              {/* Add chip */}
-              <div
-                style={{
-                  ...CHIP_BASE,
-                  border: `1.5px dashed ${addFocused || newLabel ? colors.fg : colors.border}`,
-                  background: addFocused || newLabel ? colors.inputBg : "transparent",
-                  cursor: "text",
-                }}
-              >
-                <input
-                  type="text"
-                  placeholder="+"
-                  maxLength={10}
-                  value={newLabel}
-                  onChange={(e) => setNewLabel(e.target.value)}
-                  onFocus={() => setAddFocused(true)}
-                  onBlur={() => setAddFocused(false)}
-                  onKeyDown={(e) => { if (e.key === "Enter") addTable(); }}
-                  disabled={saving}
                   style={{
-                    ...CHIP_INPUT,
-                    fontSize: addFocused || newLabel ? 15 : 20,
-                    fontWeight: addFocused || newLabel ? 600 : 400,
-                    color: addFocused || newLabel ? colors.fg : colors.subtle,
+                    ...CHIP_BASE,
+                    border: `1.5px dashed ${addFocused || newLabel ? colors.fg : colors.border}`,
+                    background: addFocused || newLabel ? colors.inputBg : "transparent",
+                    cursor: "text",
                   }}
-                />
-              </div>
+                >
+                  <input
+                    type="text"
+                    placeholder="+"
+                    maxLength={10}
+                    value={newLabel}
+                    onChange={(e) => setNewLabel(e.target.value)}
+                    onFocus={() => setAddFocused(true)}
+                    onBlur={() => setAddFocused(false)}
+                    onKeyDown={(e) => { if (e.key === "Enter") addTable(); }}
+                    disabled={saving}
+                    style={{
+                      ...CHIP_INPUT,
+                      fontSize: addFocused || newLabel ? 15 : 20,
+                      fontWeight: addFocused || newLabel ? 600 : 400,
+                      color: addFocused || newLabel ? colors.fg : colors.subtle,
+                    }}
+                  />
+                </div>
+              )}
             </div>
 
-            <div style={{
-              padding: "10px 16px 0",
-              fontSize: 12,
-              color: colors.subtle,
-            }}>
-              Tap a table to rename · tap ✕ to remove
+            <div style={{ padding: "10px 16px 0", fontSize: 12, color: isSwapMode ? colors.info : colors.subtle }}>
+              {isSwapMode
+                ? "Tap another table to swap positions · tap ⇅ again to cancel"
+                : "Tap to rename · ⇅ to reorder · ✕ to remove"}
             </div>
 
             {/* Inactive tables */}
