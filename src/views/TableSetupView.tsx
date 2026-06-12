@@ -10,59 +10,90 @@ import {
 } from "../services/directusTables";
 import { colors, radii } from "../styles/tokens";
 import { S } from "../styles/appStyles";
-import { TrashIcon, CheckIcon, PlusIcon } from "../components/icons";
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+function chipFontSize(label: string): number {
+  const len = label.length;
+  if (len <= 3) return 20;
+  if (len <= 6) return 15;
+  if (len <= 9) return 12;
+  return 10;
+}
 
 // ── Styles ─────────────────────────────────────────────────────────────────
 
-const ROW: React.CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: 10,
-  padding: "12px 16px",
-  borderBottom: `1px solid ${colors.border}`,
-  background: colors.surface,
+const SECTION_LABEL: React.CSSProperties = {
+  padding: "20px 16px 10px",
+  fontSize: 12,
+  fontWeight: 600,
+  color: colors.subtle,
+  letterSpacing: "0.06em",
+  textTransform: "uppercase",
 };
 
-const LABEL_INPUT: React.CSSProperties = {
-  flex: 1,
-  fontSize: 15,
-  fontWeight: 500,
+const GRID: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fill, minmax(76px, 1fr))",
+  gap: 10,
+  padding: "0 16px",
+};
+
+const CHIP_BASE: React.CSSProperties = {
+  position: "relative",
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  justifyContent: "center",
+  height: 72,
+  borderRadius: radii.lg,
+  padding: "6px 8px",
+  userSelect: "none",
+  WebkitUserSelect: "none",
+  boxSizing: "border-box",
+};
+
+const CHIP: React.CSSProperties = {
+  ...CHIP_BASE,
+  background: colors.surface,
+  border: `1.5px solid ${colors.border}`,
+  cursor: "text",
+};
+
+const CHIP_EDITING: React.CSSProperties = {
+  ...CHIP_BASE,
+  background: colors.inputBg,
+  border: `1.5px solid ${colors.fg}`,
+};
+
+const CHIP_INPUT: React.CSSProperties = {
+  width: "100%",
+  textAlign: "center",
   fontFamily: "inherit",
   color: colors.fg,
   background: "transparent",
   border: "none",
   outline: "none",
   padding: 0,
+  caretColor: colors.fg,
 };
 
-const LABEL_INPUT_EDITING: React.CSSProperties = {
-  ...LABEL_INPUT,
-  background: colors.inputBg,
-  border: `1.5px solid ${colors.border}`,
-  borderRadius: radii.sm,
-  padding: "4px 8px",
-};
-
-const ICON_BTN: React.CSSProperties = {
+const REMOVE_BTN: React.CSSProperties = {
+  position: "absolute",
+  top: 3,
+  right: 4,
+  width: 18,
+  height: 18,
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  width: 32,
-  height: 32,
-  borderRadius: radii.sm,
   border: "none",
   background: "none",
-  cursor: "pointer",
   padding: 0,
-  flexShrink: 0,
-};
-
-const ARROW_BTN: React.CSSProperties = {
-  ...ICON_BTN,
-  fontSize: 14,
+  cursor: "pointer",
   color: colors.subtle,
-  width: 28,
-  height: 28,
+  fontSize: 12,
+  lineHeight: 1,
 };
 
 // ── Component ──────────────────────────────────────────────────────────────
@@ -77,6 +108,7 @@ export function TableSetupView() {
   const [editLabel, setEditLabel] = useState("");
   const [newLabel, setNewLabel] = useState("");
   const [saving, setSaving] = useState(false);
+  const [addFocused, setAddFocused] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -119,28 +151,6 @@ export function TableSetupView() {
     } finally {
       setSaving(false);
       setEditingId(null);
-    }
-  };
-
-  const move = async (index: number, direction: -1 | 1) => {
-    const swapIndex = index + direction;
-    if (swapIndex < 0 || swapIndex >= activeRecords.length) return;
-
-    const reordered = [...activeRecords];
-    [reordered[index], reordered[swapIndex]] = [reordered[swapIndex], reordered[index]];
-    const updates = reordered.map((r, i) => ({ id: r.id, sort: (i + 1) * 10 }));
-
-    const sortMap = new Map(updates.map((u) => [u.id, u.sort]));
-    setRecords((prev) =>
-      prev.map((r) => sortMap.has(r.id) ? { ...r, sort: sortMap.get(r.id)! } : r)
-    );
-
-    try {
-      await Promise.all(updates.map((u) => patchPermanentTable(u.id, { sort: u.sort })));
-      reloadTablesConfig();
-    } catch {
-      showToast("Failed to reorder — refreshing");
-      load();
     }
   };
 
@@ -190,19 +200,15 @@ export function TableSetupView() {
     }
   };
 
-  const handleBack = () => {
-    setView("tables");
-  };
-
   return (
     <div style={S.page}>
       <ScreenHeader
         title="Table Setup"
         left="back"
-        onBack={handleBack}
+        onBack={() => setView("tables")}
       />
 
-      <div style={{ padding: "0 0 32px" }}>
+      <div style={{ paddingBottom: 32 }}>
         {loading ? (
           <div style={{ padding: 32, textAlign: "center", color: colors.subtle, fontSize: 14 }}>
             Loading…
@@ -210,41 +216,26 @@ export function TableSetupView() {
         ) : (
           <>
             {/* Active tables */}
-            <div style={{
-              margin: "16px 16px 0",
-              borderRadius: radii.lg,
-              border: `1px solid ${colors.border}`,
-              overflow: "hidden",
-            }}>
+            <div style={SECTION_LABEL}>Active</div>
+
+            <div style={GRID}>
               {activeRecords.length === 0 && (
-                <div style={{ ...ROW, color: colors.subtle, fontSize: 14 }}>
-                  No active tables
+                <div style={{ gridColumn: "1 / -1", color: colors.subtle, fontSize: 14, paddingBottom: 4 }}>
+                  No active tables yet
                 </div>
               )}
-              {activeRecords.map((r, i) => (
-                <div key={r.id} style={ROW}>
-                  {/* Up / Down */}
-                  <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                    <button
-                      style={{ ...ARROW_BTN, opacity: i === 0 ? 0.25 : 1 }}
-                      disabled={i === 0 || saving}
-                      onClick={() => move(i, -1)}
-                      aria-label="Move up"
-                    >▲</button>
-                    <button
-                      style={{ ...ARROW_BTN, opacity: i === activeRecords.length - 1 ? 0.25 : 1 }}
-                      disabled={i === activeRecords.length - 1 || saving}
-                      onClick={() => move(i, 1)}
-                      aria-label="Move down"
-                    >▼</button>
-                  </div>
 
-                  {/* Label */}
+              {activeRecords.map((r) => (
+                <div
+                  key={r.id}
+                  style={editingId === r.id ? CHIP_EDITING : CHIP}
+                  onClick={() => { if (editingId !== r.id) startEdit(r); }}
+                >
                   {editingId === r.id ? (
                     <input
                       autoFocus
                       maxLength={10}
-                      style={LABEL_INPUT_EDITING}
+                      style={{ ...CHIP_INPUT, fontSize: 15, fontWeight: 600 }}
                       value={editLabel}
                       onChange={(e) => setEditLabel(e.target.value)}
                       onBlur={() => commitEdit(r)}
@@ -254,117 +245,90 @@ export function TableSetupView() {
                       }}
                     />
                   ) : (
-                    <span
-                      style={{ ...LABEL_INPUT, cursor: "text" }}
-                      onClick={() => startEdit(r)}
-                    >
+                    <span style={{
+                      fontSize: chipFontSize(r.label),
+                      fontWeight: 700,
+                      color: colors.fg,
+                      lineHeight: 1.1,
+                      textAlign: "center",
+                      wordBreak: "break-all",
+                    }}>
                       {r.label}
                     </span>
                   )}
 
-                  {/* Edit confirm */}
-                  {editingId === r.id && (
-                    <button
-                      style={{ ...ICON_BTN, color: colors.success }}
-                      onClick={() => commitEdit(r)}
-                      aria-label="Confirm rename"
-                    >
-                      <CheckIcon size={16} color={colors.success} />
-                    </button>
-                  )}
-
-                  {/* Deactivate */}
                   {editingId !== r.id && (
                     <button
-                      style={{ ...ICON_BTN, color: colors.danger }}
+                      style={REMOVE_BTN}
                       disabled={saving}
-                      onClick={() => deactivate(r)}
+                      onClick={(e) => { e.stopPropagation(); deactivate(r); }}
                       aria-label={`Remove ${r.label}`}
                     >
-                      <TrashIcon size={16} color={colors.danger} />
+                      ✕
                     </button>
                   )}
                 </div>
               ))}
-            </div>
 
-            {/* Add new table */}
-            <div style={{
-              margin: "12px 16px 0",
-              borderRadius: radii.lg,
-              border: `1px solid ${colors.border}`,
-              overflow: "hidden",
-              background: colors.surface,
-            }}>
-              <div style={{ ...ROW, borderBottom: "none", gap: 8 }}>
+              {/* Add chip */}
+              <div
+                style={{
+                  ...CHIP_BASE,
+                  border: `1.5px dashed ${addFocused || newLabel ? colors.fg : colors.border}`,
+                  background: addFocused || newLabel ? colors.inputBg : "transparent",
+                  cursor: "text",
+                }}
+              >
                 <input
                   type="text"
-                  placeholder="New table name…"
+                  placeholder="+"
                   maxLength={10}
                   value={newLabel}
                   onChange={(e) => setNewLabel(e.target.value)}
+                  onFocus={() => setAddFocused(true)}
+                  onBlur={() => setAddFocused(false)}
                   onKeyDown={(e) => { if (e.key === "Enter") addTable(); }}
+                  disabled={saving}
                   style={{
-                    flex: 1,
-                    fontSize: 15,
-                    fontFamily: "inherit",
-                    color: colors.fg,
-                    background: "transparent",
-                    border: "none",
-                    outline: "none",
-                    padding: 0,
+                    ...CHIP_INPUT,
+                    fontSize: addFocused || newLabel ? 15 : 20,
+                    fontWeight: addFocused || newLabel ? 600 : 400,
+                    color: addFocused || newLabel ? colors.fg : colors.subtle,
                   }}
                 />
-                <button
-                  style={{
-                    ...ICON_BTN,
-                    background: newLabel.trim() ? colors.fg : colors.chipBg,
-                    color: newLabel.trim() ? colors.bg : colors.subtle,
-                    borderRadius: radii.pill,
-                    width: 28,
-                    height: 28,
-                    opacity: saving ? 0.5 : 1,
-                  }}
-                  disabled={!newLabel.trim() || saving}
-                  onClick={addTable}
-                  aria-label="Add table"
-                >
-                  <PlusIcon size={16} />
-                </button>
               </div>
+            </div>
+
+            <div style={{
+              padding: "10px 16px 0",
+              fontSize: 12,
+              color: colors.subtle,
+            }}>
+              Tap a table to rename · tap ✕ to remove
             </div>
 
             {/* Inactive tables */}
             {inactiveRecords.length > 0 && (
               <>
-                <div style={{
-                  padding: "20px 16px 8px",
-                  fontSize: 12,
-                  fontWeight: 600,
-                  color: colors.subtle,
-                  letterSpacing: "0.06em",
-                  textTransform: "uppercase",
-                }}>
-                  Inactive
-                </div>
-                <div style={{
-                  margin: "0 16px",
-                  borderRadius: radii.lg,
-                  border: `1px solid ${colors.border}`,
-                  overflow: "hidden",
-                }}>
+                <div style={SECTION_LABEL}>Inactive</div>
+                <div style={GRID}>
                   {inactiveRecords.map((r) => (
-                    <div key={r.id} style={{ ...ROW, opacity: 0.55 }}>
-                      <span style={{ flex: 1, fontSize: 15, fontWeight: 500, color: colors.fg }}>
+                    <div
+                      key={r.id}
+                      style={{ ...CHIP, opacity: 0.5, cursor: "pointer" }}
+                      onClick={() => reactivate(r)}
+                    >
+                      <span style={{
+                        fontSize: chipFontSize(r.label),
+                        fontWeight: 700,
+                        color: colors.fg,
+                        lineHeight: 1.1,
+                        textAlign: "center",
+                        wordBreak: "break-all",
+                      }}>
                         {r.label}
                       </span>
-                      <button
-                        style={{ ...ICON_BTN, fontSize: 13, color: colors.fg, background: colors.chipBg, borderRadius: radii.sm }}
-                        disabled={saving}
-                        onClick={() => reactivate(r)}
-                      >
-                        Restore
-                      </button>
+                      <span style={{ fontSize: 10, color: colors.subtle, marginTop: 4 }}>restore</span>
                     </div>
                   ))}
                 </div>
