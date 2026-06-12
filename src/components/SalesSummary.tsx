@@ -15,14 +15,13 @@ export function SalesSummary({ paidBills }: SalesSummaryProps) {
   const hasVouchers = totalGutschein > 0;
 
   const tiles = [
-    { label: "Revenue", value: `${totalRevenue.toFixed(2)}\u20ac`, sub: "Shift total", strong: true },
+    { label: "Revenue", value: `${totalRevenue.toFixed(2)}\u20ac`, strong: true },
     {
       label: "Tips",
       value: `${tipSign}${totalTips.toFixed(2)}\u20ac`,
-      sub: "For team distribution",
       tone: totalTips >= 0 ? colors.success : colors.danger,
     },
-    { label: "Tables", value: String(paidBills.length), sub: "Paid bills" },
+    { label: "Tables", value: String(paidBills.length) },
     ...(hasVouchers ? [{
       label: "Vouchers",
       value: `-${totalGutschein.toFixed(2)}\u20ac`,
@@ -65,9 +64,11 @@ export function SalesSummary({ paidBills }: SalesSummaryProps) {
             <span style={{ fontSize: tile.strong ? 19 : 17, fontWeight: 800, lineHeight: 1.05, color: tile.tone ?? colors.fg }}>
               {tile.value}
             </span>
-            <span style={{ fontSize: 11, color: colors.muted, lineHeight: 1.15 }}>
-              {tile.sub}
-            </span>
+            {tile.sub && (
+              <span style={{ fontSize: 11, color: colors.muted, lineHeight: 1.15 }}>
+                {tile.sub}
+              </span>
+            )}
           </div>
         ))}
       </div>

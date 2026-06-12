@@ -188,21 +188,16 @@ export function DailySalesView() {
 
         {(allItems.length > 0 || addedToPOSItems.length > 0) && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 14 }}>
-            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: colors.fg }}>Articles Sold</div>
-                <div style={{ fontSize: 12, color: colors.muted, marginTop: 2 }}>
-                  {remainingItemsCount > 0
-                    ? `${remainingItemsCount} item${remainingItemsCount !== 1 ? "s" : ""} to cross`
-                    : "All articles crossed"}
-                  {addedItemsCount > 0 && (
-                    <span style={{ display: "block", marginTop: 2 }}>
-                      {addedItemsCount} item{addedItemsCount !== 1 ? "s" : ""} excluded from {excludedTableCount} table{excludedTableCount !== 1 ? "s" : ""}
-                    </span>
-                  )}
-                </div>
-              </div>
-              <div style={{ display: "flex", gap: 6, flexShrink: 0, flexWrap: "wrap", justifyContent: "flex-end" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+              <span style={{ fontSize: 12, color: colors.muted, minWidth: 0 }}>
+                {remainingItemsCount > 0
+                  ? `${remainingItemsCount} item${remainingItemsCount !== 1 ? "s" : ""} to cross`
+                  : "All articles crossed"}
+                {addedItemsCount > 0 && (
+                  <> · {addedItemsCount} item{addedItemsCount !== 1 ? "s" : ""} excluded from {excludedTableCount} table{excludedTableCount !== 1 ? "s" : ""}</>
+                )}
+              </span>
+              <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                 {allItems.length > 0 && renderSortButton("qty", "Sales")}
                 {allItems.length > 0 && renderSortButton("posId", "POS ID")}
               </div>
