@@ -277,7 +277,7 @@ export function DailySalesView() {
               value={selectedDate}
               max={today}
               onChange={(e) => e.target.value && setSelectedDate(e.target.value)}
-              style={{ position: "absolute", opacity: 0, pointerEvents: "none", width: 0, height: 0 }}
+              style={{ position: "absolute", inset: 0, opacity: 0, width: "100%", height: "100%", cursor: "pointer" }}
             />
           </div>
           </div>
