@@ -81,8 +81,10 @@ Notes:
   to avoid zoom clipping.
 - `ScreenHeader` centralizes top bars. On shell views, wide layouts suppress
   redundant back/profile controls because navigation lives in the sidebar.
-- `TABLES` is a flat hardcoded list of 18 permanent tables: 1-4, MUT, 10-15,
-  ToGo, A, B, C, Left, Mid, Right. The old Inside/Outside grouping is removed.
+- `TABLES` is a flat hardcoded fallback of 18 permanent tables with short
+  display labels: 1-4, MUT, 10-15, To Go, A, B, C, Left, Mid, Right. When
+  Directus `restaurant_tables` has data, `permanentTables` in `TableContext`
+  replaces this fallback. The old Inside/Outside grouping is removed.
 - Staff can add temporary overflow tables during service. They are local-only in
   `dynamic_tables`, use `ext-*` ids, are resolved through
   `resolveTableDisplayId`, and are removed when the table closes. Permanent
