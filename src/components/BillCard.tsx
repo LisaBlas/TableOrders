@@ -52,13 +52,29 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
     if (!isEditing) setIsExpanded(e => !e);
   };
 
+  const paymentChip = (
+    <span style={{
+      fontSize: 11,
+      fontWeight: 600,
+      padding: "2px 7px",
+      borderRadius: 10,
+      background: colors.chipBg,
+      color: colors.muted,
+      border: `1px solid ${colors.border}`,
+      flexShrink: 0,
+    }}>
+      {paymentLabel}
+    </span>
+  );
+
   if (!isExpanded) {
     return (
       <div style={{ ...cardStyle, cursor: "pointer" }} onClick={handleToggle}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" as const }}>
               <span style={S.billTableNum}>{bill.tableId}</span>
+              {paymentChip}
               {(bill.addedToPOS || allItemsCrossed) && (
                 <span style={S.addedToPOSLabel}>Added To POS</span>
               )}
@@ -74,19 +90,6 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
             )}
           </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, flexWrap: "wrap" as const }}>
-          <span style={{
-            fontSize: 11,
-            fontWeight: 600,
-            padding: "2px 7px",
-            borderRadius: 10,
-            background: colors.chipBg,
-            color: colors.muted,
-            border: `1px solid ${colors.border}`,
-          }}>
-            {paymentLabel}
-          </span>
-        </div>
       </div>
     );
   }
@@ -99,27 +102,19 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
           style={{ flex: 1, minWidth: 0, cursor: isEditing ? "default" : "pointer" }}
           onClick={handleToggle}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" as const }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" as const }}>
             <span style={S.billTableNum}>{bill.tableId}</span>
+            {paymentChip}
             {(bill.addedToPOS || allItemsCrossed) && (
               <span style={S.addedToPOSLabel}>Added To POS</span>
             )}
           </div>
           <div style={{ fontSize: 12, color: colors.muted, marginTop: 2 }}>{timeStr}</div>
-          <div style={{ ...S.billMeta, marginTop: 4, marginBottom: 0 }}>
-            {bill.paymentMode === "full"
-              ? bill.gutschein
-                ? <span>Full payment (Voucher: {bill.gutschein.toFixed(2)}€)</span>
-                : "Full payment"
-              : bill.paymentMode === "equal"
-              ? `Split ${splitGuestCount ?? 0} ways`
-              : splitGuestCount === null
-              ? "Split by item"
-              : `Split by item (${splitGuestCount} guest${splitGuestCount > 1 ? 's' : ''})`}
-            {bill.paymentMode !== "full" && bill.gutschein && bill.gutschein > 0 && (
-              <div>Voucher: -{bill.gutschein.toFixed(2)}€</div>
-            )}
-          </div>
+          {bill.gutschein && bill.gutschein > 0 && (
+            <div style={{ ...S.billMeta, marginTop: 4, marginBottom: 0 }}>
+              Voucher: -{bill.gutschein.toFixed(2)}€
+            </div>
+          )}
         </div>
         {bill.addedToPOS ? (
           <button style={S.editBillBtn} onClick={onRestore} title="Restore bill"><ReopenIcon size={15} /></button>
