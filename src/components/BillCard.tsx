@@ -76,12 +76,9 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
 
   // Expanded view
   return (
-    <div style={cardStyle}>
+    <div style={{ ...cardStyle, cursor: isEditing ? "default" : "pointer" }} onClick={handleToggle}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-        <div
-          style={{ flex: 1, minWidth: 0, cursor: isEditing ? "default" : "pointer" }}
-          onClick={handleToggle}
-        >
+        <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <span style={S.billTableNum}>{bill.tableId}</span>
             {(bill.addedToPOS || allItemsCrossed) && (
@@ -96,11 +93,11 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
           )}
         </div>
         {bill.addedToPOS ? (
-          <button style={S.editBillBtn} onClick={onRestore} title="Restore bill"><ReopenIcon size={15} /></button>
+          <button style={S.editBillBtn} onClick={e => { e.stopPropagation(); onRestore(); }} title="Restore bill"><ReopenIcon size={15} /></button>
         ) : !isEditing ? (
-          <button style={S.editBillBtn} onClick={onEdit}><EditIcon size={15} /></button>
+          <button style={S.editBillBtn} onClick={e => { e.stopPropagation(); onEdit(); }}><EditIcon size={15} /></button>
         ) : (
-          <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+          <div style={{ display: "flex", gap: "6px", alignItems: "center" }} onClick={e => e.stopPropagation()}>
             <button style={S.doneEditBtn} onClick={onDone}>Done</button>
             <button style={S.cancelEditBtn} onClick={onCancel}>Cancel</button>
             <button style={S.deleteBillBtnIcon} onClick={onDelete} title="Mark as Added To POS"><TrashIcon size={15} /></button>
