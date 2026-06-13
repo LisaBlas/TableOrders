@@ -49,6 +49,7 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
   const timeStr = new Date(bill.timestamp).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
   const tipSuffix = bill.tip !== undefined ? ` · Tip €${Math.abs(bill.tip).toFixed(2)}` : "";
   const billSubtitle = `${timeStr} · ${shortPaymentLabel}${tipSuffix}`;
+  const expandedSubtitle = `${timeStr} · ${shortPaymentLabel}`;
 
   const handleToggle = () => {
     if (!isEditing) setIsExpanded(e => !e);
@@ -87,7 +88,7 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
               <span style={S.addedToPOSLabel}>Added To POS</span>
             )}
           </div>
-          <div style={{ fontSize: 12, color: colors.muted, marginTop: 2 }}>{billSubtitle}</div>
+          <div style={{ fontSize: 12, color: colors.muted, marginTop: 2 }}>{expandedSubtitle}</div>
           {bill.gutschein && bill.gutschein > 0 && (
             <div style={{ ...S.billMeta, marginTop: 4, marginBottom: 0 }}>
               Voucher: -{bill.gutschein.toFixed(2)}€
