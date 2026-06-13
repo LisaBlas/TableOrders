@@ -44,8 +44,9 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
     ? "Split by item"
     : `Split by item (${splitGuestCount})`;
 
+  const itemCount = bill.items.reduce((sum, i) => sum + i.qty, 0);
   const timeStr = new Date(bill.timestamp).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
-  const billSubtitle = `${timeStr} · ${shortPaymentLabel}`;
+  const billSubtitle = `${timeStr} · ${shortPaymentLabel}${itemCount > 0 ? ` · ${itemCount} item${itemCount !== 1 ? "s" : ""}` : ""}`;
 
   const handleToggle = () => {
     if (!isEditing) setIsExpanded(e => !e);
@@ -64,19 +65,17 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
             </div>
             <div style={{ fontSize: 12, color: colors.muted, marginTop: 1 }}>{billSubtitle}</div>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
-            <span style={S.billTotal}>{bill.total.toFixed(2)}€</span>
-            {bill.tip !== undefined && (
-              <span style={{ fontSize: 12, color: colors.muted }}>
-                Tip €{Math.abs(bill.tip).toFixed(2)}
-              </span>
-            )}
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+              <span style={S.billTotal}>{bill.total.toFixed(2)}€</span>
+              {bill.tip !== undefined && (
+                <span style={{ fontSize: 12, color: colors.muted }}>
+                  Tip €{Math.abs(bill.tip).toFixed(2)}
+                </span>
+              )}
+            </div>
+            <span style={{ fontSize: 16, color: colors.faint, lineHeight: 1, userSelect: "none" }}>›</span>
           </div>
-        </div>
-        <div style={{ textAlign: "center" as const, marginTop: 6, lineHeight: 1 }}>
-          <svg width="14" height="8" viewBox="0 0 14 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M1 1L7 7L13 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: colors.faint }} />
-          </svg>
         </div>
       </div>
     );
@@ -94,23 +93,20 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
             )}
           </div>
           <div style={{ fontSize: 12, color: colors.muted, marginTop: 2 }}>{billSubtitle}</div>
-          {bill.gutschein && bill.gutschein > 0 && (
-            <div style={{ ...S.billMeta, marginTop: 4, marginBottom: 0 }}>
-              Voucher: -{bill.gutschein.toFixed(2)}€
-            </div>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+            {bill.gutschein && bill.gutschein > 0 && (
+              <span style={{ fontSize: 13, color: colors.danger, fontWeight: 600 }}>(-{bill.gutschein.toFixed(2)}€)</span>
+            )}
+            <span style={S.billTotal}>{bill.total.toFixed(2)}€</span>
+          </div>
+          {bill.tip !== undefined && (
+            <span style={{ fontSize: 12, color: colors.muted }}>
+              Tip: {bill.tip >= 0 ? `+${bill.tip.toFixed(2)}€` : `${bill.tip.toFixed(2)}€`}
+            </span>
           )}
         </div>
-        {bill.addedToPOS ? (
-          <button style={S.editBillBtn} onClick={e => { e.stopPropagation(); onRestore(); }} title="Restore bill"><ReopenIcon size={15} /></button>
-        ) : !isEditing ? (
-          <button style={S.editBillBtn} onClick={e => { e.stopPropagation(); onEdit(); }}><EditIcon size={15} /></button>
-        ) : (
-          <div style={{ display: "flex", gap: "6px", alignItems: "center" }} onClick={e => e.stopPropagation()}>
-            <button style={S.doneEditBtn} onClick={onDone}>Done</button>
-            <button style={S.cancelEditBtn} onClick={onCancel}>Cancel</button>
-            <button style={S.deleteBillBtnIcon} onClick={onDelete} title="Mark as Added To POS"><TrashIcon size={15} /></button>
-          </div>
-        )}
       </div>
       <div style={{ ...S.billItemsList, marginTop: 10 }}>
         {bill.items.length === 0 ? (
@@ -189,17 +185,17 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
           );
         })()}
       </div>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", marginTop: 8, gap: 2 }}>
-        <div style={{ display: "flex", alignItems: "baseline", gap: "8px" }}>
-          {bill.gutschein && bill.gutschein > 0 && (
-            <span style={{ fontSize: 13, color: colors.danger, fontWeight: 600 }}>(-{bill.gutschein.toFixed(2)}€)</span>
-          )}
-          <span style={S.billTotal}>{bill.total.toFixed(2)}€</span>
-        </div>
-        {bill.tip !== undefined && (
-          <span style={{ fontSize: 12, color: colors.muted }}>
-            Tip: {bill.tip >= 0 ? `+${bill.tip.toFixed(2)}€` : `${bill.tip.toFixed(2)}€`}
-          </span>
+      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }} onClick={e => e.stopPropagation()}>
+        {bill.addedToPOS ? (
+          <button style={S.editBillBtn} onClick={e => { e.stopPropagation(); onRestore(); }} title="Restore bill"><ReopenIcon size={15} /></button>
+        ) : !isEditing ? (
+          <button style={S.editBillBtn} onClick={e => { e.stopPropagation(); onEdit(); }}><EditIcon size={15} /></button>
+        ) : (
+          <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+            <button style={S.doneEditBtn} onClick={onDone}>Done</button>
+            <button style={S.cancelEditBtn} onClick={onCancel}>Cancel</button>
+            <button style={S.deleteBillBtnIcon} onClick={onDelete} title="Mark as Added To POS"><TrashIcon size={15} /></button>
+          </div>
         )}
       </div>
     </div>
