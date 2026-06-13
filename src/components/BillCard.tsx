@@ -57,7 +57,7 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
       <div style={{ ...cardStyle, cursor: "pointer" }} onClick={handleToggle}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div>
-            <div style={S.billTableNum}>Table {bill.tableId}</div>
+            <div style={S.billTableNum}>{bill.tableId}</div>
             <div style={{ fontSize: 12, color: colors.muted, marginTop: 1 }}>{timeStr}</div>
           </div>
           <span style={S.billTotal}>{bill.total.toFixed(2)}€</span>
@@ -96,7 +96,7 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
           onClick={handleToggle}
         >
           <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" as const }}>
-            <span style={S.billTableNum}>Table {bill.tableId}</span>
+            <span style={S.billTableNum}>{bill.tableId}</span>
             {(bill.addedToPOS || allItemsCrossed) && (
               <span style={S.addedToPOSLabel}>Added To POS</span>
             )}
