@@ -84,15 +84,15 @@ export function DailySalesView() {
     const sortFn = articleSortMode === "qty"
       ? (a: PosEntry, b: PosEntry) => b.qty - a.qty || a.posName.localeCompare(b.posName)
       : comparePosEntries;
-    const categorisedItems = [...withPosId, ...missingPosId];
     const knownCats = new Set(CATEGORY_ORDER as readonly string[]);
     const categoryGroups = CATEGORY_ORDER.map(cat => ({
       label: cat,
-      items: categorisedItems.filter(item => item.category === cat).sort(sortFn),
+      items: withPosId.filter(item => item.category === cat).sort(sortFn),
     }));
-    const otherCategoryItems = categorisedItems
-      .filter(item => !knownCats.has(item.category ?? ""))
-      .sort(sortFn);
+    const allUncategorised = [
+      ...uncategorised,
+      ...[...withPosId, ...missingPosId].filter(item => !knownCats.has(item.category ?? "")),
+    ].sort(sortFn);
 
 
     const renderPosRow = (item: PosEntry, panelIsMissing = false) => {
@@ -223,21 +223,19 @@ export function DailySalesView() {
               (isDesktop || isTabletLandscape) ? (
                 <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
                   <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 12 }}>
-                    {uncategorised.length > 0 && renderPanel("Uncategorised", uncategorised, true)}
+                    {allUncategorised.length > 0 && renderPanel("Uncategorised", allUncategorised, true)}
                     {renderPanel("Food", categoryGroups[0].items)}
                     {renderPanel("Wines", categoryGroups[1].items)}
                   </div>
                   <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 12 }}>
                     {renderPanel("Drinks", categoryGroups[2].items)}
                     {renderPanel("Shop", categoryGroups[3].items)}
-                    {otherCategoryItems.length > 0 && renderPanel("Other", otherCategoryItems)}
                   </div>
                 </div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  {uncategorised.length > 0 && renderPanel("Uncategorised", uncategorised, true)}
+                  {allUncategorised.length > 0 && renderPanel("Uncategorised", allUncategorised, true)}
                   {categoryGroups.map(g => renderPanel(g.label, g.items))}
-                  {otherCategoryItems.length > 0 && renderPanel("Other", otherCategoryItems)}
                 </div>
               )
             )}
