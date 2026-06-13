@@ -57,10 +57,22 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
       <div style={{ ...cardStyle, cursor: "pointer" }} onClick={handleToggle}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div>
-            <div style={S.billTableNum}>{bill.tableId}</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={S.billTableNum}>{bill.tableId}</span>
+              {(bill.addedToPOS || allItemsCrossed) && (
+                <span style={S.addedToPOSLabel}>Added To POS</span>
+              )}
+            </div>
             <div style={{ fontSize: 12, color: colors.muted, marginTop: 1 }}>{timeStr}</div>
           </div>
-          <span style={S.billTotal}>{bill.total.toFixed(2)}€</span>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+            <span style={S.billTotal}>{bill.total.toFixed(2)}€</span>
+            {bill.tip !== undefined && (
+              <span style={{ fontSize: 12, color: colors.muted }}>
+                Tip: {bill.tip >= 0 ? `+${bill.tip.toFixed(2)}€` : `${bill.tip.toFixed(2)}€`}
+              </span>
+            )}
+          </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, flexWrap: "wrap" as const }}>
           <span style={{
@@ -74,14 +86,6 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
           }}>
             {paymentLabel}
           </span>
-          {bill.tip !== undefined && (
-            <span style={{ fontSize: 12, color: colors.muted }}>
-              Tip: {bill.tip >= 0 ? `+${bill.tip.toFixed(2)}€` : `${bill.tip.toFixed(2)}€`}
-            </span>
-          )}
-          {(bill.addedToPOS || allItemsCrossed) && (
-            <span style={S.addedToPOSLabel}>Added To POS</span>
-          )}
         </div>
       </div>
     );
@@ -115,9 +119,6 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
             {bill.paymentMode !== "full" && bill.gutschein && bill.gutschein > 0 && (
               <div>Voucher: -{bill.gutschein.toFixed(2)}€</div>
             )}
-            {bill.tip !== undefined && (
-              <div>Tip: {bill.tip >= 0 ? `+${bill.tip.toFixed(2)}€` : `${bill.tip.toFixed(2)}€`}</div>
-            )}
           </div>
         </div>
         {bill.addedToPOS ? (
@@ -132,7 +133,6 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
           </div>
         )}
       </div>
-      <div style={{ height: 0, borderTop: `2px dashed ${colors.divider}`, margin: "10px 0 8px" }} />
       <div style={S.billItemsList}>
         {bill.items.length === 0 ? (
           <div style={{ padding: "20px", textAlign: "center" as const, color: colors.faint, fontSize: 14, fontStyle: "italic" }}>
@@ -210,11 +210,18 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
           );
         })()}
       </div>
-      <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "baseline", marginTop: 8, gap: "8px" }}>
-        {bill.gutschein && bill.gutschein > 0 && (
-          <span style={{ fontSize: 13, color: colors.danger, fontWeight: 600 }}>(-{bill.gutschein.toFixed(2)}€)</span>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", marginTop: 8, gap: 2 }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: "8px" }}>
+          {bill.gutschein && bill.gutschein > 0 && (
+            <span style={{ fontSize: 13, color: colors.danger, fontWeight: 600 }}>(-{bill.gutschein.toFixed(2)}€)</span>
+          )}
+          <span style={S.billTotal}>{bill.total.toFixed(2)}€</span>
+        </div>
+        {bill.tip !== undefined && (
+          <span style={{ fontSize: 12, color: colors.muted }}>
+            Tip: {bill.tip >= 0 ? `+${bill.tip.toFixed(2)}€` : `${bill.tip.toFixed(2)}€`}
+          </span>
         )}
-        <span style={S.billTotal}>{bill.total.toFixed(2)}€</span>
       </div>
     </div>
   );

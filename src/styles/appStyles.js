@@ -1591,8 +1591,8 @@ export const S = {
   editBillBtn: {
     padding: "5px 12px",
     borderRadius: radii.sm,
-    border: "1.5px solid #ddd",
-    background: colors.surface,
+    border: "none",
+    background: "transparent",
     fontSize: 13,
     fontWeight: 600,
     cursor: "pointer",
