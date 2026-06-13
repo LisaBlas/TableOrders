@@ -28,9 +28,7 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
     return cQty === item.qty;
   });
 
-  const cardStyle = (bill.addedToPOS || allItemsCrossed)
-    ? { ...S.billCard, background: colors.infoBg, border: `1px solid ${colors.info}` }
-    : S.billCard;
+  const cardStyle = S.billCard;
 
   const splitGuestCount = bill.splitData
     ? "payments" in bill.splitData
