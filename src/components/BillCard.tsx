@@ -38,8 +38,8 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
       : bill.splitData.guests
     : null;
 
-  const paymentLabel = bill.paymentMode === "full"
-    ? "Full payment"
+  const shortPaymentLabel = bill.paymentMode === "full"
+    ? "Paid"
     : bill.paymentMode === "equal"
     ? `Split ${splitGuestCount ?? 0} ways`
     : splitGuestCount === null
@@ -47,48 +47,27 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
     : `Split by item (${splitGuestCount})`;
 
   const timeStr = new Date(bill.timestamp).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  const tipSuffix = bill.tip !== undefined ? ` · Tip €${Math.abs(bill.tip).toFixed(2)}` : "";
+  const billSubtitle = `${timeStr} · ${shortPaymentLabel}${tipSuffix}`;
 
   const handleToggle = () => {
     if (!isEditing) setIsExpanded(e => !e);
   };
-
-  const paymentChip = (
-    <span style={{
-      fontSize: 11,
-      fontWeight: 600,
-      padding: "2px 7px",
-      borderRadius: 10,
-      background: colors.chipBg,
-      color: colors.muted,
-      border: `1px solid ${colors.border}`,
-      flexShrink: 0,
-    }}>
-      {paymentLabel}
-    </span>
-  );
 
   if (!isExpanded) {
     return (
       <div style={{ ...cardStyle, cursor: "pointer" }} onClick={handleToggle}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" as const }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <span style={S.billTableNum}>{bill.tableId}</span>
-              {paymentChip}
               {(bill.addedToPOS || allItemsCrossed) && (
                 <span style={S.addedToPOSLabel}>Added To POS</span>
               )}
             </div>
-            <div style={{ fontSize: 12, color: colors.muted, marginTop: 1 }}>{timeStr}</div>
+            <div style={{ fontSize: 12, color: colors.muted, marginTop: 1 }}>{billSubtitle}</div>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
-            <span style={S.billTotal}>{bill.total.toFixed(2)}€</span>
-            {bill.tip !== undefined && (
-              <span style={{ fontSize: 12, color: colors.muted }}>
-                Tip: {bill.tip >= 0 ? `+${bill.tip.toFixed(2)}€` : `${bill.tip.toFixed(2)}€`}
-              </span>
-            )}
-          </div>
+          <span style={S.billTotal}>{bill.total.toFixed(2)}€</span>
         </div>
       </div>
     );
@@ -102,14 +81,13 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
           style={{ flex: 1, minWidth: 0, cursor: isEditing ? "default" : "pointer" }}
           onClick={handleToggle}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" as const }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <span style={S.billTableNum}>{bill.tableId}</span>
-            {paymentChip}
             {(bill.addedToPOS || allItemsCrossed) && (
               <span style={S.addedToPOSLabel}>Added To POS</span>
             )}
           </div>
-          <div style={{ fontSize: 12, color: colors.muted, marginTop: 2 }}>{timeStr}</div>
+          <div style={{ fontSize: 12, color: colors.muted, marginTop: 2 }}>{billSubtitle}</div>
           {bill.gutschein && bill.gutschein > 0 && (
             <div style={{ ...S.billMeta, marginTop: 4, marginBottom: 0 }}>
               Voucher: -{bill.gutschein.toFixed(2)}€
