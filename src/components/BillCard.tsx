@@ -47,9 +47,7 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
     : `Split by item (${splitGuestCount})`;
 
   const timeStr = new Date(bill.timestamp).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
-  const tipSuffix = bill.tip !== undefined ? ` · Tip €${Math.abs(bill.tip).toFixed(2)}` : "";
-  const billSubtitle = `${timeStr} · ${shortPaymentLabel}${tipSuffix}`;
-  const expandedSubtitle = `${timeStr} · ${shortPaymentLabel}`;
+  const billSubtitle = `${timeStr} · ${shortPaymentLabel}`;
 
   const handleToggle = () => {
     if (!isEditing) setIsExpanded(e => !e);
@@ -68,7 +66,14 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
             </div>
             <div style={{ fontSize: 12, color: colors.muted, marginTop: 1 }}>{billSubtitle}</div>
           </div>
-          <span style={S.billTotal}>{bill.total.toFixed(2)}€</span>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+            <span style={S.billTotal}>{bill.total.toFixed(2)}€</span>
+            {bill.tip !== undefined && (
+              <span style={{ fontSize: 12, color: colors.muted }}>
+                Tip €{Math.abs(bill.tip).toFixed(2)}
+              </span>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -85,7 +90,7 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
               <span style={S.addedToPOSLabel}>Added To POS</span>
             )}
           </div>
-          <div style={{ fontSize: 12, color: colors.muted, marginTop: 2 }}>{expandedSubtitle}</div>
+          <div style={{ fontSize: 12, color: colors.muted, marginTop: 2 }}>{billSubtitle}</div>
           {bill.gutschein && bill.gutschein > 0 && (
             <div style={{ ...S.billMeta, marginTop: 4, marginBottom: 0 }}>
               Voucher: -{bill.gutschein.toFixed(2)}€
