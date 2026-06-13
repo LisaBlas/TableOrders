@@ -106,7 +106,7 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
           </div>
         )}
       </div>
-      <div style={S.billItemsList}>
+      <div style={{ ...S.billItemsList, marginTop: 10 }}>
         {bill.items.length === 0 ? (
           <div style={{ padding: "20px", textAlign: "center" as const, color: colors.faint, fontSize: 14, fontStyle: "italic" }}>
             No items in this bill
