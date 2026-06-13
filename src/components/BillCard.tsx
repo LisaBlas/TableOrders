@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { S } from "../styles/appStyles";
 import { colors } from "../styles/tokens";
 import { EditIcon, ReopenIcon, TrashIcon } from "./icons";
@@ -16,7 +17,12 @@ interface BillCardProps {
 }
 
 export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, onRestore, onRemoveItem, onRestoreItem }: BillCardProps) {
-  // Check if all items are crossed (removed one by one)
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  useEffect(() => {
+    if (isEditing) setIsExpanded(true);
+  }, [isEditing]);
+
   const allItemsCrossed = bill.items.length > 0 && bill.items.every((item) => {
     const cQty = item.crossedQty ?? (item.crossed ? item.qty : 0);
     return cQty === item.qty;
@@ -32,23 +38,74 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
       : bill.splitData.guests
     : null;
 
+  const paymentLabel = bill.paymentMode === "full"
+    ? "Full payment"
+    : bill.paymentMode === "equal"
+    ? `Split ${splitGuestCount ?? 0} ways`
+    : splitGuestCount === null
+    ? "Split by item"
+    : `Split by item (${splitGuestCount})`;
+
+  const timeStr = new Date(bill.timestamp).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+
+  const handleToggle = () => {
+    if (!isEditing) setIsExpanded(e => !e);
+  };
+
+  if (!isExpanded) {
+    return (
+      <div style={{ ...cardStyle, cursor: "pointer" }} onClick={handleToggle}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div>
+            <div style={S.billTableNum}>Table {bill.tableId}</div>
+            <div style={{ fontSize: 12, color: colors.muted, marginTop: 1 }}>{timeStr}</div>
+          </div>
+          <span style={S.billTotal}>{bill.total.toFixed(2)}€</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, flexWrap: "wrap" as const }}>
+          <span style={{
+            fontSize: 11,
+            fontWeight: 600,
+            padding: "2px 7px",
+            borderRadius: 10,
+            background: colors.chipBg,
+            color: colors.muted,
+            border: `1px solid ${colors.border}`,
+          }}>
+            {paymentLabel}
+          </span>
+          {bill.tip !== undefined && (
+            <span style={{ fontSize: 12, color: colors.muted }}>
+              Tip: {bill.tip >= 0 ? `+${bill.tip.toFixed(2)}€` : `${bill.tip.toFixed(2)}€`}
+            </span>
+          )}
+          {(bill.addedToPOS || allItemsCrossed) && (
+            <span style={S.addedToPOSLabel}>Added To POS</span>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Expanded view
   return (
     <div style={cardStyle}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "baseline", gap: "8px", flexWrap: "wrap" as const }}>
+        <div
+          style={{ flex: 1, minWidth: 0, cursor: isEditing ? "default" : "pointer" }}
+          onClick={handleToggle}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" as const }}>
             <span style={S.billTableNum}>Table {bill.tableId}</span>
-            <span style={{ fontSize: 12, color: colors.muted }}>
-              {new Date(bill.timestamp).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
-            </span>
             {(bill.addedToPOS || allItemsCrossed) && (
               <span style={S.addedToPOSLabel}>Added To POS</span>
             )}
           </div>
-          <div style={{ ...S.billMeta, marginTop: 2 }}>
+          <div style={{ fontSize: 12, color: colors.muted, marginTop: 2 }}>{timeStr}</div>
+          <div style={{ ...S.billMeta, marginTop: 4, marginBottom: 0 }}>
             {bill.paymentMode === "full"
               ? bill.gutschein
-                ? <span style={{ color: colors.success, fontWeight: 600 }}>Full payment (Voucher: {bill.gutschein.toFixed(2)}€)</span>
+                ? <span>Full payment (Voucher: {bill.gutschein.toFixed(2)}€)</span>
                 : "Full payment"
               : bill.paymentMode === "equal"
               ? `Split ${splitGuestCount ?? 0} ways`
@@ -56,14 +113,10 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
               ? "Split by item"
               : `Split by item (${splitGuestCount} guest${splitGuestCount > 1 ? 's' : ''})`}
             {bill.paymentMode !== "full" && bill.gutschein && bill.gutschein > 0 && (
-              <div style={{ color: colors.success, fontWeight: 600 }}>
-                Voucher: -{bill.gutschein.toFixed(2)}€
-              </div>
+              <div>Voucher: -{bill.gutschein.toFixed(2)}€</div>
             )}
             {bill.tip !== undefined && (
-              <div style={{ color: bill.tip >= 0 ? colors.success : colors.danger }}>
-                Tip: {bill.tip >= 0 ? `+${bill.tip.toFixed(2)}€` : `${bill.tip.toFixed(2)}€`}
-              </div>
+              <div>Tip: {bill.tip >= 0 ? `+${bill.tip.toFixed(2)}€` : `${bill.tip.toFixed(2)}€`}</div>
             )}
           </div>
         </div>
@@ -93,7 +146,6 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
             const cQty = item.crossedQty ?? (item.crossed ? item.qty : 0);
             const aQty = item.qty - cQty;
 
-            // If bill is marked as deleted or all items are crossed, show everything in main section
             if (bill.addedToPOS || allItemsCrossed) {
               activeItems.push({ ...item, displayQty: item.qty });
             } else {
