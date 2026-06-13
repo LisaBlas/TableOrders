@@ -33,6 +33,16 @@ export function DailySalesView() {
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
   const [articleSortMode, setArticleSortMode] = useState<ArticleSortMode>("qty");
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+
+  const toggleSection = (label: string) => {
+    setCollapsedSections(prev => {
+      const next = new Set(prev);
+      if (next.has(label)) next.delete(label);
+      else next.add(label);
+      return next;
+    });
+  };
 
   const today = todayBusinessDate();
   const dateLabel = selectedDate === today
@@ -64,14 +74,12 @@ export function DailySalesView() {
 
     const allItems = [...withPosId, ...missingPosId, ...uncategorised].sort(comparePosEntries);
     const remainingItemsCount = allItems.reduce((sum, entry) => sum + entry.qty, 0);
-    const excludedTableCount = paidBills.reduce((tables, bill) => {
-      const hasExcludedItems = bill.addedToPOS || bill.items.some((item) => {
+    const excludedTableCount = paidBills.filter((bill) =>
+      bill.addedToPOS || bill.items.some((item) => {
         const crossedQty = item.crossedQty ?? (item.crossed ? item.qty : 0);
         return crossedQty > 0;
-      });
-      if (hasExcludedItems) tables.add(String(bill.tableId));
-      return tables;
-    }, new Set<string>()).size;
+      })
+    ).length;
     const CATEGORY_ORDER = ["Food", "Wines", "Drinks", "Shop"] as const;
     const sortFn = articleSortMode === "qty"
       ? (a: PosEntry, b: PosEntry) => b.qty - a.qty || a.posName.localeCompare(b.posName)
@@ -135,6 +143,7 @@ export function DailySalesView() {
 
     const renderPanel = (title: string, items: PosEntry[], isMissing = false) => {
       if (items.length === 0) return null;
+      const isCollapsed = collapsedSections.has(title);
       return (
         <div
           style={{
@@ -144,15 +153,23 @@ export function DailySalesView() {
             padding: "14px 16px",
           }}
         >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, marginBottom: 4 }}>
+          <div
+            onClick={() => toggleSection(title)}
+            style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginBottom: isCollapsed ? 0 : 4, cursor: "pointer", userSelect: "none" }}
+          >
             <span style={{ fontSize: 13, fontWeight: 700, color: isMissing ? colors.danger : colors.fg }}>
               {title}
             </span>
-            <span style={{ fontSize: 12, color: colors.muted }}>
-              {items.reduce((sum, item) => sum + item.qty, 0)} items
-            </span>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 12, color: colors.muted }}>
+                {items.reduce((sum, item) => sum + item.qty, 0)} items
+              </span>
+              <span style={{ fontSize: 10, color: colors.muted, lineHeight: 1, transition: "transform 0.2s", display: "inline-block", transform: isCollapsed ? "rotate(-90deg)" : "rotate(0deg)" }}>
+                ▼
+              </span>
+            </div>
           </div>
-          {items.map((item, idx) => (
+          {!isCollapsed && items.map((item, idx) => (
             <div key={`${item.posId ?? "missing"}-${item.posName}-${item.items.join(",")}`}>
               {idx > 0 && <div style={{ height: 1, background: colors.border }} />}
               {renderPosRow(item, isMissing)}
