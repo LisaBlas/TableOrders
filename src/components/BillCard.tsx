@@ -52,12 +52,26 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
     if (!isEditing) setIsExpanded(e => !e);
   };
 
+  const chevron = (expanded: boolean) => (
+    <span style={{
+      fontSize: 16,
+      color: colors.faint,
+      lineHeight: 1,
+      userSelect: "none",
+      display: "inline-block",
+      transform: expanded ? "rotate(90deg)" : "rotate(0deg)",
+      transition: "transform 0.18s ease",
+      flexShrink: 0,
+    }}>›</span>
+  );
+
   if (!isExpanded) {
     return (
       <div style={{ ...cardStyle, cursor: "pointer" }} onClick={handleToggle}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              {chevron(false)}
               <span style={S.billTableNum}>{bill.tableId}</span>
               {(bill.addedToPOS || allItemsCrossed) && (
                 <span style={S.addedToPOSLabel}>Added To POS</span>
@@ -65,16 +79,13 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
             </div>
             <div style={{ fontSize: 12, color: colors.muted, marginTop: 1 }}>{billSubtitle}</div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
-              <span style={S.billTotal}>{bill.total.toFixed(2)}€</span>
-              {bill.tip !== undefined && (
-                <span style={{ fontSize: 12, color: colors.muted }}>
-                  Tip €{Math.abs(bill.tip).toFixed(2)}
-                </span>
-              )}
-            </div>
-            <span style={{ fontSize: 16, color: colors.faint, lineHeight: 1, userSelect: "none" }}>›</span>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+            <span style={S.billTotal}>{bill.total.toFixed(2)}€</span>
+            {bill.tip !== undefined && (
+              <span style={{ fontSize: 12, color: colors.muted }}>
+                Tip €{Math.abs(bill.tip).toFixed(2)}
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -87,6 +98,7 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            {chevron(true)}
             <span style={S.billTableNum}>{bill.tableId}</span>
             {(bill.addedToPOS || allItemsCrossed) && (
               <span style={S.addedToPOSLabel}>Added To POS</span>
@@ -135,10 +147,11 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
                   {isEditing && !bill.addedToPOS && !allItemsCrossed && (
                     <button style={S.billItemRemoveBtn} onClick={() => onRemoveItem(item.id)} title="Remove one">−</button>
                   )}
-                  <span style={S.billItemName}>
+                  <span style={{ ...S.billItemName, flex: "none" }}>
                     <span style={S.billItemQty}>{item.displayQty}×</span>
                     {item.name}
                   </span>
+                  <span style={{ flex: 1, borderBottom: `1px dotted ${colors.faint}`, margin: "0 6px", alignSelf: "flex-end", marginBottom: 3 }} />
                   <span style={S.billItemPrice}>
                     {(item.price * item.displayQty).toFixed(2)}€
                   </span>
@@ -164,12 +177,14 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
                       )}
                       <span style={{
                         ...S.billItemName,
+                        flex: "none",
                         textDecoration: "line-through",
                         color: colors.info
                       }}>
                         <span style={S.billItemQty}>{item.displayQty}×</span>
                         {item.name}
                       </span>
+                      <span style={{ flex: 1, borderBottom: `1px dotted ${colors.info}`, margin: "0 6px", alignSelf: "flex-end", marginBottom: 3, opacity: 0.4 }} />
                       <span style={{
                         ...S.billItemPrice,
                         textDecoration: "line-through",

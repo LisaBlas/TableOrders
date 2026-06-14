@@ -262,7 +262,6 @@ export function DailySalesView() {
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <div style={{ position: "relative" }}>
             <button
-              onClick={() => dateInputRef.current?.showPicker()}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -287,6 +286,7 @@ export function DailySalesView() {
               value={selectedDate}
               max={today}
               onChange={(e) => e.target.value && setSelectedDate(e.target.value)}
+              onClick={() => { try { dateInputRef.current?.showPicker(); } catch (_) {} }}
               style={{ position: "absolute", inset: 0, opacity: 0, width: "100%", height: "100%", cursor: "pointer" }}
             />
           </div>
