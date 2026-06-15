@@ -93,7 +93,7 @@ export function PeriodSelector({
       setDraftStart(customStart);
       setDraftEnd(customEnd);
       setVisibleMonth(parseDate(customEnd || today));
-      setShowCalendar(period === "custom");
+      setShowCalendar(false);
       setSelectingEnd(false);
     }
   }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
