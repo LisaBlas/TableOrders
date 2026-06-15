@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { S } from "../styles/appStyles";
 import { colors, radii } from "../styles/tokens";
-import { EditIcon, ReopenIcon } from "./icons";
+import { ReopenIcon } from "./icons";
 import type { Bill } from "../types";
 
 interface BillCardProps {
@@ -91,35 +91,81 @@ export function BillCard({ bill, isExpanded, onToggle, isEditing, onEdit, onDone
     }}>›</span>
   );
 
-  const posBar = posLabel && (
-    <div style={{
-      height: 22,
-      background: colors.infoBg,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      fontSize: 11,
-      fontWeight: 700,
-      color: colors.info,
-      letterSpacing: 0.3,
-    }}>
+  const barBase = {
+    height: 22,
+    display: "flex",
+    alignItems: "center",
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: 0.3,
+  } as const;
+
+  const infoBar = (
+    <div
+      style={{ ...barBase, justifyContent: "center", background: colors.infoBg, color: colors.info }}
+      onClick={e => e.stopPropagation()}
+    >
       {posLabel}
     </div>
   );
 
-  const editBtnStyle = {
-    display: "flex",
-    alignItems: "center",
-    gap: 4,
-    fontSize: 12,
-    fontWeight: 600,
-    padding: "3px 8px",
-    borderRadius: radii.sm,
-    border: `1.5px solid ${colors.border}`,
-    background: colors.surface,
-    color: colors.fg,
-    cursor: "pointer",
-    fontFamily: "inherit",
+  const editOnlyBar = (
+    <button
+      style={{
+        ...barBase,
+        width: "100%",
+        justifyContent: "center",
+        background: colors.surface,
+        color: colors.subtle,
+        border: "none",
+        borderTop: `1px solid ${colors.border}`,
+        cursor: "pointer",
+        fontFamily: "inherit",
+      }}
+      onClick={e => { e.stopPropagation(); onEdit(); }}
+    >
+      Edit
+    </button>
+  );
+
+  const splitBar = (
+    <div
+      style={{ ...barBase, background: colors.infoBg }}
+      onClick={e => e.stopPropagation()}
+    >
+      <button
+        style={{
+          height: "100%",
+          padding: "0 14px",
+          fontSize: 11,
+          fontWeight: 700,
+          letterSpacing: 0.3,
+          color: colors.info,
+          background: "transparent",
+          border: "none",
+          borderRight: `1px solid ${colors.info}33`,
+          cursor: "pointer",
+          fontFamily: "inherit",
+          flexShrink: 0,
+        }}
+        onClick={e => { e.stopPropagation(); onEdit(); }}
+      >
+        Edit
+      </button>
+      <span style={{ flex: 1, textAlign: "center", color: colors.info }}>
+        {posLabel}
+      </span>
+    </div>
+  );
+
+  const renderBottomBar = () => {
+    if (!isExpanded) {
+      return posLabel ? infoBar : null;
+    }
+    if (bill.addedToPOS) return infoBar;
+    if (isEditing) return null;
+    if (posLabel) return splitBar;
+    return editOnlyBar;
   };
 
   if (!isExpanded) {
@@ -144,7 +190,7 @@ export function BillCard({ bill, isExpanded, onToggle, isEditing, onEdit, onDone
             </div>
           </div>
         </div>
-        {posBar}
+        {renderBottomBar()}
       </div>
     );
   }
@@ -158,14 +204,6 @@ export function BillCard({ bill, isExpanded, onToggle, isEditing, onEdit, onDone
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               {chevron(true)}
               <span style={S.billTableNum}>{bill.tableId}</span>
-              {!bill.addedToPOS && !isEditing && (
-                <button
-                  style={editBtnStyle}
-                  onClick={e => { e.stopPropagation(); onEdit(); }}
-                >
-                  <EditIcon size={12} />Edit
-                </button>
-              )}
             </div>
             <div style={{ fontSize: 12, color: colors.muted, marginTop: 2 }}>{billSubtitle}</div>
           </div>
@@ -293,7 +331,7 @@ export function BillCard({ bill, isExpanded, onToggle, isEditing, onEdit, onDone
           </div>
         )}
       </div>
-      {posBar}
+      {renderBottomBar()}
     </div>
   );
 }
