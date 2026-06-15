@@ -161,7 +161,7 @@ export function BillCard({ bill, isExpanded, onToggle, isEditing, onEdit, onDone
                     <span style={S.billItemQty}>{item.displayQty}×</span>
                     {item.name}
                   </span>
-                  {!isEditing && <span style={S.billItemDots} />}
+                  <span style={{ flex: 1, borderBottom: `1px dotted ${colors.faint}`, margin: "0 6px", alignSelf: "flex-end", marginBottom: 3 }} />
                   <span style={S.billItemPrice}>
                     {(item.price * item.displayQty).toFixed(2)}€
                   </span>
@@ -194,7 +194,7 @@ export function BillCard({ bill, isExpanded, onToggle, isEditing, onEdit, onDone
                         <span style={S.billItemQty}>{item.displayQty}×</span>
                         {item.name}
                       </span>
-                      {!(isEditing && !bill.addedToPOS) && <span style={{ ...S.billItemDots, color: colors.info }} />}
+                      <span style={{ flex: 1, borderBottom: `1px dotted ${colors.info}`, margin: "0 6px", alignSelf: "flex-end", marginBottom: 3, opacity: 0.4 }} />
                       <span style={{
                         ...S.billItemPrice,
                         textDecoration: "line-through",
