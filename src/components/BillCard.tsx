@@ -1,7 +1,7 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { S } from "../styles/appStyles";
-import { colors } from "../styles/tokens";
-import { EditIcon, ReopenIcon, TrashIcon } from "./icons";
+import { colors, radii } from "../styles/tokens";
+import { ReopenIcon } from "./icons";
 import type { Bill } from "../types";
 
 interface BillCardProps {
@@ -19,9 +19,25 @@ interface BillCardProps {
 }
 
 export function BillCard({ bill, isExpanded, onToggle, isEditing, onEdit, onDone, onCancel, onDelete, onRestore, onRemoveItem, onRestoreItem }: BillCardProps) {
+  const [selectAllPending, setSelectAllPending] = useState(false);
+
   useEffect(() => {
     if (isEditing && !isExpanded) onToggle();
   }, [isEditing]);
+
+  useEffect(() => {
+    if (!isEditing) setSelectAllPending(false);
+  }, [isEditing]);
+
+  const handleDone = () => {
+    if (selectAllPending) onDelete();
+    onDone();
+  };
+
+  const handleCancel = () => {
+    setSelectAllPending(false);
+    onCancel();
+  };
 
   const allItemsCrossed = bill.items.length > 0 && bill.items.every((item) => {
     const cQty = item.crossedQty ?? (item.crossed ? item.qty : 0);
@@ -107,11 +123,26 @@ export function BillCard({ bill, isExpanded, onToggle, isEditing, onEdit, onDone
     <div style={{ ...cardStyle, cursor: isEditing ? "default" : "pointer" }} onClick={handleToggle}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
             {chevron(true)}
             <span style={S.billTableNum}>{bill.tableId}</span>
             {posLabel && (
               <span style={S.addedToPOSLabel}>{posLabel}</span>
+            )}
+            {!bill.addedToPOS && !isEditing && (
+              <button
+                style={{
+                  ...S.addedToPOSLabel,
+                  cursor: "pointer",
+                  border: "none",
+                  fontFamily: "inherit",
+                  background: colors.infoBg,
+                  color: colors.info,
+                }}
+                onClick={e => { e.stopPropagation(); onEdit(); }}
+              >
+                Edit
+              </button>
             )}
           </div>
           <div style={{ fontSize: 12, color: colors.muted, marginTop: 2 }}>{billSubtitle}</div>
@@ -210,19 +241,35 @@ export function BillCard({ bill, isExpanded, onToggle, isEditing, onEdit, onDone
           );
         })()}
       </div>
-      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }} onClick={e => e.stopPropagation()}>
-        {bill.addedToPOS ? (
-          <button style={S.editBillBtn} onClick={e => { e.stopPropagation(); onRestore(); }} title="Restore bill"><ReopenIcon size={15} /></button>
-        ) : !isEditing ? (
-          <button style={S.editBillBtn} onClick={e => { e.stopPropagation(); onEdit(); }}><EditIcon size={15} />Cross</button>
-        ) : (
-          <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
-            <button style={S.doneEditBtn} onClick={onDone}>Done</button>
-            <button style={S.cancelEditBtn} onClick={onCancel}>Cancel</button>
-            <button style={S.deleteBillBtnIcon} onClick={onDelete} title="Mark full bill as in POS"><TrashIcon size={15} />Bill</button>
-          </div>
-        )}
-      </div>
+      {(bill.addedToPOS || isEditing) && (
+        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }} onClick={e => e.stopPropagation()}>
+          {bill.addedToPOS ? (
+            <button style={S.editBillBtn} onClick={e => { e.stopPropagation(); onRestore(); }} title="Restore bill"><ReopenIcon size={15} /></button>
+          ) : (
+            <div style={{ display: "flex", gap: "6px", alignItems: "center", width: "100%" }}>
+              <button style={{ ...S.doneEditBtn, flex: 1 }} onClick={handleDone}>Done</button>
+              <button style={{ ...S.cancelEditBtn, flex: 1 }} onClick={handleCancel}>Cancel</button>
+              <button
+                style={{
+                  flex: 1,
+                  padding: "6px 12px",
+                  borderRadius: radii.sm,
+                  border: selectAllPending ? `1.5px solid ${colors.info}` : "1.5px solid #ddd",
+                  background: selectAllPending ? colors.infoBg : colors.surface,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  color: selectAllPending ? colors.info : colors.subtle,
+                  fontFamily: "inherit",
+                }}
+                onClick={() => setSelectAllPending(p => !p)}
+              >
+                Select All
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
