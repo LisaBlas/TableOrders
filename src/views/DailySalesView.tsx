@@ -34,6 +34,10 @@ export function DailySalesView() {
   const touchStartY = useRef(0);
   const [articleSortMode, setArticleSortMode] = useState<ArticleSortMode>("qty");
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+  const [expandedBillKey, setExpandedBillKey] = useState<string | null>(null);
+
+  const getBillKey = (bill: { directusId?: string; tempId?: string }, idx: number) =>
+    bill.directusId || bill.tempId || `bill-${idx}`;
 
   const toggleSection = (label: string) => {
     setCollapsedSections(prev => {
@@ -330,12 +334,15 @@ export function DailySalesView() {
               <div style={{ ...billsListStyle, width: "50%", height: "100%", flex: "none" }}>
                 {[...paidBills].reverse().map((bill, reverseIdx) => {
                   const billIndex = paidBills.length - 1 - reverseIdx;
+                  const billKey = getBillKey(bill, billIndex);
                   return (
                     <BillCard
-                      key={bill.directusId || bill.tempId || `bill-${billIndex}`}
+                      key={billKey}
                       bill={bill}
+                      isExpanded={expandedBillKey === billKey}
+                      onToggle={() => setExpandedBillKey(prev => prev === billKey ? null : billKey)}
                       isEditing={editingBillId === bill.directusId}
-                      onEdit={() => enterBillEditMode(billIndex)}
+                      onEdit={() => { setExpandedBillKey(billKey); enterBillEditMode(billIndex); }}
                       onDone={exitBillEditMode}
                       onCancel={cancelBillEditMode}
                       onDelete={() => markBillAddedToPOS(billIndex)}

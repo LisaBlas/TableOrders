@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { S } from "../styles/appStyles";
 import { colors } from "../styles/tokens";
 import { EditIcon, ReopenIcon, TrashIcon } from "./icons";
@@ -6,6 +6,8 @@ import type { Bill } from "../types";
 
 interface BillCardProps {
   bill: Bill;
+  isExpanded: boolean;
+  onToggle: () => void;
   isEditing: boolean;
   onEdit: () => void;
   onDone: () => void;
@@ -16,17 +18,25 @@ interface BillCardProps {
   onRestoreItem: (itemId: string) => void;
 }
 
-export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, onRestore, onRemoveItem, onRestoreItem }: BillCardProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
-
+export function BillCard({ bill, isExpanded, onToggle, isEditing, onEdit, onDone, onCancel, onDelete, onRestore, onRemoveItem, onRestoreItem }: BillCardProps) {
   useEffect(() => {
-    if (isEditing) setIsExpanded(true);
+    if (isEditing && !isExpanded) onToggle();
   }, [isEditing]);
 
   const allItemsCrossed = bill.items.length > 0 && bill.items.every((item) => {
     const cQty = item.crossedQty ?? (item.crossed ? item.qty : 0);
     return cQty === item.qty;
   });
+
+  const crossedCount = bill.items.reduce((sum, item) => {
+    return sum + (item.crossedQty ?? (item.crossed ? item.qty : 0));
+  }, 0);
+
+  const posLabel = (bill.addedToPOS || allItemsCrossed)
+    ? "In POS"
+    : crossedCount > 0
+    ? `${crossedCount} items in POS`
+    : null;
 
   const cardStyle = S.billCard;
 
@@ -49,7 +59,7 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
   const billSubtitle = `${timeStr} · ${shortPaymentLabel}${itemCount > 0 ? ` · ${itemCount} item${itemCount !== 1 ? "s" : ""}` : ""}`;
 
   const handleToggle = () => {
-    if (!isEditing) setIsExpanded(e => !e);
+    if (!isEditing) onToggle();
   };
 
   const chevron = (expanded: boolean) => (
@@ -73,8 +83,8 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               {chevron(false)}
               <span style={S.billTableNum}>{bill.tableId}</span>
-              {(bill.addedToPOS || allItemsCrossed) && (
-                <span style={S.addedToPOSLabel}>Added To POS</span>
+              {posLabel && (
+                <span style={S.addedToPOSLabel}>{posLabel}</span>
               )}
             </div>
             <div style={{ fontSize: 12, color: colors.muted, marginTop: 1 }}>{billSubtitle}</div>
@@ -151,7 +161,7 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
                     <span style={S.billItemQty}>{item.displayQty}×</span>
                     {item.name}
                   </span>
-                  <span style={{ flex: 1, borderBottom: `1px dotted ${colors.faint}`, margin: "0 6px", alignSelf: "flex-end", marginBottom: 3 }} />
+                  {!isEditing && <span style={S.billItemDots} />}
                   <span style={S.billItemPrice}>
                     {(item.price * item.displayQty).toFixed(2)}€
                   </span>
@@ -168,7 +178,7 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
                     marginTop: 8,
                     marginBottom: 2
                   }}>
-                    Added to POS
+                    In POS
                   </div>
                   {crossedItems.map((item, idx) => (
                     <div key={`crossed-${item.directusId || item.id}-${idx}`} style={isEditing && !bill.addedToPOS ? S.billItemEditable : S.billItem}>
@@ -184,7 +194,7 @@ export function BillCard({ bill, isEditing, onEdit, onDone, onCancel, onDelete, 
                         <span style={S.billItemQty}>{item.displayQty}×</span>
                         {item.name}
                       </span>
-                      <span style={{ flex: 1, borderBottom: `1px dotted ${colors.info}`, margin: "0 6px", alignSelf: "flex-end", marginBottom: 3, opacity: 0.4 }} />
+                      {!(isEditing && !bill.addedToPOS) && <span style={{ ...S.billItemDots, color: colors.info }} />}
                       <span style={{
                         ...S.billItemPrice,
                         textDecoration: "line-through",

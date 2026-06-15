@@ -1539,14 +1539,20 @@ export const S = {
     fontSize: 13,
     color: colors.secondary,
     display: "flex",
-    justifyContent: "space-between",
   },
   billItemQty: {
     color: colors.dimmed,
     marginRight: 4,
   },
   billItemName: {
+    flexShrink: 0,
+  },
+  billItemDots: {
     flex: 1,
+    borderBottom: "1px dotted currentColor",
+    margin: "0 5px",
+    opacity: 0.25,
+    alignSelf: "flex-end",
   },
   billItemPrice: {
     fontWeight: 500,
