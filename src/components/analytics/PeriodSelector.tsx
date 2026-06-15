@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { AnalyticsPeriod, DateRange } from "../../utils/analytics";
 import { colors, radii } from "../../styles/tokens";
 import { todayBusinessDate } from "../../services/directusBills";
@@ -11,7 +11,8 @@ interface Props {
   priorRange: DateRange;
   onPeriodChange: (p: AnalyticsPeriod) => void;
   onCustomRangeChange: (start: string, end: string) => void;
-  embedded?: boolean;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -23,7 +24,7 @@ function fmtDate(d: string): string {
   return `${MONTHS[m - 1]} ${day}`;
 }
 
-function fmtRange(start: string, end: string): string {
+export function fmtRange(start: string, end: string): string {
   return start === end ? fmtDate(start) : `${fmtDate(start)}–${fmtDate(end)}`;
 }
 
@@ -63,10 +64,10 @@ function getCalendarDays(monthDate: Date): (string | null)[] {
 }
 
 const SEGMENTS: { id: AnalyticsPeriod; label: string }[] = [
-  { id: "last7", label: "Last 7" },
-  { id: "last30", label: "Last 30" },
+  { id: "last7", label: "Last 7 days" },
+  { id: "last30", label: "Last 30 days" },
   { id: "thisMonth", label: "This month" },
-  { id: "custom", label: "Custom" },
+  { id: "custom", label: "Custom range" },
 ];
 
 export function PeriodSelector({
@@ -77,43 +78,59 @@ export function PeriodSelector({
   priorRange,
   onPeriodChange,
   onCustomRangeChange,
-  embedded = false,
+  isOpen,
+  onClose,
 }: Props) {
   const today = todayBusinessDate();
   const [draftStart, setDraftStart] = useState(customStart);
   const [draftEnd, setDraftEnd] = useState(customEnd);
-  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
   const [selectingEnd, setSelectingEnd] = useState(false);
   const [visibleMonth, setVisibleMonth] = useState(() => parseDate(customEnd || today));
+
+  useEffect(() => {
+    if (isOpen) {
+      setDraftStart(customStart);
+      setDraftEnd(customEnd);
+      setVisibleMonth(parseDate(customEnd || today));
+      setShowCalendar(period === "custom");
+      setSelectingEnd(false);
+    }
+  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const calendarDays = getCalendarDays(visibleMonth);
   const canApply = !!draftStart && !!draftEnd && draftStart <= draftEnd;
-  const canGoNext = toDateString(addMonths(visibleMonth, 1)) <= toDateString(new Date(parseDate(today).getFullYear(), parseDate(today).getMonth(), 1));
+  const canGoNext =
+    toDateString(addMonths(visibleMonth, 1)) <=
+    toDateString(new Date(parseDate(today).getFullYear(), parseDate(today).getMonth(), 1));
 
   function handleSegment(p: AnalyticsPeriod) {
     onPeriodChange(p);
     if (p === "custom") {
-      setDraftStart(customStart);
-      setDraftEnd(customEnd);
-      setVisibleMonth(parseDate(customEnd || today));
-      setCalendarOpen(true);
+      setShowCalendar(true);
       setSelectingEnd(false);
+    } else {
+      onClose();
     }
   }
 
   function handleApply() {
     if (canApply) {
       onCustomRangeChange(draftStart, draftEnd);
-      setCalendarOpen(false);
-      setSelectingEnd(false);
+      onClose();
     }
   }
 
   function handleCancel() {
-    setDraftStart(customStart);
-    setDraftEnd(customEnd);
-    setVisibleMonth(parseDate(customEnd || today));
-    setCalendarOpen(false);
-    setSelectingEnd(false);
+    if (showCalendar && period === "custom") {
+      setDraftStart(customStart);
+      setDraftEnd(customEnd);
+      setVisibleMonth(parseDate(customEnd || today));
+      setShowCalendar(false);
+      setSelectingEnd(false);
+    } else {
+      onClose();
+    }
   }
 
   function handleDateClick(date: string) {
@@ -135,115 +152,113 @@ export function PeriodSelector({
     setSelectingEnd(false);
   }
 
+  if (!isOpen) return null;
+
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Select period"
       style={{
-        padding: embedded ? "12px 12px 10px" : undefined,
-        borderBottom: embedded ? `1px solid ${colors.border}` : undefined,
+        position: "fixed",
+        inset: 0,
+        zIndex: 1000,
+        background: colors.overlay,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 16,
       }}
+      onClick={onClose}
     >
-      {/* Segment row */}
       <div
         style={{
-          display: "flex",
-          gap: 6,
-          padding: embedded ? 0 : "10px 16px 0",
-          overflowX: "auto",
-          WebkitOverflowScrolling: "touch",
-          scrollbarWidth: "none",
+          width: "min(100%, 360px)",
+          padding: 14,
+          border: `1px solid ${colors.border}`,
+          borderRadius: radii.lg,
+          background: colors.surface,
+          boxShadow: "0 18px 48px rgba(0,0,0,0.22)",
         }}
+        onClick={(e) => e.stopPropagation()}
       >
-        {SEGMENTS.map((seg) => {
-          const active = period === seg.id;
-          return (
-            <button
-              key={seg.id}
-              onClick={() => handleSegment(seg.id)}
-              style={{
-                flexShrink: 0,
-                padding: "6px 14px",
-                borderRadius: radii.pill,
-                border: `1px solid ${active ? colors.fg : colors.border}`,
-                background: active ? colors.fg : colors.surface,
-                color: active ? colors.surface : colors.fg,
-                fontSize: 13,
-                fontWeight: active ? 600 : 400,
-                fontFamily: "inherit",
-                cursor: "pointer",
-                transition: "all 0.15s",
-              }}
-            >
-              {seg.label}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Date range context row */}
-      <div style={{ padding: embedded ? "8px 0 0" : "5px 16px 0", fontSize: 12, color: colors.muted }}>
-        {fmtRange(currentRange.start, currentRange.end)}
-        <span style={{ margin: "0 5px" }}>·</span>
-        vs {fmtRange(priorRange.start, priorRange.end)}
-      </div>
-
-      {calendarOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label="Select custom date range"
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 1000,
-            background: colors.overlay,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 16,
-          }}
-          onClick={handleCancel}
-        >
-          <div
-            style={{
-              width: "min(100%, 360px)",
-              padding: 14,
-              border: `1px solid ${colors.border}`,
-              borderRadius: radii.lg,
-              background: colors.surface,
-              boxShadow: "0 18px 48px rgba(0,0,0,0.22)",
-            }}
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 12 }}>
-              <div>
-                <div style={{ fontSize: 15, fontWeight: 700 }}>Custom range</div>
-                <div style={{ marginTop: 3, fontSize: 12, color: colors.muted }}>
-                  {draftStart && draftEnd ? fmtRange(draftStart, draftEnd) : "Select one day or a range"}
-                </div>
-              </div>
-              <button
-                onClick={handleCancel}
-                style={{
-                  width: 30,
-                  height: 30,
-                  borderRadius: radii.sm,
-                  border: `1px solid ${colors.border}`,
-                  background: colors.surface,
-                  color: colors.fg,
-                  fontSize: 18,
-                  lineHeight: 1,
-                  fontFamily: "inherit",
-                  cursor: "pointer",
-                }}
-                aria-label="Close calendar"
-              >
-                x
-              </button>
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 12 }}>
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 700 }}>
+              {showCalendar ? "Custom range" : "Select period"}
             </div>
+            <div style={{ marginTop: 3, fontSize: 12, color: colors.muted }}>
+              {showCalendar
+                ? (draftStart && draftEnd ? fmtRange(draftStart, draftEnd) : "Select one day or a range")
+                : `${fmtRange(currentRange.start, currentRange.end)} · vs ${fmtRange(priorRange.start, priorRange.end)}`}
+            </div>
+          </div>
+          <button
+            onClick={handleCancel}
+            style={{
+              width: 30,
+              height: 30,
+              borderRadius: radii.sm,
+              border: `1px solid ${colors.border}`,
+              background: colors.surface,
+              color: colors.fg,
+              fontSize: 18,
+              lineHeight: 1,
+              fontFamily: "inherit",
+              cursor: "pointer",
+            }}
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
 
+        {!showCalendar ? (
+          /* Segment list */
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            {SEGMENTS.map((seg) => {
+              const active = period === seg.id;
+              return (
+                <button
+                  key={seg.id}
+                  onClick={() => handleSegment(seg.id)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "11px 14px",
+                    borderRadius: radii.sm,
+                    border: `1px solid ${active ? colors.fg : colors.border}`,
+                    background: active ? colors.fg : colors.surface,
+                    color: active ? colors.surface : colors.fg,
+                    fontSize: 14,
+                    fontWeight: active ? 600 : 400,
+                    fontFamily: "inherit",
+                    cursor: "pointer",
+                    textAlign: "left",
+                    width: "100%",
+                  }}
+                >
+                  <span>{seg.label}</span>
+                  {active && seg.id !== "custom" && (
+                    <span style={{ fontSize: 12, opacity: 0.7 }}>
+                      {fmtRange(currentRange.start, currentRange.end)}
+                    </span>
+                  )}
+                  {seg.id === "custom" && (
+                    <span style={{ fontSize: 18, lineHeight: 1, opacity: 0.5 }}>›</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          /* Calendar */
+          <>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
               <button
-                onClick={() => setVisibleMonth((month) => addMonths(month, -1))}
+                onClick={() => setVisibleMonth((m) => addMonths(m, -1))}
                 style={calendarNavStyle}
                 aria-label="Previous month"
               >
@@ -253,7 +268,7 @@ export function PeriodSelector({
                 {MONTH_NAMES[visibleMonth.getMonth()]} {visibleMonth.getFullYear()}
               </span>
               <button
-                onClick={() => canGoNext && setVisibleMonth((month) => addMonths(month, 1))}
+                onClick={() => canGoNext && setVisibleMonth((m) => addMonths(m, 1))}
                 disabled={!canGoNext}
                 style={{ ...calendarNavStyle, opacity: canGoNext ? 1 : 0.35, cursor: canGoNext ? "pointer" : "default" }}
                 aria-label="Next month"
@@ -313,7 +328,7 @@ export function PeriodSelector({
                   cursor: "pointer",
                 }}
               >
-                Cancel
+                Back
               </button>
               <button
                 onClick={handleApply}
@@ -334,9 +349,9 @@ export function PeriodSelector({
                 Apply
               </button>
             </div>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </div>
     </div>
   );
 }

@@ -6,7 +6,8 @@ import { useBreakpoint } from "../hooks/useBreakpoint";
 import { S } from "../styles/appStyles";
 import { colors, radii } from "../styles/tokens";
 import { ScreenHeader } from "../components/ScreenHeader";
-import { PeriodSelector } from "../components/analytics/PeriodSelector";
+import { CalendarIcon } from "../components/icons";
+import { PeriodSelector, fmtRange } from "../components/analytics/PeriodSelector";
 import { KpiSummary } from "../components/analytics/KpiSummary";
 import { RevenueTrendChart } from "../components/analytics/RevenueTrendChart";
 import { CategoryBreakdown } from "../components/analytics/CategoryBreakdown";
@@ -30,12 +31,6 @@ import {
   groupByHour,
   groupByTable,
 } from "../utils/analytics";
-
-const _MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-function fmtShort(d: string): string {
-  const [, m, day] = d.split("-").map(Number);
-  return `${_MONTHS[m - 1]} ${day}`;
-}
 
 function SkeletonBlock({ height = 80 }: { height?: number }) {
   return (
@@ -62,6 +57,7 @@ export function AnalyticsView() {
   const [period, setPeriod] = useState<AnalyticsPeriod>("last7");
   const [customStart, setCustomStart] = useState(() => addDays(today, -6));
   const [customEnd, setCustomEnd] = useState(today);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const bounds = getPeriodBounds(period, customStart, customEnd);
   const { current, prior } = bounds;
@@ -99,6 +95,20 @@ export function AnalyticsView() {
     period === "thisMonth" ? "vs last month" :
     `vs prior ${daysBetween(current.start, current.end)} days`;
 
+  const periodLabel =
+    period === "last7" ? "Last 7" :
+    period === "last30" ? "Last 30" :
+    period === "thisMonth" ? "This month" :
+    fmtRange(customStart, customEnd);
+
+  const rangeContextLine = (
+    <div style={{ fontSize: 12, color: colors.muted, padding: "8px 12px 10px" }}>
+      {fmtRange(current.start, current.end)}
+      <span style={{ margin: "0 5px" }}>·</span>
+      vs {fmtRange(prior.start, prior.end)}
+    </div>
+  );
+
   const dashboardSummary = (
     <div
       style={{
@@ -108,19 +118,7 @@ export function AnalyticsView() {
         overflow: "hidden",
       }}
     >
-      <PeriodSelector
-        period={period}
-        customStart={customStart}
-        customEnd={customEnd}
-        currentRange={current}
-        priorRange={prior}
-        onPeriodChange={setPeriod}
-        onCustomRangeChange={(s, e) => {
-          setCustomStart(s);
-          setCustomEnd(e);
-        }}
-        embedded
-      />
+      {rangeContextLine}
 
       {!loading && currentBills.length > 0 && (
         <InsightStrip kpis={kpisWithDeltas} days={dayTimeline} categories={categories} embedded />
@@ -152,6 +150,43 @@ export function AnalyticsView() {
         onBack={() => setView("tables")}
         ariaLabel="Back to floor"
         hideBackOnWide
+        right={
+          <button
+            onClick={() => setPickerOpen(true)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              fontSize: 13,
+              fontWeight: 600,
+              border: `1px solid ${colors.border}`,
+              borderRadius: radii.sm,
+              padding: "5px 10px",
+              background: colors.surface,
+              color: colors.fg,
+              cursor: "pointer",
+              fontFamily: "inherit",
+            }}
+          >
+            <CalendarIcon size={15} />
+            {periodLabel}
+          </button>
+        }
+      />
+
+      <PeriodSelector
+        period={period}
+        customStart={customStart}
+        customEnd={customEnd}
+        currentRange={current}
+        priorRange={prior}
+        onPeriodChange={setPeriod}
+        onCustomRangeChange={(s, e) => {
+          setCustomStart(s);
+          setCustomEnd(e);
+        }}
+        isOpen={pickerOpen}
+        onClose={() => setPickerOpen(false)}
       />
 
       {/* Loading skeletons */}
@@ -190,7 +225,7 @@ export function AnalyticsView() {
           >
             <span style={{ fontSize: 32 }}>📊</span>
             <p style={{ fontSize: 15, color: colors.muted, margin: 0, textAlign: "center" }}>
-              No paid bills for {fmtShort(current.start)}–{fmtShort(current.end)}.
+              No paid bills for {fmtRange(current.start, current.end)}.
             </p>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
               <button
