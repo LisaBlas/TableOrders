@@ -214,12 +214,12 @@ export function BillCard({ bill, isExpanded, onToggle, isEditing, onEdit, onDone
         {bill.addedToPOS ? (
           <button style={S.editBillBtn} onClick={e => { e.stopPropagation(); onRestore(); }} title="Restore bill"><ReopenIcon size={15} /></button>
         ) : !isEditing ? (
-          <button style={S.editBillBtn} onClick={e => { e.stopPropagation(); onEdit(); }}><EditIcon size={15} /></button>
+          <button style={S.editBillBtn} onClick={e => { e.stopPropagation(); onEdit(); }}><EditIcon size={15} />Cross</button>
         ) : (
           <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
             <button style={S.doneEditBtn} onClick={onDone}>Done</button>
             <button style={S.cancelEditBtn} onClick={onCancel}>Cancel</button>
-            <button style={S.deleteBillBtnIcon} onClick={onDelete} title="Mark as Added To POS"><TrashIcon size={15} /></button>
+            <button style={S.deleteBillBtnIcon} onClick={onDelete} title="Mark full bill as in POS"><TrashIcon size={15} />Bill</button>
           </div>
         )}
       </div>
