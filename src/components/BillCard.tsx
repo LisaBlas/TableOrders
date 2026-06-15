@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { S } from "../styles/appStyles";
 import { colors, radii } from "../styles/tokens";
-import { ReopenIcon } from "./icons";
+import { EditIcon, ReopenIcon } from "./icons";
 import type { Bill } from "../types";
 
 interface BillCardProps {
@@ -91,185 +91,209 @@ export function BillCard({ bill, isExpanded, onToggle, isEditing, onEdit, onDone
     }}>›</span>
   );
 
+  const posBar = posLabel && (
+    <div style={{
+      height: 22,
+      background: colors.infoBg,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontSize: 11,
+      fontWeight: 700,
+      color: colors.info,
+      letterSpacing: 0.3,
+    }}>
+      {posLabel}
+    </div>
+  );
+
+  const editBtnStyle = {
+    display: "flex",
+    alignItems: "center",
+    gap: 4,
+    fontSize: 12,
+    fontWeight: 600,
+    padding: "3px 8px",
+    borderRadius: radii.sm,
+    border: `1.5px solid ${colors.border}`,
+    background: colors.surface,
+    color: colors.fg,
+    cursor: "pointer",
+    fontFamily: "inherit",
+  };
+
   if (!isExpanded) {
     return (
-      <div style={{ ...cardStyle, cursor: "pointer" }} onClick={handleToggle}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              {chevron(false)}
-              <span style={S.billTableNum}>{bill.tableId}</span>
-              {posLabel && (
-                <span style={S.addedToPOSLabel}>{posLabel}</span>
+      <div style={{ ...cardStyle, padding: 0, overflow: "hidden", cursor: "pointer" }} onClick={handleToggle}>
+        <div style={{ padding: "14px 16px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                {chevron(false)}
+                <span style={S.billTableNum}>{bill.tableId}</span>
+              </div>
+              <div style={{ fontSize: 12, color: colors.muted, marginTop: 1 }}>{billSubtitle}</div>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+              <span style={S.billTotal}>{bill.total.toFixed(2)}€</span>
+              {bill.tip !== undefined && (
+                <span style={{ fontSize: 12, color: colors.muted }}>
+                  Tip €{Math.abs(bill.tip).toFixed(2)}
+                </span>
               )}
             </div>
-            <div style={{ fontSize: 12, color: colors.muted, marginTop: 1 }}>{billSubtitle}</div>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
-            <span style={S.billTotal}>{bill.total.toFixed(2)}€</span>
-            {bill.tip !== undefined && (
-              <span style={{ fontSize: 12, color: colors.muted }}>
-                Tip €{Math.abs(bill.tip).toFixed(2)}
-              </span>
-            )}
           </div>
         </div>
+        {posBar}
       </div>
     );
   }
 
   // Expanded view
   return (
-    <div style={{ ...cardStyle, cursor: isEditing ? "default" : "pointer" }} onClick={handleToggle}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-            {chevron(true)}
-            <span style={S.billTableNum}>{bill.tableId}</span>
-            {posLabel && (
-              <span style={S.addedToPOSLabel}>{posLabel}</span>
-            )}
-            {!bill.addedToPOS && !isEditing && (
-              <button
-                style={{
-                  ...S.addedToPOSLabel,
-                  cursor: "pointer",
-                  border: "none",
-                  fontFamily: "inherit",
-                  background: colors.infoBg,
-                  color: colors.info,
-                }}
-                onClick={e => { e.stopPropagation(); onEdit(); }}
-              >
-                Edit
-              </button>
-            )}
-          </div>
-          <div style={{ fontSize: 12, color: colors.muted, marginTop: 2 }}>{billSubtitle}</div>
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-            {bill.gutschein && bill.gutschein > 0 && (
-              <span style={{ fontSize: 13, color: colors.danger, fontWeight: 600 }}>(-{bill.gutschein.toFixed(2)}€)</span>
-            )}
-            <span style={S.billTotal}>{bill.total.toFixed(2)}€</span>
-          </div>
-          {bill.tip !== undefined && (
-            <span style={{ fontSize: 12, color: colors.muted }}>
-              Tip: {bill.tip >= 0 ? `+${bill.tip.toFixed(2)}€` : `${bill.tip.toFixed(2)}€`}
-            </span>
-          )}
-        </div>
-      </div>
-      <div style={{ ...S.billItemsList, marginTop: 10 }}>
-        {bill.items.length === 0 ? (
-          <div style={{ padding: "20px", textAlign: "center" as const, color: colors.faint, fontSize: 14, fontStyle: "italic" }}>
-            No items in this bill
-          </div>
-        ) : (() => {
-          type DisplayItem = (typeof bill.items)[0] & { displayQty: number };
-          const activeItems: DisplayItem[] = [];
-          const crossedItems: DisplayItem[] = [];
-          bill.items.forEach((item) => {
-            const cQty = item.crossedQty ?? (item.crossed ? item.qty : 0);
-            const aQty = item.qty - cQty;
-
-            if (bill.addedToPOS || allItemsCrossed) {
-              activeItems.push({ ...item, displayQty: item.qty });
-            } else {
-              if (aQty > 0) activeItems.push({ ...item, displayQty: aQty });
-              if (cQty > 0) crossedItems.push({ ...item, displayQty: cQty });
-            }
-          });
-          return (
-            <>
-              {activeItems.map((item, idx) => (
-                <div key={`active-${item.directusId || item.id}-${idx}`} style={isEditing ? S.billItemEditable : S.billItem}>
-                  {isEditing && !bill.addedToPOS && !allItemsCrossed && (
-                    <button style={S.billItemRemoveBtn} onClick={() => onRemoveItem(item.id)} title="Remove one">−</button>
-                  )}
-                  <span style={{ ...S.billItemName, flex: "none" }}>
-                    <span style={S.billItemQty}>{item.displayQty}×</span>
-                    {item.name}
-                  </span>
-                  <span style={{ flex: 1, borderBottom: `1px dotted ${colors.faint}`, margin: "0 6px", alignSelf: "flex-end", marginBottom: 3 }} />
-                  <span style={S.billItemPrice}>
-                    {(item.price * item.displayQty).toFixed(2)}€
-                  </span>
-                </div>
-              ))}
-              {crossedItems.length > 0 && (
-                <>
-                  <div style={{
-                    fontSize: 10,
-                    fontWeight: 700,
-                    letterSpacing: 1,
-                    color: colors.info,
-                    textTransform: "uppercase" as const,
-                    marginTop: 8,
-                    marginBottom: 2
-                  }}>
-                    In POS
-                  </div>
-                  {crossedItems.map((item, idx) => (
-                    <div key={`crossed-${item.directusId || item.id}-${idx}`} style={isEditing && !bill.addedToPOS ? S.billItemEditable : S.billItem}>
-                      {isEditing && !bill.addedToPOS && (
-                        <button style={{ ...S.billItemRemoveBtn, background: colors.success, color: "#fff" }} onClick={() => onRestoreItem(item.id)} title="Un-cross one">+</button>
-                      )}
-                      <span style={{
-                        ...S.billItemName,
-                        flex: "none",
-                        textDecoration: "line-through",
-                        color: colors.info
-                      }}>
-                        <span style={S.billItemQty}>{item.displayQty}×</span>
-                        {item.name}
-                      </span>
-                      <span style={{ flex: 1, borderBottom: `1px dotted ${colors.info}`, margin: "0 6px", alignSelf: "flex-end", marginBottom: 3, opacity: 0.4 }} />
-                      <span style={{
-                        ...S.billItemPrice,
-                        textDecoration: "line-through",
-                        color: colors.info
-                      }}>
-                        {(item.price * item.displayQty).toFixed(2)}€
-                      </span>
-                    </div>
-                  ))}
-                </>
+    <div style={{ ...cardStyle, padding: 0, overflow: "hidden", cursor: isEditing ? "default" : "pointer" }} onClick={handleToggle}>
+      <div style={{ padding: "14px 16px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              {chevron(true)}
+              <span style={S.billTableNum}>{bill.tableId}</span>
+              {!bill.addedToPOS && !isEditing && (
+                <button
+                  style={editBtnStyle}
+                  onClick={e => { e.stopPropagation(); onEdit(); }}
+                >
+                  <EditIcon size={12} />Edit
+                </button>
               )}
-            </>
-          );
-        })()}
-      </div>
-      {(bill.addedToPOS || isEditing) && (
-        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }} onClick={e => e.stopPropagation()}>
-          {bill.addedToPOS ? (
-            <button style={S.editBillBtn} onClick={e => { e.stopPropagation(); onRestore(); }} title="Restore bill"><ReopenIcon size={15} /></button>
-          ) : (
-            <div style={{ display: "flex", gap: "6px", alignItems: "center", width: "100%" }}>
-              <button style={{ ...S.doneEditBtn, flex: 1 }} onClick={handleDone}>Done</button>
-              <button style={{ ...S.cancelEditBtn, flex: 1 }} onClick={handleCancel}>Cancel</button>
-              <button
-                style={{
-                  flex: 1,
-                  padding: "6px 12px",
-                  borderRadius: radii.sm,
-                  border: selectAllPending ? `1.5px solid ${colors.info}` : "1.5px solid #ddd",
-                  background: selectAllPending ? colors.infoBg : colors.surface,
-                  fontSize: 13,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  color: selectAllPending ? colors.info : colors.subtle,
-                  fontFamily: "inherit",
-                }}
-                onClick={() => setSelectAllPending(p => !p)}
-              >
-                Select All
-              </button>
             </div>
-          )}
+            <div style={{ fontSize: 12, color: colors.muted, marginTop: 2 }}>{billSubtitle}</div>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+              {bill.gutschein && bill.gutschein > 0 && (
+                <span style={{ fontSize: 13, color: colors.danger, fontWeight: 600 }}>(-{bill.gutschein.toFixed(2)}€)</span>
+              )}
+              <span style={S.billTotal}>{bill.total.toFixed(2)}€</span>
+            </div>
+            {bill.tip !== undefined && (
+              <span style={{ fontSize: 12, color: colors.muted }}>
+                Tip: {bill.tip >= 0 ? `+${bill.tip.toFixed(2)}€` : `${bill.tip.toFixed(2)}€`}
+              </span>
+            )}
+          </div>
         </div>
-      )}
+        <div style={{ ...S.billItemsList, marginTop: 10 }}>
+          {bill.items.length === 0 ? (
+            <div style={{ padding: "20px", textAlign: "center" as const, color: colors.faint, fontSize: 14, fontStyle: "italic" }}>
+              No items in this bill
+            </div>
+          ) : (() => {
+            type DisplayItem = (typeof bill.items)[0] & { displayQty: number };
+            const activeItems: DisplayItem[] = [];
+            const crossedItems: DisplayItem[] = [];
+            bill.items.forEach((item) => {
+              const cQty = item.crossedQty ?? (item.crossed ? item.qty : 0);
+              const aQty = item.qty - cQty;
+
+              if (bill.addedToPOS || allItemsCrossed) {
+                activeItems.push({ ...item, displayQty: item.qty });
+              } else {
+                if (aQty > 0) activeItems.push({ ...item, displayQty: aQty });
+                if (cQty > 0) crossedItems.push({ ...item, displayQty: cQty });
+              }
+            });
+            return (
+              <>
+                {activeItems.map((item, idx) => (
+                  <div key={`active-${item.directusId || item.id}-${idx}`} style={isEditing ? S.billItemEditable : S.billItem}>
+                    {isEditing && !bill.addedToPOS && !allItemsCrossed && (
+                      <button style={S.billItemRemoveBtn} onClick={() => onRemoveItem(item.id)} title="Remove one">−</button>
+                    )}
+                    <span style={{ ...S.billItemName, flex: "none" }}>
+                      <span style={S.billItemQty}>{item.displayQty}×</span>
+                      {item.name}
+                    </span>
+                    <span style={{ flex: 1, borderBottom: `1px dotted ${colors.faint}`, margin: "0 6px", alignSelf: "flex-end", marginBottom: 3 }} />
+                    <span style={S.billItemPrice}>
+                      {(item.price * item.displayQty).toFixed(2)}€
+                    </span>
+                  </div>
+                ))}
+                {crossedItems.length > 0 && (
+                  <>
+                    <div style={{
+                      fontSize: 10,
+                      fontWeight: 700,
+                      letterSpacing: 1,
+                      color: colors.info,
+                      textTransform: "uppercase" as const,
+                      marginTop: 8,
+                      marginBottom: 2
+                    }}>
+                      In POS
+                    </div>
+                    {crossedItems.map((item, idx) => (
+                      <div key={`crossed-${item.directusId || item.id}-${idx}`} style={isEditing && !bill.addedToPOS ? S.billItemEditable : S.billItem}>
+                        {isEditing && !bill.addedToPOS && (
+                          <button style={{ ...S.billItemRemoveBtn, background: colors.success, color: "#fff" }} onClick={() => onRestoreItem(item.id)} title="Un-cross one">+</button>
+                        )}
+                        <span style={{
+                          ...S.billItemName,
+                          flex: "none",
+                          textDecoration: "line-through",
+                          color: colors.info
+                        }}>
+                          <span style={S.billItemQty}>{item.displayQty}×</span>
+                          {item.name}
+                        </span>
+                        <span style={{ flex: 1, borderBottom: `1px dotted ${colors.info}`, margin: "0 6px", alignSelf: "flex-end", marginBottom: 3, opacity: 0.4 }} />
+                        <span style={{
+                          ...S.billItemPrice,
+                          textDecoration: "line-through",
+                          color: colors.info
+                        }}>
+                          {(item.price * item.displayQty).toFixed(2)}€
+                        </span>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </>
+            );
+          })()}
+        </div>
+        {(bill.addedToPOS || isEditing) && (
+          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }} onClick={e => e.stopPropagation()}>
+            {bill.addedToPOS ? (
+              <button style={S.editBillBtn} onClick={e => { e.stopPropagation(); onRestore(); }} title="Restore bill"><ReopenIcon size={15} /></button>
+            ) : (
+              <div style={{ display: "flex", gap: "6px", alignItems: "center", width: "100%" }}>
+                <button style={{ ...S.doneEditBtn, flex: 1 }} onClick={handleDone}>Done</button>
+                <button style={{ ...S.cancelEditBtn, flex: 1 }} onClick={handleCancel}>Cancel</button>
+                <button
+                  style={{
+                    flex: 1,
+                    padding: "6px 12px",
+                    borderRadius: radii.sm,
+                    border: selectAllPending ? `1.5px solid ${colors.info}` : "1.5px solid #ddd",
+                    background: selectAllPending ? colors.infoBg : colors.surface,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    color: selectAllPending ? colors.info : colors.subtle,
+                    fontFamily: "inherit",
+                  }}
+                  onClick={() => setSelectAllPending(p => !p)}
+                >
+                  Select All
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      {posBar}
     </div>
   );
 }
