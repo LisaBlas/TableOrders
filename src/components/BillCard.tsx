@@ -110,8 +110,8 @@ export function BillCard({ bill, isExpanded, onToggle, isEditing, onEdit, onDone
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             {chevron(true)}
             <span style={S.billTableNum}>{bill.tableId}</span>
-            {(bill.addedToPOS || allItemsCrossed) && (
-              <span style={S.addedToPOSLabel}>Added To POS</span>
+            {posLabel && (
+              <span style={S.addedToPOSLabel}>{posLabel}</span>
             )}
           </div>
           <div style={{ fontSize: 12, color: colors.muted, marginTop: 2 }}>{billSubtitle}</div>
