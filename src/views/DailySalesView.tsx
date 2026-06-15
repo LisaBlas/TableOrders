@@ -22,10 +22,6 @@ export function DailySalesView() {
     restoreBillFromPOS,
     removePaidBillItem,
     restorePaidBillItem,
-    editingBillId,
-    enterBillEditMode,
-    exitBillEditMode,
-    cancelBillEditMode,
     dailySalesTab, setDailySalesTab,
   } = app;
 
@@ -341,13 +337,9 @@ export function DailySalesView() {
                       bill={bill}
                       isExpanded={expandedBillKey === billKey}
                       onToggle={() => setExpandedBillKey(prev => prev === billKey ? null : billKey)}
-                      isEditing={editingBillId === bill.directusId}
-                      onEdit={() => { setExpandedBillKey(billKey); enterBillEditMode(billIndex); }}
-                      onDone={exitBillEditMode}
-                      onCancel={cancelBillEditMode}
-                      onDelete={() => markBillAddedToPOS(billIndex)}
-                      onRestore={() => restoreBillFromPOS(billIndex)}
-                      onRemoveItem={(itemId) => removePaidBillItem(billIndex, itemId)}
+                      onMarkAll={() => markBillAddedToPOS(billIndex)}
+                      onRestoreAll={() => restoreBillFromPOS(billIndex)}
+                      onMarkItem={(itemId) => removePaidBillItem(billIndex, itemId)}
                       onRestoreItem={(itemId) => restorePaidBillItem(billIndex, itemId)}
                     />
                   );
