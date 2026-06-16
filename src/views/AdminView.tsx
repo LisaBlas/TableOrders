@@ -1420,14 +1420,8 @@ function FilterDropdown({
     <div style={{ position: "relative" }}>
       <button
         style={{
-          ...S.ticketBtn,
-          display: "flex",
-          alignItems: "center",
-          gap: 4,
-          width: "auto",
-          paddingLeft: 8,
-          paddingRight: 10,
-          color: hasActiveFilters ? colors.info : undefined,
+          ...S.headerActionBtn,
+          ...(hasActiveFilters && { color: colors.info, border: `1.5px solid ${colors.info}` }),
         }}
         onClick={onToggle}
         aria-label="Filter menu items"

@@ -260,22 +260,7 @@ export function TableSetupView() {
         right={
           !isSwapMode && (
             <button
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 4,
-                padding: "6px 12px",
-                fontSize: 13,
-                fontWeight: 600,
-                background: colors.fg,
-                color: "#fff",
-                border: "none",
-                borderRadius: radii.sm,
-                cursor: "pointer",
-                fontFamily: "inherit",
-                opacity: saving ? 0.5 : 1,
-                whiteSpace: "nowrap",
-              }}
+              style={{ ...S.headerActionBtn, opacity: saving ? 0.5 : 1 }}
               disabled={saving}
               onClick={() => {
                 setSwapSourceId(null);
