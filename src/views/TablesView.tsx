@@ -12,6 +12,7 @@ import { Modal } from "../components/Modal";
 import { ScreenHeader } from "../components/ScreenHeader";
 import { PlusIcon } from "../components/icons";
 import { S } from "../styles/appStyles";
+import { colors, radii } from "../styles/tokens";
 import type { TableId, TableConfig } from "../types";
 
 const DESTINATION_ORDER = ["bar", "counter", "kitchen"] as const;
@@ -116,7 +117,18 @@ export function TablesView() {
               setNewTableName("");
               setShowNewTableModal(true);
             }}
-            style={S.back}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 34,
+              height: 34,
+              background: colors.surface,
+              border: `1px solid ${colors.border}`,
+              borderRadius: radii.sm,
+              color: colors.fg,
+              cursor: "pointer",
+            }}
             aria-label="Create new table"
             title="Create new table"
           >
