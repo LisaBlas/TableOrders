@@ -19,6 +19,7 @@ import {
   FOOD_SUBCATEGORIES,
   DRINKS_SUBCATEGORIES,
   SHOP_SUBCATEGORIES,
+  BOTTLES_SUBCATEGORIES,
 } from "../data/constants";
 import { directusFetch } from "../services/directusFetch";
 
@@ -867,6 +868,13 @@ function VariantRowInput({
 
 // ── FilterBar ──────────────────────────────────────────────────────────────
 
+const SUBCATEGORY_LABELS: Record<string, { value: string; label: string }[]> = {
+  Food: FOOD_SUBCATEGORIES.map((s) => ({ value: s.id, label: s.label })),
+  Drinks: DRINKS_SUBCATEGORIES.map((s) => ({ value: s.id, label: s.label })),
+  Wines: BOTTLES_SUBCATEGORIES.map((s) => ({ value: s.id, label: s.label })),
+  Shop: SHOP_SUBCATEGORIES.map((s) => ({ value: s.id, label: s.label })),
+};
+
 type AvailFilter = "all" | "available" | "unavailable";
 type VariantFilter = "all" | "variants" | "simple";
 
@@ -910,6 +918,8 @@ function FilterBar({
   onQuery,
   categoryFilter,
   onCategoryFilter,
+  subcategoryFilter,
+  onSubcategoryFilter,
   availFilter,
   onAvailFilter,
   variantFilter,
@@ -922,6 +932,8 @@ function FilterBar({
   onQuery: (q: string) => void;
   categoryFilter: string;
   onCategoryFilter: (c: string) => void;
+  subcategoryFilter: string;
+  onSubcategoryFilter: (s: string) => void;
   availFilter: AvailFilter;
   onAvailFilter: (f: AvailFilter) => void;
   variantFilter: VariantFilter;
@@ -982,12 +994,21 @@ function FilterBar({
         )}
       </div>
       <div style={{ display: "flex", gap: isTableView ? 10 : 8, alignItems: "center", flexWrap: "wrap" }}>
-        <FilterPills options={catOptions} value={categoryFilter} onChange={onCategoryFilter} />
+        <FilterPills options={catOptions} value={categoryFilter} onChange={(c) => { onCategoryFilter(c); onSubcategoryFilter("all"); }} />
         {isTableView && <span style={{ width: 1, height: 18, background: colors.border, flexShrink: 0 }} />}
         <FilterPills options={availOptions} value={availFilter} onChange={onAvailFilter} />
         {isTableView && <span style={{ width: 1, height: 18, background: colors.border, flexShrink: 0 }} />}
         <FilterPills options={variantOptions} value={variantFilter} onChange={onVariantFilter} />
       </div>
+      {categoryFilter !== "all" && SUBCATEGORY_LABELS[categoryFilter] && (
+        <div style={{ display: "flex", gap: isTableView ? 10 : 8, alignItems: "center", flexWrap: "wrap" }}>
+          <FilterPills
+            options={[{ value: "all", label: "All subcategories" }, ...SUBCATEGORY_LABELS[categoryFilter]]}
+            value={subcategoryFilter}
+            onChange={onSubcategoryFilter}
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -1502,6 +1523,7 @@ export function AdminView() {
   const [query, setQuery] = useState("");
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [subcategoryFilter, setSubcategoryFilter] = useState("all");
   const [availabilityFilter, setAvailabilityFilter] = useState<AvailFilter>("all");
   const [variantFilter, setVariantFilter] = useState<VariantFilter>("all");
 
@@ -1548,6 +1570,7 @@ export function AdminView() {
       result = result.filter((i) => i.name.toLowerCase().includes(q) || (i.short_name ?? "").toLowerCase().includes(q));
     }
     if (categoryFilter !== "all") result = result.filter((i) => i.category?.name === categoryFilter);
+    if (subcategoryFilter !== "all") result = result.filter((i) => i.subcategory === subcategoryFilter);
     if (availabilityFilter !== "all") result = result.filter((i) => availabilityFilter === "available" ? i.available : !i.available);
     if (variantFilter !== "all") result = result.filter((i) => variantFilter === "variants" ? (i.variants?.length ?? 0) > 0 : (i.variants?.length ?? 0) === 0);
     return [...result].sort((a, b) => {
@@ -1567,7 +1590,7 @@ export function AdminView() {
       if (av > bv) return sortDir === "asc" ? 1 : -1;
       return 0;
     });
-  }, [items, query, categoryFilter, availabilityFilter, variantFilter, sortKey, sortDir]);
+  }, [items, query, categoryFilter, subcategoryFilter, availabilityFilter, variantFilter, sortKey, sortDir]);
 
   const mobileSections = useMemo(() => {
     const q = query.toLowerCase();
@@ -1576,13 +1599,14 @@ export function AdminView() {
         ...s,
         sectionItems: s.sectionItems.filter((item) => {
           const matchSearch = !query.trim() || item.name.toLowerCase().includes(q) || (item.short_name ?? "").toLowerCase().includes(q);
+          const matchSubcat = subcategoryFilter === "all" || item.subcategory === subcategoryFilter;
           const matchAvail = availabilityFilter === "all" || (availabilityFilter === "available" ? item.available : !item.available);
           const matchVariant = variantFilter === "all" || (variantFilter === "variants" ? (item.variants?.length ?? 0) > 0 : (item.variants?.length ?? 0) === 0);
-          return matchSearch && matchAvail && matchVariant;
+          return matchSearch && matchSubcat && matchAvail && matchVariant;
         }),
       }))
       .filter((s) => categoryFilter === "all" || s.name === categoryFilter);
-  }, [sections, query, categoryFilter, availabilityFilter, variantFilter]);
+  }, [sections, query, categoryFilter, subcategoryFilter, availabilityFilter, variantFilter]);
 
   const gridCols = isMobile ? 1 : 2;
 
@@ -1668,6 +1692,8 @@ export function AdminView() {
           onQuery={setQuery}
           categoryFilter={categoryFilter}
           onCategoryFilter={setCategoryFilter}
+          subcategoryFilter={subcategoryFilter}
+          onSubcategoryFilter={setSubcategoryFilter}
           availFilter={availabilityFilter}
           onAvailFilter={setAvailabilityFilter}
           variantFilter={variantFilter}
