@@ -918,17 +918,15 @@ function FilterBar({
   query,
   onQuery,
   onAddItem,
-  isTableView,
 }: {
   query: string;
   onQuery: (q: string) => void;
   onAddItem: () => void;
-  isTableView: boolean;
 }) {
   return (
     <div
       style={{
-        padding: isTableView ? "8px 16px" : "10px 16px",
+        padding: "10px 16px",
         borderBottom: `1px solid ${colors.border}`,
         background: colors.surface,
         display: "flex",
@@ -937,7 +935,7 @@ function FilterBar({
         flexShrink: 0,
       }}
     >
-      <div style={{ position: "relative", flex: 1, minWidth: isTableView ? 200 : 0 }}>
+      <div style={{ position: "relative", flex: 1, minWidth: 0 }}>
         <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: colors.muted, fontSize: 14, pointerEvents: "none", lineHeight: 1 }}>⌕</span>
         <input
           type="text"
@@ -950,14 +948,12 @@ function FilterBar({
           <button onClick={() => onQuery("")} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: colors.muted, fontSize: 16, lineHeight: 1, padding: 0 }}>×</button>
         )}
       </div>
-      {isTableView && (
-        <button
-          onClick={onAddItem}
-          style={{ padding: "7px 14px", fontSize: 13, fontWeight: 700, background: colors.fg, color: "#fff", border: "none", borderRadius: radii.md, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap", flexShrink: 0 }}
-        >
-          + Add item
-        </button>
-      )}
+      <button
+        onClick={onAddItem}
+        style={{ padding: "7px 14px", fontSize: 13, fontWeight: 700, background: colors.fg, color: "#fff", border: "none", borderRadius: radii.md, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap", flexShrink: 0 }}
+      >
+        + Add item
+      </button>
     </div>
   );
 }
@@ -1457,7 +1453,7 @@ const SECTION_ORDER = ["Food", "Wines", "Drinks", "Shop"] as const;
 export function AdminView() {
   const { setView, showToast } = useApp();
   const { reloadMenu } = useMenu();
-  const { isMobile, isTablet, isTabletLandscape, isLaptop, isDesktop } = useBreakpoint();
+  const { isTabletLandscape, isLaptop, isDesktop } = useBreakpoint();
   const isWideShell = isDesktop || isLaptop || isTabletLandscape;
   const isTableView = isWideShell;
 
@@ -1470,7 +1466,7 @@ export function AdminView() {
   const [showNewItemModal, setShowNewItemModal] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [query, setQuery] = useState("");
-  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+  const [activeCategory, setActiveCategory] = useState<string>("Food");
   const [showFilterSheet, setShowFilterSheet] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [subcategoryFilter, setSubcategoryFilter] = useState("all");
@@ -1557,8 +1553,6 @@ export function AdminView() {
       }))
       .filter((s) => categoryFilter === "all" || s.name === categoryFilter);
   }, [sections, query, categoryFilter, subcategoryFilter, availabilityFilter, variantFilter]);
-
-  const gridCols = isMobile ? 1 : 2;
 
   const handleBack = () => {
     if (dirty) reloadMenu();
@@ -1729,8 +1723,11 @@ export function AdminView() {
         <FilterBar
           query={query}
           onQuery={setQuery}
-          onAddItem={() => { setNewItemCategoryId(null); setShowNewItemModal(true); }}
-          isTableView={isTableView}
+          onAddItem={() => {
+            const activeSec = mobileSections.find((s) => s.name === activeCategory);
+            setNewItemCategoryId(isTableView ? null : (activeSec?.catId ?? null));
+            setShowNewItemModal(true);
+          }}
         />
       )}
 
@@ -1777,48 +1774,51 @@ export function AdminView() {
         </div>
       )}
 
-      {/* ── Mobile: category sections ── */}
-      {!loading && !loadError && !isTableView && (
-        <div style={{ padding: 16, display: "grid", gridTemplateColumns: `repeat(${gridCols}, 1fr)`, gap: 16, alignItems: "start" }}>
-          {mobileSections.map(({ name, catId, sectionItems }) => {
-            const collapsed = collapsedSections.has(name);
-            const toggleCollapse = () =>
-              setCollapsedSections((prev) => {
-                const next = new Set(prev);
-                collapsed ? next.delete(name) : next.add(name);
-                return next;
-              });
-            return (
-              <div key={name} style={{ background: colors.surface, borderRadius: radii.lg, border: `1px solid ${colors.border}`, overflow: "hidden" }}>
-                <div style={{ padding: "11px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: collapsed ? "none" : `1px solid ${colors.border}`, background: colors.bg }}>
+      {/* ── Mobile: category tabs + flat list ── */}
+      {!loading && !loadError && !isTableView && (() => {
+        const activeItems = mobileSections.find((s) => s.name === activeCategory)?.sectionItems ?? [];
+        return (
+          <>
+            <div style={S.tabs}>
+              <div style={S.tabsContainer}>
+                {SECTION_ORDER.map((name) => (
                   <button
-                    onClick={toggleCollapse}
-                    style={{ background: "none", border: "none", padding: 0, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, flex: 1, textAlign: "left", fontFamily: "inherit" }}
+                    key={name}
+                    style={{ ...S.tab, ...(activeCategory === name ? S.tabActive : {}) }}
+                    onClick={() => setActiveCategory(name)}
                   >
-                    <span style={{ fontSize: 10, color: colors.dimmed, transition: "transform 0.18s", transform: collapsed ? "rotate(-90deg)" : "rotate(0deg)", display: "inline-block", lineHeight: 1 }}>▾</span>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: colors.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                      {name}
-                      <span style={{ marginLeft: 6, fontWeight: 400, color: colors.dimmed }}>{sectionItems.length}</span>
-                    </span>
+                    {name}
                   </button>
-                  <button
-                    onClick={() => { setNewItemCategoryId(catId); setShowNewItemModal(true); }}
-                    style={{ background: "none", border: `1.5px solid ${colors.border}`, borderRadius: 6, width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: colors.secondary, fontSize: 18, lineHeight: 1, padding: 0, fontFamily: "inherit" }}
-                    title={`Add item to ${name}`}
-                  >+</button>
-                </div>
-                {!collapsed && (
-                  sectionItems.length === 0
-                    ? <div style={{ padding: "20px 16px", color: colors.dimmed, fontSize: 13, textAlign: "center" }}>No items</div>
-                    : sectionItems.map((item) => (
-                        <ItemRow key={item.id} item={item} toggling={toggling.has(item.id)} onToggle={() => handleToggle(item)} onEdit={() => setEditItem(item)} />
-                      ))
-                )}
+                ))}
+                <div
+                  style={{
+                    ...S.tabIndicator,
+                    width: "25%",
+                    transform: `translateX(${SECTION_ORDER.indexOf(activeCategory) * 100}%)`,
+                  }}
+                />
               </div>
-            );
-          })}
-        </div>
-      )}
+            </div>
+            {activeItems.length === 0 ? (
+              <div style={{ padding: "48px 20px", textAlign: "center", color: colors.dimmed, fontSize: 14 }}>
+                No items
+              </div>
+            ) : (
+              <div style={{ background: colors.surface }}>
+                {activeItems.map((item) => (
+                  <ItemRow
+                    key={item.id}
+                    item={item}
+                    toggling={toggling.has(item.id)}
+                    onToggle={() => handleToggle(item)}
+                    onEdit={() => setEditItem(item)}
+                  />
+                ))}
+              </div>
+            )}
+          </>
+        );
+      })()}
 
       {/* ── Mobile edit sheet ── */}
       {!isTableView && editItem && (
