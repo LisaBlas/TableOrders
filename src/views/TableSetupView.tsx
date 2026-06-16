@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useApp } from "../contexts/AppContext";
 import { useTable } from "../contexts/TableContext";
 import { ScreenHeader } from "../components/ScreenHeader";
@@ -105,8 +105,9 @@ export function TableSetupView() {
   const [editLabel, setEditLabel] = useState("");
   const [newLabel, setNewLabel] = useState("");
   const [saving, setSaving] = useState(false);
-  const [addFocused, setAddFocused] = useState(false);
+  const [showNewTableInput, setShowNewTableInput] = useState(false);
   const [swapSourceId, setSwapSourceId] = useState<number | null>(null);
+  const newTableInputRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -239,6 +240,7 @@ export function TableSetupView() {
       setRecords((prev) => [...prev, created]);
       reloadTablesConfig();
       setNewLabel("");
+      setShowNewTableInput(false);
       showToast(`"${label}" added`);
     } catch {
       showToast("Failed to add table");
@@ -255,6 +257,38 @@ export function TableSetupView() {
         title="Table Setup"
         left="back"
         onBack={() => setView("tables")}
+        right={
+          !isSwapMode && (
+            <button
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+                padding: "6px 12px",
+                fontSize: 13,
+                fontWeight: 600,
+                background: colors.fg,
+                color: "#fff",
+                border: "none",
+                borderRadius: radii.sm,
+                cursor: "pointer",
+                fontFamily: "inherit",
+                opacity: saving ? 0.5 : 1,
+                whiteSpace: "nowrap",
+              }}
+              disabled={saving}
+              onClick={() => {
+                setSwapSourceId(null);
+                setEditingId(null);
+                setNewLabel("");
+                setShowNewTableInput(true);
+                setTimeout(() => newTableInputRef.current?.focus(), 0);
+              }}
+            >
+              + New table
+            </button>
+          )
+        }
       />
 
       <div style={{ paddingBottom: 32 }}>
@@ -266,6 +300,74 @@ export function TableSetupView() {
           <>
             {/* Active tables */}
             <div style={SECTION_LABEL}>Active</div>
+
+            {showNewTableInput && (
+              <div style={{ padding: "0 16px 12px", display: "flex", gap: 8, alignItems: "center" }}>
+                <input
+                  ref={newTableInputRef}
+                  type="text"
+                  placeholder="Table name"
+                  maxLength={10}
+                  value={newLabel}
+                  onChange={(e) => setNewLabel(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") addTable();
+                    if (e.key === "Escape") { setShowNewTableInput(false); setNewLabel(""); }
+                  }}
+                  onBlur={() => { if (!newLabel.trim()) { setShowNewTableInput(false); } }}
+                  disabled={saving}
+                  style={{
+                    flex: 1,
+                    padding: "9px 12px",
+                    fontSize: 15,
+                    border: `1.5px solid ${colors.fg}`,
+                    borderRadius: radii.sm,
+                    outline: "none",
+                    fontFamily: "inherit",
+                    background: colors.inputBg,
+                    color: colors.fg,
+                    boxSizing: "border-box" as const,
+                  }}
+                />
+                <button
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={addTable}
+                  disabled={saving || !newLabel.trim()}
+                  style={{
+                    padding: "9px 16px",
+                    fontSize: 14,
+                    fontWeight: 600,
+                    background: colors.fg,
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: radii.sm,
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                    opacity: !newLabel.trim() ? 0.5 : 1,
+                    flexShrink: 0,
+                  }}
+                >
+                  Add
+                </button>
+                <button
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => { setShowNewTableInput(false); setNewLabel(""); }}
+                  style={{
+                    padding: "9px 12px",
+                    fontSize: 14,
+                    background: "none",
+                    color: colors.subtle,
+                    border: `1.5px solid ${colors.border}`,
+                    borderRadius: radii.sm,
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                    flexShrink: 0,
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
 
             <div style={GRID}>
               {activeRecords.length === 0 && (
@@ -351,35 +453,6 @@ export function TableSetupView() {
                 );
               })}
 
-              {/* Add chip — hidden in swap mode */}
-              {!isSwapMode && (
-                <div
-                  style={{
-                    ...CHIP_BASE,
-                    border: `1.5px dashed ${addFocused || newLabel ? colors.fg : colors.border}`,
-                    background: addFocused || newLabel ? colors.inputBg : "transparent",
-                    cursor: "text",
-                  }}
-                >
-                  <input
-                    type="text"
-                    placeholder="+"
-                    maxLength={10}
-                    value={newLabel}
-                    onChange={(e) => setNewLabel(e.target.value)}
-                    onFocus={() => setAddFocused(true)}
-                    onBlur={() => setAddFocused(false)}
-                    onKeyDown={(e) => { if (e.key === "Enter") addTable(); }}
-                    disabled={saving}
-                    style={{
-                      ...CHIP_INPUT,
-                      fontSize: addFocused || newLabel ? 15 : 20,
-                      fontWeight: addFocused || newLabel ? 600 : 400,
-                      color: addFocused || newLabel ? colors.fg : colors.subtle,
-                    }}
-                  />
-                </div>
-              )}
             </div>
 
             <div style={{ padding: "10px 16px 0", fontSize: 12, color: isSwapMode ? colors.info : colors.subtle }}>

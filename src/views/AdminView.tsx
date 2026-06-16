@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, type CSSProperties } from "react";
+import { useState, useEffect, useCallback, useMemo, type CSSProperties, type ReactNode } from "react";
 import { useApp } from "../contexts/AppContext";
 import { useMenu } from "../contexts/MenuContext";
 import { ScreenHeader } from "../components/ScreenHeader";
@@ -1401,6 +1401,68 @@ function NewItemModal({
   );
 }
 
+// ── FilterDropdown ─────────────────────────────────────────────────────────
+
+function FilterDropdown({
+  open,
+  onToggle,
+  isTableView,
+  hasActiveFilters,
+  children,
+}: {
+  open: boolean;
+  onToggle: () => void;
+  isTableView: boolean;
+  hasActiveFilters: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <div style={{ position: "relative" }}>
+      <button
+        style={{
+          ...S.ticketBtn,
+          display: "flex",
+          alignItems: "center",
+          gap: 4,
+          width: "auto",
+          paddingLeft: 8,
+          paddingRight: 10,
+          color: hasActiveFilters ? colors.info : undefined,
+        }}
+        onClick={onToggle}
+        aria-label="Filter menu items"
+      >
+        <FilterIcon size={16} />
+        <span style={{ fontSize: 13, fontWeight: 600, fontFamily: "inherit" }}>Filters</span>
+      </button>
+      {open && isTableView && (
+        <>
+          <div
+            style={{ position: "fixed", inset: 0, zIndex: 199 }}
+            onClick={onToggle}
+          />
+          <div
+            style={{
+              position: "absolute",
+              top: "calc(100% + 8px)",
+              right: 0,
+              zIndex: 200,
+              width: 280,
+              background: colors.surface,
+              border: `1px solid ${colors.border}`,
+              borderRadius: radii.lg,
+              boxShadow: "0 4px 20px rgba(0,0,0,0.12)",
+              padding: "16px",
+            }}
+          >
+            {children}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 // ── Section order ──────────────────────────────────────────────────────────
 
 const SECTION_ORDER = ["Food", "Wines", "Drinks", "Shop"] as const;
@@ -1641,42 +1703,16 @@ export function AdminView() {
         onBack={handleBack}
         hideBackOnWide
         right={
-          <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-            {!loading && !loadError && (
-              <div style={{ position: "relative" }}>
-                <button
-                  style={{ ...S.ticketBtn, display: "flex", alignItems: "center", gap: 4, width: "auto", paddingLeft: 8, paddingRight: 10, color: hasActiveFilters ? colors.info : undefined }}
-                  onClick={() => setShowFilterSheet((v) => !v)}
-                  aria-label="Filter menu items"
-                >
-                  <FilterIcon size={16} />
-                  <span style={{ fontSize: 13, fontWeight: 600, fontFamily: "inherit" }}>Filters</span>
-                </button>
-                {showFilterSheet && isTableView && (
-                  <>
-                    <div
-                      style={{ position: "fixed", inset: 0, zIndex: 199 }}
-                      onClick={() => setShowFilterSheet(false)}
-                    />
-                    <div style={{
-                      position: "absolute",
-                      top: "calc(100% + 8px)",
-                      right: 0,
-                      zIndex: 200,
-                      width: 280,
-                      background: colors.surface,
-                      border: `1px solid ${colors.border}`,
-                      borderRadius: radii.lg,
-                      boxShadow: "0 4px 20px rgba(0,0,0,0.12)",
-                      padding: "16px",
-                    }}>
-                      {renderFilterSections()}
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
-          </div>
+          !loading && !loadError ? (
+            <FilterDropdown
+              open={showFilterSheet}
+              onToggle={() => setShowFilterSheet((v) => !v)}
+              isTableView={isTableView}
+              hasActiveFilters={hasActiveFilters}
+            >
+              {renderFilterSections()}
+            </FilterDropdown>
+          ) : undefined
         }
         style={{ zIndex: 10 }}
       />
