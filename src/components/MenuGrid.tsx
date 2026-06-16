@@ -48,13 +48,15 @@ export function MenuGrid({
         const subcategoryObj = subcategoryConfig.find((subcategory) => subcategory.id === subcategoryId);
         const subcategoryLabel = (subcategoryObj?.label || subcategoryId)
           .replace(/\p{Extended_Pictographic}/gu, "")
-          .trim()
-          .toUpperCase();
+          .trim();
 
         return (
           <div key={subcategoryId} style={{ gridColumn: "1 / -1", display: "contents" }}>
             {subcategoryConfig.length > 0 && (
-              <div style={S.subcategoryDivider as CSSProperties}>{subcategoryLabel}</div>
+              <div style={S.subcategoryDivider as CSSProperties}>
+                {subcategoryLabel}{" "}
+                <span style={{ opacity: 0.45, fontWeight: 400, fontSize: 11 }}>({items.length})</span>
+              </div>
             )}
             {items.map((item) => (
               <MenuItemCard
