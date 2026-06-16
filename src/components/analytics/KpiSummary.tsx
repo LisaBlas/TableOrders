@@ -34,7 +34,7 @@ export function KpiSummary({ kpis, comparisonLabel, wide, embedded = false }: Pr
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: wide ? "repeat(5, 1fr)" : "repeat(2, 1fr)",
+          gridTemplateColumns: wide ? "repeat(5, 1fr)" : "repeat(6, 1fr)",
           gap: 1,
           background: colors.border,
         }}
@@ -44,63 +44,39 @@ export function KpiSummary({ kpis, comparisonLabel, wide, embedded = false }: Pr
           value={`€${kpis.revenue.toFixed(0)}`}
           delta={kpis.revenueΔ}
           deltaType="pct"
+          span={wide ? 1 : 2}
         />
         <KpiTile
           label="Avg Bill"
           value={`€${kpis.avgBill.toFixed(2)}`}
           delta={kpis.avgBillΔ}
           deltaType="pct"
+          span={wide ? 1 : 2}
         />
-        {wide ? (
-          <>
-            <KpiTile
-              label="Avg Tip"
-              value={`${kpis.avgTipPct.toFixed(1)}%`}
-              delta={kpis.avgTipPctΔ}
-              deltaType="abs"
-              deltaSuffix="pp"
-            />
-            <KpiTile
-              label="Tables"
-              value={String(kpis.bills)}
-              delta={kpis.billsΔ}
-              deltaType="abs"
-              deltaSuffix=""
-            />
-            <KpiTile
-              label="Covers"
-              value={String(kpis.covers)}
-              delta={kpis.coversΔ}
-              deltaType="abs"
-              deltaSuffix=""
-            />
-          </>
-        ) : (
-          <>
-            <KpiTile
-              label="Tables"
-              value={String(kpis.bills)}
-              delta={kpis.billsΔ}
-              deltaType="abs"
-              deltaSuffix=""
-            />
-            <KpiTile
-              label="Covers"
-              value={String(kpis.covers)}
-              delta={kpis.coversΔ}
-              deltaType="abs"
-              deltaSuffix=""
-            />
-            <KpiTile
-              label="Avg Tip"
-              value={`${kpis.avgTipPct.toFixed(1)}%`}
-              delta={kpis.avgTipPctΔ}
-              deltaType="abs"
-              deltaSuffix="pp"
-              wide
-            />
-          </>
-        )}
+        <KpiTile
+          label="Avg Tip"
+          value={`${kpis.avgTipPct.toFixed(1)}%`}
+          delta={kpis.avgTipPctΔ}
+          deltaType="abs"
+          deltaSuffix="pp"
+          span={wide ? 1 : 2}
+        />
+        <KpiTile
+          label="Tables"
+          value={String(kpis.bills)}
+          delta={kpis.billsΔ}
+          deltaType="abs"
+          deltaSuffix=""
+          span={wide ? 1 : 3}
+        />
+        <KpiTile
+          label="Covers"
+          value={String(kpis.covers)}
+          delta={kpis.coversΔ}
+          deltaType="abs"
+          deltaSuffix=""
+          span={wide ? 1 : 3}
+        />
       </div>
     </div>
   );
@@ -112,10 +88,10 @@ interface TileProps {
   delta: number | null;
   deltaType: "pct" | "abs";
   deltaSuffix?: string;
-  wide?: boolean;
+  span?: number;
 }
 
-function KpiTile({ label, value, delta, deltaType, deltaSuffix = "%", wide }: TileProps) {
+function KpiTile({ label, value, delta, deltaType, deltaSuffix = "%", span }: TileProps) {
   const positive = delta !== null && delta > 0;
   const negative = delta !== null && delta < 0;
 
@@ -137,7 +113,7 @@ function KpiTile({ label, value, delta, deltaType, deltaSuffix = "%", wide }: Ti
         display: "flex",
         flexDirection: "column",
         gap: 3,
-        gridColumn: wide ? "span 2" : undefined,
+        gridColumn: span ? `span ${span}` : undefined,
       }}
     >
       <span style={{ fontSize: 11, color: colors.muted, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em" }}>
