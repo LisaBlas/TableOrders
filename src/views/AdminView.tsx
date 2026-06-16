@@ -15,6 +15,7 @@ import {
 } from "../services/directusAdmin";
 import { colors, radii } from "../styles/tokens";
 import { S } from "../styles/appStyles";
+import { FilterIcon } from "../components/icons";
 import {
   FOOD_SUBCATEGORIES,
   DRINKS_SUBCATEGORIES,
@@ -1522,6 +1523,7 @@ export function AdminView() {
   const [dirty, setDirty] = useState(false);
   const [query, setQuery] = useState("");
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+  const [showFilterSheet, setShowFilterSheet] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [subcategoryFilter, setSubcategoryFilter] = useState("all");
   const [availabilityFilter, setAvailabilityFilter] = useState<AvailFilter>("all");
@@ -1660,6 +1662,8 @@ export function AdminView() {
     [showToast]
   );
 
+  const hasActiveFilters = categoryFilter !== "all" || subcategoryFilter !== "all" || availabilityFilter !== "all" || variantFilter !== "all";
+
   const handleSort = (key: string) => {
     if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     else { setSortKey(key); setSortDir("asc"); }
@@ -1681,7 +1685,20 @@ export function AdminView() {
         left="back"
         onBack={handleBack}
         hideBackOnWide
-        right={<span style={{ fontSize: 12, color: colors.muted, fontWeight: 500 }}>Admin</span>}
+        right={
+          <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+            {!loading && !loadError && (
+              <button
+                style={{ ...S.ticketBtn, color: hasActiveFilters ? colors.info : undefined }}
+                onClick={() => setShowFilterSheet(true)}
+                aria-label="Filter menu items"
+              >
+                <FilterIcon size={20} />
+              </button>
+            )}
+            <span style={{ fontSize: 12, color: colors.muted, fontWeight: 500 }}>Admin</span>
+          </div>
+        }
         style={{ zIndex: 10 }}
       />
 
@@ -1809,6 +1826,64 @@ export function AdminView() {
           onClose={() => setShowNewItemModal(false)}
           onCreated={handleCreated}
         />
+      )}
+
+      {/* ── Filter sheet ── */}
+      {showFilterSheet && (
+        <>
+          <div style={S.variantSheetOverlay} onClick={() => setShowFilterSheet(false)} />
+          <div style={S.variantSheet}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
+              <span style={{ fontSize: 18, fontWeight: 700 }}>Filters</span>
+              {hasActiveFilters && (
+                <button
+                  onClick={() => { setCategoryFilter("all"); setSubcategoryFilter("all"); setAvailabilityFilter("all"); setVariantFilter("all"); }}
+                  style={{ background: "none", border: "none", fontSize: 13, color: colors.info, cursor: "pointer", fontFamily: "inherit", fontWeight: 600, padding: 0 }}
+                >
+                  Clear all
+                </button>
+              )}
+            </div>
+
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: colors.muted, textTransform: "uppercase" as const, letterSpacing: "0.06em", marginBottom: 8 }}>Category</div>
+              <FilterPills
+                options={[{ value: "all", label: "All" }, ...categories.map((c) => ({ value: c.name, label: c.name }))]}
+                value={categoryFilter}
+                onChange={(c) => { setCategoryFilter(c); setSubcategoryFilter("all"); }}
+              />
+            </div>
+
+            {categoryFilter !== "all" && SUBCATEGORY_LABELS[categoryFilter] && (
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: colors.muted, textTransform: "uppercase" as const, letterSpacing: "0.06em", marginBottom: 8 }}>Subcategory</div>
+                <FilterPills
+                  options={[{ value: "all", label: "All" }, ...SUBCATEGORY_LABELS[categoryFilter]]}
+                  value={subcategoryFilter}
+                  onChange={setSubcategoryFilter}
+                />
+              </div>
+            )}
+
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: colors.muted, textTransform: "uppercase" as const, letterSpacing: "0.06em", marginBottom: 8 }}>Availability</div>
+              <FilterPills
+                options={[{ value: "all", label: "All" }, { value: "available", label: "On" }, { value: "unavailable", label: "Off" }]}
+                value={availabilityFilter}
+                onChange={setAvailabilityFilter}
+              />
+            </div>
+
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: colors.muted, textTransform: "uppercase" as const, letterSpacing: "0.06em", marginBottom: 8 }}>Type</div>
+              <FilterPills
+                options={[{ value: "all", label: "All" }, { value: "variants", label: "Variants" }, { value: "simple", label: "Fixed price" }]}
+                value={variantFilter}
+                onChange={setVariantFilter}
+              />
+            </div>
+          </div>
+        </>
       )}
     </div>
   );
