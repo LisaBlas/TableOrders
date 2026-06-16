@@ -917,47 +917,14 @@ function FilterPills<T extends string>({
 function FilterBar({
   query,
   onQuery,
-  categoryFilter,
-  onCategoryFilter,
-  subcategoryFilter,
-  onSubcategoryFilter,
-  availFilter,
-  onAvailFilter,
-  variantFilter,
-  onVariantFilter,
-  categoryNames,
   onAddItem,
   isTableView,
 }: {
   query: string;
   onQuery: (q: string) => void;
-  categoryFilter: string;
-  onCategoryFilter: (c: string) => void;
-  subcategoryFilter: string;
-  onSubcategoryFilter: (s: string) => void;
-  availFilter: AvailFilter;
-  onAvailFilter: (f: AvailFilter) => void;
-  variantFilter: VariantFilter;
-  onVariantFilter: (f: VariantFilter) => void;
-  categoryNames: string[];
   onAddItem: () => void;
   isTableView: boolean;
 }) {
-  const catOptions = [
-    { value: "all", label: "All" },
-    ...categoryNames.map((n) => ({ value: n, label: n })),
-  ];
-  const availOptions: { value: AvailFilter; label: string }[] = [
-    { value: "all", label: "All" },
-    { value: "available", label: "On" },
-    { value: "unavailable", label: "Off" },
-  ];
-  const variantOptions: { value: VariantFilter; label: string }[] = [
-    { value: "all", label: "All" },
-    { value: "variants", label: "Variants" },
-    { value: "simple", label: "Fixed price" },
-  ];
-
   return (
     <div
       style={{
@@ -965,50 +932,31 @@ function FilterBar({
         borderBottom: `1px solid ${colors.border}`,
         background: colors.surface,
         display: "flex",
-        flexDirection: isTableView ? "row" : "column",
         gap: 8,
-        alignItems: isTableView ? "center" : "stretch",
+        alignItems: "center",
         flexShrink: 0,
       }}
     >
-      <div style={{ display: "flex", gap: 8, alignItems: "center", flex: isTableView ? "none" : 1 }}>
-        <div style={{ position: "relative", flex: 1, minWidth: isTableView ? 200 : 0 }}>
-          <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: colors.muted, fontSize: 14, pointerEvents: "none", lineHeight: 1 }}>⌕</span>
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => onQuery(e.target.value)}
-            placeholder="Search items…"
-            style={{ ...inputStyle, paddingLeft: 28, paddingTop: 7, paddingBottom: 7, fontSize: 13 }}
-          />
-          {query && (
-            <button onClick={() => onQuery("")} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: colors.muted, fontSize: 16, lineHeight: 1, padding: 0 }}>×</button>
-          )}
-        </div>
-        {isTableView && (
-          <button
-            onClick={onAddItem}
-            style={{ padding: "7px 14px", fontSize: 13, fontWeight: 700, background: colors.fg, color: "#fff", border: "none", borderRadius: radii.md, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap", flexShrink: 0 }}
-          >
-            + Add item
-          </button>
+      <div style={{ position: "relative", flex: 1, minWidth: isTableView ? 200 : 0 }}>
+        <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: colors.muted, fontSize: 14, pointerEvents: "none", lineHeight: 1 }}>⌕</span>
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => onQuery(e.target.value)}
+          placeholder="Search items…"
+          style={{ ...inputStyle, paddingLeft: 28, paddingTop: 7, paddingBottom: 7, fontSize: 13 }}
+        />
+        {query && (
+          <button onClick={() => onQuery("")} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: colors.muted, fontSize: 16, lineHeight: 1, padding: 0 }}>×</button>
         )}
       </div>
-      <div style={{ display: "flex", gap: isTableView ? 10 : 8, alignItems: "center", flexWrap: "wrap" }}>
-        <FilterPills options={catOptions} value={categoryFilter} onChange={(c) => { onCategoryFilter(c); onSubcategoryFilter("all"); }} />
-        {isTableView && <span style={{ width: 1, height: 18, background: colors.border, flexShrink: 0 }} />}
-        <FilterPills options={availOptions} value={availFilter} onChange={onAvailFilter} />
-        {isTableView && <span style={{ width: 1, height: 18, background: colors.border, flexShrink: 0 }} />}
-        <FilterPills options={variantOptions} value={variantFilter} onChange={onVariantFilter} />
-      </div>
-      {categoryFilter !== "all" && SUBCATEGORY_LABELS[categoryFilter] && (
-        <div style={{ display: "flex", gap: isTableView ? 10 : 8, alignItems: "center", flexWrap: "wrap" }}>
-          <FilterPills
-            options={[{ value: "all", label: "All subcategories" }, ...SUBCATEGORY_LABELS[categoryFilter]]}
-            value={subcategoryFilter}
-            onChange={onSubcategoryFilter}
-          />
-        </div>
+      {isTableView && (
+        <button
+          onClick={onAddItem}
+          style={{ padding: "7px 14px", fontSize: 13, fontWeight: 700, background: colors.fg, color: "#fff", border: "none", borderRadius: radii.md, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap", flexShrink: 0 }}
+        >
+          + Add item
+        </button>
       )}
     </div>
   );
@@ -1664,6 +1612,56 @@ export function AdminView() {
 
   const hasActiveFilters = categoryFilter !== "all" || subcategoryFilter !== "all" || availabilityFilter !== "all" || variantFilter !== "all";
 
+  const renderFilterSections = () => (
+    <>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
+        <span style={{ fontSize: 18, fontWeight: 700 }}>Filters</span>
+        {hasActiveFilters && (
+          <button
+            onClick={() => { setCategoryFilter("all"); setSubcategoryFilter("all"); setAvailabilityFilter("all"); setVariantFilter("all"); }}
+            style={{ background: "none", border: "none", fontSize: 13, color: colors.info, cursor: "pointer", fontFamily: "inherit", fontWeight: 600, padding: 0 }}
+          >
+            Clear all
+          </button>
+        )}
+      </div>
+      <div style={{ marginBottom: 14 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: colors.muted, textTransform: "uppercase" as const, letterSpacing: "0.06em", marginBottom: 8 }}>Category</div>
+        <FilterPills
+          options={[{ value: "all", label: "All" }, ...categories.map((c) => ({ value: c.name, label: c.name }))]}
+          value={categoryFilter}
+          onChange={(c) => { setCategoryFilter(c); setSubcategoryFilter("all"); }}
+        />
+      </div>
+      {categoryFilter !== "all" && SUBCATEGORY_LABELS[categoryFilter] && (
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: colors.muted, textTransform: "uppercase" as const, letterSpacing: "0.06em", marginBottom: 8 }}>Subcategory</div>
+          <FilterPills
+            options={[{ value: "all", label: "All" }, ...SUBCATEGORY_LABELS[categoryFilter]]}
+            value={subcategoryFilter}
+            onChange={setSubcategoryFilter}
+          />
+        </div>
+      )}
+      <div style={{ marginBottom: 14 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: colors.muted, textTransform: "uppercase" as const, letterSpacing: "0.06em", marginBottom: 8 }}>Availability</div>
+        <FilterPills
+          options={[{ value: "all", label: "All" }, { value: "available", label: "On" }, { value: "unavailable", label: "Off" }]}
+          value={availabilityFilter}
+          onChange={setAvailabilityFilter}
+        />
+      </div>
+      <div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: colors.muted, textTransform: "uppercase" as const, letterSpacing: "0.06em", marginBottom: 8 }}>Type</div>
+        <FilterPills
+          options={[{ value: "all", label: "All" }, { value: "variants", label: "Variants" }, { value: "simple", label: "Fixed price" }]}
+          value={variantFilter}
+          onChange={setVariantFilter}
+        />
+      </div>
+    </>
+  );
+
   const handleSort = (key: string) => {
     if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     else { setSortKey(key); setSortDir("asc"); }
@@ -1688,13 +1686,37 @@ export function AdminView() {
         right={
           <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
             {!loading && !loadError && (
-              <button
-                style={{ ...S.ticketBtn, color: hasActiveFilters ? colors.info : undefined }}
-                onClick={() => setShowFilterSheet(true)}
-                aria-label="Filter menu items"
-              >
-                <FilterIcon size={20} />
-              </button>
+              <div style={{ position: "relative" }}>
+                <button
+                  style={{ ...S.ticketBtn, color: hasActiveFilters ? colors.info : undefined }}
+                  onClick={() => setShowFilterSheet((v) => !v)}
+                  aria-label="Filter menu items"
+                >
+                  <FilterIcon size={20} />
+                </button>
+                {showFilterSheet && isTableView && (
+                  <>
+                    <div
+                      style={{ position: "fixed", inset: 0, zIndex: 199 }}
+                      onClick={() => setShowFilterSheet(false)}
+                    />
+                    <div style={{
+                      position: "absolute",
+                      top: "calc(100% + 8px)",
+                      right: 0,
+                      zIndex: 200,
+                      width: 280,
+                      background: colors.surface,
+                      border: `1px solid ${colors.border}`,
+                      borderRadius: radii.lg,
+                      boxShadow: "0 4px 20px rgba(0,0,0,0.12)",
+                      padding: "16px",
+                    }}>
+                      {renderFilterSections()}
+                    </div>
+                  </>
+                )}
+              </div>
             )}
             <span style={{ fontSize: 12, color: colors.muted, fontWeight: 500 }}>Admin</span>
           </div>
@@ -1707,15 +1729,6 @@ export function AdminView() {
         <FilterBar
           query={query}
           onQuery={setQuery}
-          categoryFilter={categoryFilter}
-          onCategoryFilter={setCategoryFilter}
-          subcategoryFilter={subcategoryFilter}
-          onSubcategoryFilter={setSubcategoryFilter}
-          availFilter={availabilityFilter}
-          onAvailFilter={setAvailabilityFilter}
-          variantFilter={variantFilter}
-          onVariantFilter={setVariantFilter}
-          categoryNames={categories.map((c) => c.name)}
           onAddItem={() => { setNewItemCategoryId(null); setShowNewItemModal(true); }}
           isTableView={isTableView}
         />
@@ -1828,60 +1841,12 @@ export function AdminView() {
         />
       )}
 
-      {/* ── Filter sheet ── */}
-      {showFilterSheet && (
+      {/* ── Filter sheet (mobile only) ── */}
+      {showFilterSheet && !isTableView && (
         <>
           <div style={S.variantSheetOverlay} onClick={() => setShowFilterSheet(false)} />
           <div style={S.variantSheet}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
-              <span style={{ fontSize: 18, fontWeight: 700 }}>Filters</span>
-              {hasActiveFilters && (
-                <button
-                  onClick={() => { setCategoryFilter("all"); setSubcategoryFilter("all"); setAvailabilityFilter("all"); setVariantFilter("all"); }}
-                  style={{ background: "none", border: "none", fontSize: 13, color: colors.info, cursor: "pointer", fontFamily: "inherit", fontWeight: 600, padding: 0 }}
-                >
-                  Clear all
-                </button>
-              )}
-            </div>
-
-            <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: colors.muted, textTransform: "uppercase" as const, letterSpacing: "0.06em", marginBottom: 8 }}>Category</div>
-              <FilterPills
-                options={[{ value: "all", label: "All" }, ...categories.map((c) => ({ value: c.name, label: c.name }))]}
-                value={categoryFilter}
-                onChange={(c) => { setCategoryFilter(c); setSubcategoryFilter("all"); }}
-              />
-            </div>
-
-            {categoryFilter !== "all" && SUBCATEGORY_LABELS[categoryFilter] && (
-              <div style={{ marginBottom: 14 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: colors.muted, textTransform: "uppercase" as const, letterSpacing: "0.06em", marginBottom: 8 }}>Subcategory</div>
-                <FilterPills
-                  options={[{ value: "all", label: "All" }, ...SUBCATEGORY_LABELS[categoryFilter]]}
-                  value={subcategoryFilter}
-                  onChange={setSubcategoryFilter}
-                />
-              </div>
-            )}
-
-            <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: colors.muted, textTransform: "uppercase" as const, letterSpacing: "0.06em", marginBottom: 8 }}>Availability</div>
-              <FilterPills
-                options={[{ value: "all", label: "All" }, { value: "available", label: "On" }, { value: "unavailable", label: "Off" }]}
-                value={availabilityFilter}
-                onChange={setAvailabilityFilter}
-              />
-            </div>
-
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: colors.muted, textTransform: "uppercase" as const, letterSpacing: "0.06em", marginBottom: 8 }}>Type</div>
-              <FilterPills
-                options={[{ value: "all", label: "All" }, { value: "variants", label: "Variants" }, { value: "simple", label: "Fixed price" }]}
-                value={variantFilter}
-                onChange={setVariantFilter}
-              />
-            </div>
+            {renderFilterSections()}
           </div>
         </>
       )}
