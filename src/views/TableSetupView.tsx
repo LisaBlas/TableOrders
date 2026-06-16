@@ -1,7 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useApp } from "../contexts/AppContext";
 import { useTable } from "../contexts/TableContext";
+import { useBreakpoint } from "../hooks/useBreakpoint";
+import { useLongPress } from "../hooks/useLongPress";
+import { useTableSwap } from "../hooks/useTableSwap";
 import { ScreenHeader } from "../components/ScreenHeader";
+import { SwapSheet } from "../components/SwapSheet";
 import {
   fetchAllPermanentTableRecords,
   createPermanentTable,
@@ -10,6 +14,7 @@ import {
 } from "../services/directusTables";
 import { colors, radii } from "../styles/tokens";
 import { S } from "../styles/appStyles";
+import type { TableId } from "../types";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -19,6 +24,14 @@ function chipFontSize(label: string): number {
   if (len <= 6) return 15;
   if (len <= 9) return 12;
   return 10;
+}
+
+function resolveGrid(bp: ReturnType<typeof useBreakpoint>): React.CSSProperties {
+  if (bp.isDesktop) return S.gridDesktop;
+  if (bp.isLaptop) return S.gridLaptop;
+  if (bp.isTabletLandscape) return S.gridTabletLandscape;
+  if (bp.isTablet) return S.gridTablet;
+  return S.grid;
 }
 
 // ── Styles ─────────────────────────────────────────────────────────────────
@@ -32,14 +45,25 @@ const SECTION_LABEL: React.CSSProperties = {
   textTransform: "uppercase",
 };
 
-const GRID: React.CSSProperties = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fill, minmax(76px, 1fr))",
-  gap: 10,
-  padding: "0 16px",
+const ARCHIVE_BTN: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 6,
+  padding: "20px 16px 10px",
+  fontSize: 12,
+  fontWeight: 600,
+  color: colors.subtle,
+  letterSpacing: "0.06em",
+  textTransform: "uppercase",
+  background: "none",
+  border: "none",
+  cursor: "pointer",
+  fontFamily: "inherit",
+  width: "100%",
+  textAlign: "left",
 };
 
-const CHIP_BASE: React.CSSProperties = {
+const CHIP: React.CSSProperties = {
   position: "relative",
   display: "flex",
   flexDirection: "column",
@@ -51,46 +75,22 @@ const CHIP_BASE: React.CSSProperties = {
   userSelect: "none",
   WebkitUserSelect: "none",
   boxSizing: "border-box",
-};
-
-const CHIP: React.CSSProperties = {
-  ...CHIP_BASE,
   background: colors.surface,
   border: `1.5px solid ${colors.border}`,
-  cursor: "text",
-};
-
-const CHIP_EDITING: React.CSSProperties = {
-  ...CHIP_BASE,
-  background: colors.inputBg,
-  border: `1.5px solid ${colors.fg}`,
-};
-
-const CHIP_INPUT: React.CSSProperties = {
-  width: "100%",
-  textAlign: "center",
-  fontFamily: "inherit",
-  color: colors.fg,
-  background: "transparent",
-  border: "none",
-  outline: "none",
-  padding: 0,
-  caretColor: colors.fg,
-};
-
-const CORNER_BTN: React.CSSProperties = {
-  position: "absolute",
-  width: 18,
-  height: 18,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  border: "none",
-  background: "none",
-  padding: 0,
   cursor: "pointer",
-  fontSize: 12,
-  lineHeight: 1,
+};
+
+const SHEET_INPUT: React.CSSProperties = {
+  flex: 1,
+  padding: "9px 12px",
+  fontSize: 15,
+  border: `1.5px solid ${colors.fg}`,
+  borderRadius: radii.sm,
+  outline: "none",
+  fontFamily: "inherit",
+  background: colors.inputBg,
+  color: colors.fg,
+  boxSizing: "border-box" as const,
 };
 
 // ── Component ──────────────────────────────────────────────────────────────
@@ -98,15 +98,16 @@ const CORNER_BTN: React.CSSProperties = {
 export function TableSetupView() {
   const { setView, showToast } = useApp();
   const { reloadTablesConfig } = useTable();
+  const bp = useBreakpoint();
 
   const [records, setRecords] = useState<PermanentTableRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [editLabel, setEditLabel] = useState("");
-  const [newLabel, setNewLabel] = useState("");
   const [saving, setSaving] = useState(false);
+  const [newLabel, setNewLabel] = useState("");
   const [showNewTableInput, setShowNewTableInput] = useState(false);
-  const [swapSourceId, setSwapSourceId] = useState<number | null>(null);
+  const [selectedRecord, setSelectedRecord] = useState<PermanentTableRecord | null>(null);
+  const [sheetLabel, setSheetLabel] = useState("");
+  const [archivedExpanded, setArchivedExpanded] = useState(false);
   const newTableInputRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
@@ -127,34 +128,12 @@ export function TableSetupView() {
   const activeRecords = records
     .filter((r) => r.active !== false)
     .sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0) || a.id - b.id);
-  const inactiveRecords = records.filter((r) => r.active === false);
+  const archivedRecords = records.filter((r) => r.active === false);
 
-  const startEdit = (r: PermanentTableRecord) => {
-    setSwapSourceId(null);
-    setEditingId(r.id);
-    setEditLabel(r.label);
-  };
-
-  const commitEdit = async (r: PermanentTableRecord) => {
-    const trimmed = editLabel.trim();
-    if (!trimmed || trimmed === r.label) {
-      setEditingId(null);
-      return;
-    }
-    setSaving(true);
-    try {
-      await patchPermanentTable(r.id, { label: trimmed });
-      setRecords((prev) => prev.map((t) => t.id === r.id ? { ...t, label: trimmed } : t));
-      reloadTablesConfig();
-    } catch {
-      showToast("Failed to rename table");
-    } finally {
-      setSaving(false);
-      setEditingId(null);
-    }
-  };
-
-  const executeSwap = async (a: PermanentTableRecord, b: PermanentTableRecord) => {
+  const executeSwap = useCallback(async (aId: TableId, bId: TableId) => {
+    const a = records.find((r) => r.id === Number(aId));
+    const b = records.find((r) => r.id === Number(bId));
+    if (!a || !b) return;
     const sortA = a.sort ?? 0;
     const sortB = b.sort ?? 0;
     setRecords((prev) => prev.map((r) => {
@@ -172,48 +151,68 @@ export function TableSetupView() {
       showToast("Failed to reorder — refreshing");
       load();
     }
-  };
+  }, [records, reloadTablesConfig, showToast, load]);
+
+  const swap = useTableSwap(executeSwap);
+
+  const activateSwap = useCallback((id: TableId) => {
+    setSelectedRecord(null);
+    swap.activate(id);
+  }, [swap.activate]);
+
+  const { start: startLongPress, cancel: cancelLongPress, didFireRef: longFiredRef } =
+    useLongPress<TableId>(activateSwap);
+
+  const closeSheet = () => setSelectedRecord(null);
 
   const handleChipClick = (r: PermanentTableRecord) => {
-    if (swapSourceId !== null) {
-      if (swapSourceId === r.id) {
-        setSwapSourceId(null);
-      } else {
-        const source = activeRecords.find((x) => x.id === swapSourceId);
-        if (source) executeSwap(source, r);
-        setSwapSourceId(null);
-      }
+    if (swap.isActive) {
+      if (r.id !== swap.sourceTable) swap.selectTarget(r.id);
       return;
     }
-    startEdit(r);
+    if (longFiredRef.current) return;
+    cancelLongPress();
+    setSelectedRecord(r);
+    setSheetLabel(r.label);
   };
 
-  const handleSwapBtn = (e: React.MouseEvent, r: PermanentTableRecord) => {
-    e.stopPropagation();
-    if (swapSourceId === r.id) {
-      setSwapSourceId(null);
-    } else if (swapSourceId !== null) {
-      const source = activeRecords.find((x) => x.id === swapSourceId);
-      if (source) executeSwap(source, r);
-      setSwapSourceId(null);
-    } else {
-      setEditingId(null);
-      setSwapSourceId(r.id);
+  const handleSheetRename = async () => {
+    if (!selectedRecord) return;
+    const trimmed = sheetLabel.trim();
+    if (!trimmed || trimmed === selectedRecord.label) { closeSheet(); return; }
+    setSaving(true);
+    try {
+      await patchPermanentTable(selectedRecord.id, { label: trimmed });
+      setRecords((prev) => prev.map((t) => t.id === selectedRecord.id ? { ...t, label: trimmed } : t));
+      reloadTablesConfig();
+      closeSheet();
+    } catch {
+      showToast("Failed to rename table");
+    } finally {
+      setSaving(false);
     }
   };
 
-  const deactivate = async (r: PermanentTableRecord) => {
+  const handleSheetArchive = async () => {
+    if (!selectedRecord) return;
+    const r = selectedRecord;
+    closeSheet();
     setSaving(true);
     try {
       await patchPermanentTable(r.id, { active: false });
       setRecords((prev) => prev.map((t) => t.id === r.id ? { ...t, active: false } : t));
       reloadTablesConfig();
-      showToast(`"${r.label}" removed from floor`);
+      showToast(`"${r.label}" archived`);
     } catch {
-      showToast("Failed to remove table");
+      showToast("Failed to archive table");
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleSheetReorder = () => {
+    if (!selectedRecord) return;
+    activateSwap(selectedRecord.id);
   };
 
   const reactivate = async (r: PermanentTableRecord) => {
@@ -222,7 +221,7 @@ export function TableSetupView() {
       await patchPermanentTable(r.id, { active: true });
       setRecords((prev) => prev.map((t) => t.id === r.id ? { ...t, active: true } : t));
       reloadTablesConfig();
-      showToast(`"${r.label}" restored to floor`);
+      showToast(`"${r.label}" restored`);
     } catch {
       showToast("Failed to restore table");
     } finally {
@@ -249,7 +248,13 @@ export function TableSetupView() {
     }
   };
 
-  const isSwapMode = swapSourceId !== null;
+  const gridStyle = resolveGrid(bp);
+  const isSwapMode = swap.isActive;
+  const sourceLabel = activeRecords.find((r) => r.id === swap.sourceTable)?.label;
+  const targetLabel = activeRecords.find((r) => r.id === swap.targetTable)?.label;
+  const swapHintText = swap.targetTable !== null && targetLabel
+    ? `${sourceLabel} ↔ ${targetLabel}`
+    : "Tap another table to swap positions";
 
   return (
     <div style={S.page}>
@@ -263,8 +268,7 @@ export function TableSetupView() {
               style={{ ...S.headerActionBtn, opacity: saving ? 0.5 : 1 }}
               disabled={saving}
               onClick={() => {
-                setSwapSourceId(null);
-                setEditingId(null);
+                setSelectedRecord(null);
                 setNewLabel("");
                 setShowNewTableInput(true);
                 setTimeout(() => newTableInputRef.current?.focus(), 0);
@@ -283,7 +287,6 @@ export function TableSetupView() {
           </div>
         ) : (
           <>
-            {/* Active tables */}
             <div style={SECTION_LABEL}>Active</div>
 
             {showNewTableInput && (
@@ -299,7 +302,7 @@ export function TableSetupView() {
                     if (e.key === "Enter") addTable();
                     if (e.key === "Escape") { setShowNewTableInput(false); setNewLabel(""); }
                   }}
-                  onBlur={() => { if (!newLabel.trim()) { setShowNewTableInput(false); } }}
+                  onBlur={() => { if (!newLabel.trim()) setShowNewTableInput(false); }}
                   disabled={saving}
                   style={{
                     flex: 1,
@@ -354,7 +357,7 @@ export function TableSetupView() {
               </div>
             )}
 
-            <div style={GRID}>
+            <div style={gridStyle}>
               {activeRecords.length === 0 && (
                 <div style={{ gridColumn: "1 / -1", color: colors.subtle, fontSize: 14, paddingBottom: 4 }}>
                   No active tables yet
@@ -362,120 +365,205 @@ export function TableSetupView() {
               )}
 
               {activeRecords.map((r) => {
-                const isSource = swapSourceId === r.id;
-                const isEditing = editingId === r.id;
+                const isSource = swap.sourceTable === r.id;
+                const isTarget = swap.targetTable === r.id;
 
                 return (
                   <div
                     key={r.id}
                     style={{
-                      ...(isEditing ? CHIP_EDITING : CHIP),
+                      ...CHIP,
                       ...(isSource && {
                         background: colors.infoBg,
                         border: `1.5px solid ${colors.info}`,
                       }),
-                      ...(isSwapMode && !isSource && !isEditing && {
-                        cursor: "pointer",
+                      ...(isTarget && {
+                        background: colors.successBg,
+                        border: `1.5px solid ${colors.success}`,
                       }),
+                      ...(isSwapMode && !isSource && !isTarget && { opacity: 0.6 }),
                     }}
-                    onClick={() => { if (!isEditing) handleChipClick(r); }}
+                    onPointerDown={!isSwapMode ? () => startLongPress(r.id) : undefined}
+                    onPointerUp={cancelLongPress}
+                    onPointerLeave={cancelLongPress}
+                    onPointerCancel={cancelLongPress}
+                    onClick={() => handleChipClick(r)}
                   >
-                    {isEditing ? (
-                      <input
-                        autoFocus
-                        maxLength={10}
-                        style={{ ...CHIP_INPUT, fontSize: 15, fontWeight: 600 }}
-                        value={editLabel}
-                        onChange={(e) => setEditLabel(e.target.value)}
-                        onBlur={() => commitEdit(r)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") commitEdit(r);
-                          if (e.key === "Escape") setEditingId(null);
-                        }}
-                      />
-                    ) : (
-                      <span style={{
-                        fontSize: chipFontSize(r.label),
-                        fontWeight: 700,
-                        color: isSource ? colors.info : colors.fg,
-                        lineHeight: 1.1,
-                        textAlign: "center",
-                        wordBreak: "break-all",
-                      }}>
-                        {r.label}
-                      </span>
-                    )}
-
-                    {/* ✕ deactivate — hidden in swap mode and while editing */}
-                    {!isEditing && !isSwapMode && (
-                      <button
-                        style={{ ...CORNER_BTN, top: 3, right: 4, color: colors.subtle }}
-                        disabled={saving}
-                        onClick={(e) => { e.stopPropagation(); deactivate(r); }}
-                        aria-label={`Remove ${r.label}`}
-                      >
-                        ✕
-                      </button>
-                    )}
-
-                    {/* ⇅ reorder — hidden while editing */}
-                    {!isEditing && (
-                      <button
-                        style={{
-                          ...CORNER_BTN,
-                          bottom: 3,
-                          left: 4,
-                          color: isSource ? colors.info : colors.subtle,
-                          fontSize: 13,
-                        }}
-                        onClick={(e) => handleSwapBtn(e, r)}
-                        aria-label={isSource ? "Cancel reorder" : "Reorder"}
-                      >
-                        ⇅
-                      </button>
-                    )}
+                    <span style={{
+                      fontSize: chipFontSize(r.label),
+                      fontWeight: 700,
+                      color: isSource ? colors.info : isTarget ? colors.success : colors.fg,
+                      lineHeight: 1.1,
+                      textAlign: "center",
+                      wordBreak: "break-all",
+                    }}>
+                      {r.label}
+                    </span>
                   </div>
                 );
               })}
-
             </div>
 
             <div style={{ padding: "10px 16px 0", fontSize: 12, color: isSwapMode ? colors.info : colors.subtle }}>
-              {isSwapMode
-                ? "Tap another table to swap positions · tap ⇅ again to cancel"
-                : "Tap to rename · ⇅ to reorder · ✕ to remove"}
+              {isSwapMode ? "Tap another table to swap positions" : "Tap to edit · Hold to reorder"}
             </div>
 
-            {/* Inactive tables */}
-            {inactiveRecords.length > 0 && (
+            {/* Archived section */}
+            {archivedRecords.length > 0 && (
               <>
-                <div style={SECTION_LABEL}>Inactive</div>
-                <div style={GRID}>
-                  {inactiveRecords.map((r) => (
-                    <div
-                      key={r.id}
-                      style={{ ...CHIP, opacity: 0.5, cursor: "pointer" }}
-                      onClick={() => reactivate(r)}
-                    >
-                      <span style={{
-                        fontSize: chipFontSize(r.label),
-                        fontWeight: 700,
-                        color: colors.fg,
-                        lineHeight: 1.1,
-                        textAlign: "center",
-                        wordBreak: "break-all",
-                      }}>
-                        {r.label}
-                      </span>
-                      <span style={{ fontSize: 10, color: colors.subtle, marginTop: 4 }}>restore</span>
-                    </div>
-                  ))}
-                </div>
+                <button
+                  style={ARCHIVE_BTN}
+                  onClick={() => setArchivedExpanded((v) => !v)}
+                  aria-expanded={archivedExpanded}
+                >
+                  <span style={{
+                    display: "inline-block",
+                    transform: archivedExpanded ? "rotate(90deg)" : "rotate(0deg)",
+                    transition: "transform 0.2s ease",
+                    fontSize: 14,
+                    lineHeight: 1,
+                  }}>›</span>
+                  Archived
+                  <span style={{ fontWeight: 400, opacity: 0.7 }}>({archivedRecords.length})</span>
+                </button>
+
+                {archivedExpanded && (
+                  <div style={gridStyle}>
+                    {archivedRecords.map((r) => (
+                      <div
+                        key={r.id}
+                        style={{ ...CHIP, opacity: 0.5 }}
+                        onClick={() => reactivate(r)}
+                      >
+                        <span style={{
+                          fontSize: chipFontSize(r.label),
+                          fontWeight: 700,
+                          color: colors.fg,
+                          lineHeight: 1.1,
+                          textAlign: "center",
+                          wordBreak: "break-all",
+                        }}>
+                          {r.label}
+                        </span>
+                        <span style={{ fontSize: 10, color: colors.subtle, marginTop: 4 }}>restore</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </>
             )}
           </>
         )}
       </div>
+
+      {/* Table action bottom sheet */}
+      {selectedRecord && (
+        <>
+          <div style={S.variantSheetOverlay} onClick={closeSheet} />
+          <div style={S.variantSheet}>
+            <div style={S.variantSheetHeader}>{selectedRecord.label}</div>
+
+            <div style={{ marginBottom: 16 }}>
+              <div style={{
+                fontSize: 12,
+                fontWeight: 600,
+                color: colors.subtle,
+                marginBottom: 8,
+                letterSpacing: "0.04em",
+                textTransform: "uppercase" as const,
+              }}>
+                Rename
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <input
+                  autoFocus
+                  type="text"
+                  maxLength={10}
+                  value={sheetLabel}
+                  onChange={(e) => setSheetLabel(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleSheetRename();
+                    if (e.key === "Escape") closeSheet();
+                  }}
+                  disabled={saving}
+                  style={SHEET_INPUT}
+                />
+                <button
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={handleSheetRename}
+                  disabled={saving || !sheetLabel.trim()}
+                  style={{
+                    padding: "9px 16px",
+                    fontSize: 14,
+                    fontWeight: 600,
+                    background: colors.fg,
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: radii.sm,
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                    opacity: !sheetLabel.trim() ? 0.5 : 1,
+                    flexShrink: 0,
+                  }}
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", gap: 10 }}>
+              <button
+                onClick={handleSheetArchive}
+                disabled={saving}
+                style={{
+                  flex: 1,
+                  padding: "13px 0",
+                  borderRadius: radii.md,
+                  border: `1.5px solid ${colors.border}`,
+                  background: colors.surface,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: colors.danger,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                }}
+              >
+                Archive
+              </button>
+              <button
+                onClick={handleSheetReorder}
+                disabled={saving}
+                style={{
+                  flex: 1,
+                  padding: "13px 0",
+                  borderRadius: radii.md,
+                  border: `1.5px solid ${colors.border}`,
+                  background: colors.surface,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: colors.fg,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                }}
+              >
+                Reorder
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Swap sheet */}
+      {isSwapMode && (
+        <SwapSheet
+          sourceTable={swap.sourceTable!}
+          targetTable={swap.targetTable}
+          headerText={sourceLabel ? `Reorder: ${sourceLabel}` : undefined}
+          hintText={swapHintText}
+          onConfirm={swap.confirm}
+          onCancel={swap.cancel}
+        />
+      )}
     </div>
   );
 }

@@ -7,6 +7,8 @@ interface SwapSheetProps {
   targetTable: TableId | null;
   onConfirm: () => void;
   onCancel: () => void;
+  headerText?: string;
+  hintText?: string;
 }
 
 const cancelStyle: CSSProperties = {
@@ -21,14 +23,14 @@ const cancelStyle: CSSProperties = {
   cursor: "pointer",
 };
 
-export function SwapSheet({ sourceTable, targetTable, onConfirm, onCancel }: SwapSheetProps) {
+export function SwapSheet({ sourceTable, targetTable, onConfirm, onCancel, headerText, hintText }: SwapSheetProps) {
   const hasTarget = targetTable !== null;
 
   return (
     <div style={S.variantSheet}>
-      <div style={S.variantSheetHeader}>Move Table {sourceTable}</div>
+      <div style={S.variantSheetHeader}>{headerText ?? `Move Table ${sourceTable}`}</div>
       <div style={{ fontSize: 14, color: "#888", textAlign: "center", marginBottom: 20 }}>
-        {hasTarget ? `Table ${sourceTable} → Table ${targetTable}` : "Tap a table to select destination"}
+        {hintText ?? (hasTarget ? `Table ${sourceTable} → Table ${targetTable}` : "Tap a table to select destination")}
       </div>
       <div style={{ display: "flex", gap: 10 }}>
         <button style={cancelStyle} onClick={onCancel}>
