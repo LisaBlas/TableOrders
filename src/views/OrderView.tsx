@@ -120,8 +120,9 @@ export function OrderView() {
           app.setView("tables");
         }}
         right={
-          <button style={S.ticketBtn} onClick={() => app.setOrderViewTab('bill')} aria-label="Open bill">
-            <BillIcon size={22} />
+          <button style={{ ...S.ticketBtn, display: "flex", alignItems: "center", gap: 4, width: "auto", paddingLeft: 8, paddingRight: 10 }} onClick={() => app.setOrderViewTab('bill')} aria-label="Open bill">
+            <BillIcon size={16} />
+            <span style={{ fontSize: 13, fontWeight: 600, fontFamily: "inherit" }}>Bill</span>
           </button>
         }
       />
