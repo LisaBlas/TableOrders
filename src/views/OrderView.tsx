@@ -126,6 +126,20 @@ export function OrderView() {
         }
       />
 
+      <div style={S.searchBar}>
+        <button style={S.customAddBtn} onClick={() => setShowCustomModal(true)} title="Add custom item">+</button>
+        <input
+          type="text"
+          placeholder="Search menu items..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          style={S.searchInputWithBtn}
+        />
+        {searchQuery && (
+          <button style={S.searchClear} onClick={() => setSearchQuery("")}>✕</button>
+        )}
+      </div>
+
       {/* Category Tabs */}
       <div style={S.tabs}>
         <div style={S.tabsContainer}>
@@ -139,20 +153,6 @@ export function OrderView() {
             </button>
           ))}
         </div>
-      </div>
-
-      <div style={S.searchBar}>
-        <button style={S.customAddBtn} onClick={() => setShowCustomModal(true)} title="Add custom item">+</button>
-        <input
-          type="text"
-          placeholder="Search menu items..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          style={S.searchInputWithBtn}
-        />
-        {searchQuery && (
-          <button style={S.searchClear} onClick={() => setSearchQuery("")}>✕</button>
-        )}
       </div>
 
       {searchQuery ? (
