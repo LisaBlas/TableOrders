@@ -2026,13 +2026,14 @@ export const S = {
   // Subcategory divider (in grid)
   subcategoryDivider: {
     gridColumn: "1 / -1",
-    borderTop: `1px solid ${colors.border}`,
-    paddingTop: 12,
+    marginTop: 28,
     paddingBottom: 8,
-    fontSize: 14,
-    fontWeight: 600,
+    borderBottom: `1px solid ${colors.border}`,
+    fontSize: 13,
+    fontWeight: 700,
     color: colors.subtle,
-    textAlign: "center",
+    textAlign: "left",
+    letterSpacing: "0.08em",
   },
 
   // Variant bottom sheet

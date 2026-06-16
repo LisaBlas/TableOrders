@@ -46,7 +46,10 @@ export function MenuGrid({
     <div style={menuGridStyle}>
       {orderedEntries.map(([subcategoryId, items]) => {
         const subcategoryObj = subcategoryConfig.find((subcategory) => subcategory.id === subcategoryId);
-        const subcategoryLabel = subcategoryObj?.label || subcategoryId;
+        const subcategoryLabel = (subcategoryObj?.label || subcategoryId)
+          .replace(/\p{Extended_Pictographic}/gu, "")
+          .trim()
+          .toUpperCase();
 
         return (
           <div key={subcategoryId} style={{ gridColumn: "1 / -1", display: "contents" }}>
