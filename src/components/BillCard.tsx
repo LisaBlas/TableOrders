@@ -66,9 +66,9 @@ export function BillCard({
       onClick={(e) => { e.stopPropagation(); isFullyMarked ? onRestoreAll() : onMarkAll(); }}
       title={isFullyMarked ? "Restore from POS" : "Mark all as in POS"}
       style={{
-        width: 36,
-        height: 36,
-        borderRadius: radii.round,
+        width: 28,
+        height: 28,
+        borderRadius: radii.sm,
         border: `1.5px solid ${isFullyMarked ? colors.info : isPartiallyMarked ? colors.info : colors.border}`,
         background: isFullyMarked ? colors.info : isPartiallyMarked ? colors.infoBg : "transparent",
         color: isFullyMarked ? colors.surface : isPartiallyMarked ? colors.info : colors.faint,
@@ -186,29 +186,6 @@ export function BillCard({
           </div>
         ) : (
           <div style={{ marginTop: 10 }}>
-            {/* Mark all row — only when there are active items to mark */}
-            {activeItems.length > 0 && (
-              <button
-                onClick={(e) => { e.stopPropagation(); onMarkAll(); }}
-                style={{
-                  width: "100%",
-                  padding: "6px 0",
-                  fontSize: 12,
-                  fontWeight: 600,
-                  color: colors.subtle,
-                  background: "transparent",
-                  border: "none",
-                  borderBottom: `1px solid ${colors.border}`,
-                  cursor: "pointer",
-                  textAlign: "left" as const,
-                  fontFamily: "inherit",
-                  marginBottom: 6,
-                }}
-              >
-                → Mark all in POS
-              </button>
-            )}
-
             <div style={S.billItemsList}>
               {/* Active items */}
               {activeItems.map((item, idx) => (
