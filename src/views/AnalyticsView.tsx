@@ -13,7 +13,7 @@ import { RevenueTrendChart } from "../components/analytics/RevenueTrendChart";
 import { CategoryBreakdown } from "../components/analytics/CategoryBreakdown";
 import { TopItemsTable } from "../components/analytics/TopItemsTable";
 import { WeekdayPattern } from "../components/analytics/WeekdayPattern";
-import { InsightStrip } from "../components/analytics/InsightStrip";
+
 import { PeakHoursChart } from "../components/analytics/PeakHoursChart";
 import { TopTablesTable } from "../components/analytics/TopTablesTable";
 import { fetchBillsByDateRange, todayBusinessDate } from "../services/directusBills";
@@ -101,14 +101,6 @@ export function AnalyticsView() {
     period === "thisMonth" ? "This month" :
     fmtRange(customStart, customEnd);
 
-  const rangeContextLine = (
-    <div style={{ fontSize: 12, color: colors.muted, padding: "8px 12px 10px" }}>
-      {fmtRange(current.start, current.end)}
-      <span style={{ margin: "0 5px" }}>·</span>
-      vs {fmtRange(prior.start, prior.end)}
-    </div>
-  );
-
   const dashboardSummary = (
     <div
       style={{
@@ -118,12 +110,6 @@ export function AnalyticsView() {
         overflow: "hidden",
       }}
     >
-      {rangeContextLine}
-
-      {!loading && currentBills.length > 0 && (
-        <InsightStrip kpis={kpisWithDeltas} days={dayTimeline} categories={categories} embedded />
-      )}
-
       {loading ? (
         <div style={{ padding: 12 }}>
           <SkeletonBlock height={96} />
