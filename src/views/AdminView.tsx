@@ -914,49 +914,6 @@ function FilterPills<T extends string>({
   );
 }
 
-function FilterBar({
-  query,
-  onQuery,
-  onAddItem,
-}: {
-  query: string;
-  onQuery: (q: string) => void;
-  onAddItem: () => void;
-}) {
-  return (
-    <div
-      style={{
-        padding: "10px 16px",
-        borderBottom: `1px solid ${colors.border}`,
-        background: colors.surface,
-        display: "flex",
-        gap: 8,
-        alignItems: "center",
-        flexShrink: 0,
-      }}
-    >
-      <div style={{ position: "relative", flex: 1, minWidth: 0 }}>
-        <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: colors.muted, fontSize: 14, pointerEvents: "none", lineHeight: 1 }}>⌕</span>
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => onQuery(e.target.value)}
-          placeholder="Search items…"
-          style={{ ...inputStyle, paddingLeft: 28, paddingTop: 7, paddingBottom: 7, fontSize: 13 }}
-        />
-        {query && (
-          <button onClick={() => onQuery("")} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: colors.muted, fontSize: 16, lineHeight: 1, padding: 0 }}>×</button>
-        )}
-      </div>
-      <button
-        onClick={onAddItem}
-        style={{ padding: "7px 14px", fontSize: 13, fontWeight: 700, background: colors.fg, color: "#fff", border: "none", borderRadius: radii.md, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap", flexShrink: 0 }}
-      >
-        + Add item
-      </button>
-    </div>
-  );
-}
 
 // ── SortableHeader + MenuTable ─────────────────────────────────────────────
 
@@ -1724,17 +1681,29 @@ export function AdminView() {
         style={{ zIndex: 10 }}
       />
 
-      {/* ── Filter bar ── */}
+      {/* ── Search bar ── */}
       {!loading && !loadError && (
-        <FilterBar
-          query={query}
-          onQuery={setQuery}
-          onAddItem={() => {
-            const activeSec = mobileSections.find((s) => s.name === activeCategory);
-            setNewItemCategoryId(isTableView ? null : (activeSec?.catId ?? null));
-            setShowNewItemModal(true);
-          }}
-        />
+        <div style={S.searchBar}>
+          <button
+            style={S.customAddBtn}
+            onClick={() => {
+              const activeSec = mobileSections.find((s) => s.name === activeCategory);
+              setNewItemCategoryId(isTableView ? null : (activeSec?.catId ?? null));
+              setShowNewItemModal(true);
+            }}
+            title="Add item"
+          >+</button>
+          <input
+            type="text"
+            placeholder="Search items…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            style={S.searchInputWithBtn}
+          />
+          {query && (
+            <button style={S.searchClear} onClick={() => setQuery("")}>✕</button>
+          )}
+        </div>
       )}
 
       {/* ── Loading / Error ── */}
