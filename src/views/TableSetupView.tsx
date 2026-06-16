@@ -476,7 +476,6 @@ export function TableSetupView() {
               </div>
               <div style={{ display: "flex", gap: 8 }}>
                 <input
-                  autoFocus
                   type="text"
                   maxLength={10}
                   value={sheetLabel}
