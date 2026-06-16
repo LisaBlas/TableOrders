@@ -1688,11 +1688,12 @@ export function AdminView() {
             {!loading && !loadError && (
               <div style={{ position: "relative" }}>
                 <button
-                  style={{ ...S.ticketBtn, color: hasActiveFilters ? colors.info : undefined }}
+                  style={{ ...S.ticketBtn, display: "flex", alignItems: "center", gap: 4, width: "auto", paddingLeft: 8, paddingRight: 10, color: hasActiveFilters ? colors.info : undefined }}
                   onClick={() => setShowFilterSheet((v) => !v)}
                   aria-label="Filter menu items"
                 >
-                  <FilterIcon size={20} />
+                  <FilterIcon size={16} />
+                  <span style={{ fontSize: 13, fontWeight: 600, fontFamily: "inherit" }}>Filters</span>
                 </button>
                 {showFilterSheet && isTableView && (
                   <>
@@ -1718,7 +1719,6 @@ export function AdminView() {
                 )}
               </div>
             )}
-            <span style={{ fontSize: 12, color: colors.muted, fontWeight: 500 }}>Admin</span>
           </div>
         }
         style={{ zIndex: 10 }}
