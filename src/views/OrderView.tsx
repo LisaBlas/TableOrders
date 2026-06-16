@@ -14,7 +14,7 @@ import { OrderBar } from "../components/OrderBar";
 import { BillView } from "../components/BillView";
 import { CustomItemModal } from "../components/CustomItemModal";
 import { ScreenHeader } from "../components/ScreenHeader";
-import { BillIcon } from "../components/icons";
+import { BillIcon, FilterIcon } from "../components/icons";
 import type { MenuCategory, MenuItem, MenuItemVariant } from "../types";
 
 export function OrderView() {
@@ -31,6 +31,8 @@ export function OrderView() {
     Food: FOOD_SUBCATEGORIES, Drinks: DRINKS_SUBCATEGORIES, Wines: BOTTLES_SUBCATEGORIES, Shop: SHOP_SUBCATEGORIES,
   };
   const subcategoryConfig = SUBCATEGORY_CONFIG[activeCategory] ?? [];
+  const [activeSubcategory, setActiveSubcategory] = useState<string | null>(null);
+  const [showFilterSheet, setShowFilterSheet] = useState(false);
   const [orderBarExpanded, setOrderBarExpanded] = useState(false);
   const [showCustomModal, setShowCustomModal] = useState(false);
   const [showVariantSheet, setShowVariantSheet] = useState(false);
@@ -101,8 +103,8 @@ export function OrderView() {
     const dx = e.changedTouches[0].clientX - touchStartX.current;
     const dy = e.changedTouches[0].clientY - touchStartY.current;
     if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy)) return;
-    if (dx < 0 && catIndex < categories.length - 1) setActiveCategory(categories[catIndex + 1]);
-    else if (dx > 0 && catIndex > 0) setActiveCategory(categories[catIndex - 1]);
+    if (dx < 0 && catIndex < categories.length - 1) { setActiveCategory(categories[catIndex + 1]); setActiveSubcategory(null); }
+    else if (dx > 0 && catIndex > 0) { setActiveCategory(categories[catIndex - 1]); setActiveSubcategory(null); }
   };
 
   // Show BillView if active
@@ -120,9 +122,18 @@ export function OrderView() {
           app.setView("tables");
         }}
         right={
-          <button style={S.ticketBtn} onClick={() => app.setOrderViewTab('bill')} aria-label="Open bill">
-            <BillIcon size={22} />
-          </button>
+          <div style={{ display: "flex", gap: 2, alignItems: "center" }}>
+            <button
+              style={{ ...S.ticketBtn, color: activeSubcategory ? "var(--c-info)" : undefined }}
+              onClick={() => setShowFilterSheet(true)}
+              aria-label="Filter menu items"
+            >
+              <FilterIcon size={20} />
+            </button>
+            <button style={S.ticketBtn} onClick={() => app.setOrderViewTab('bill')} aria-label="Open bill">
+              <BillIcon size={22} />
+            </button>
+          </div>
         }
       />
 
@@ -133,7 +144,7 @@ export function OrderView() {
             <button
               key={category}
               style={{ ...S.tab, ...(activeCategory === category ? S.tabActive : {}) }}
-              onClick={() => setActiveCategory(category)}
+              onClick={() => { setActiveCategory(category); setActiveSubcategory(null); }}
             >
               {category}
             </button>
@@ -179,27 +190,33 @@ export function OrderView() {
             transform: `translateX(${-catIndex * paneWidthPct}%)`,
             transition: "transform 0.3s ease-out",
           }}>
-            {categories.map((cat) => (
-              <div
-                key={cat}
-                style={{
-                  ...S.orderContent,
-                  width: `${paneWidthPct}%`,
-                  height: "100%",
-                  flex: "none",
-                  paddingBottom: (unsent.length > 0 || batches.length > 0) ? 220 : 36,
-                }}
-              >
-                <MenuGrid
-                  filteredItems={categoryItems[cat] ?? []}
-                  subcategoryConfig={SUBCATEGORY_CONFIG[cat] ?? []}
-                  searchQuery=""
-                  unsent={unsent}
-                  onTap={handleCardTap}
-                  onLongPress={handleCardLongPress}
-                />
-              </div>
-            ))}
+            {categories.map((cat) => {
+              const rawItems = categoryItems[cat] ?? [];
+              const paneItems = (activeSubcategory && cat === activeCategory)
+                ? rawItems.filter((item) => item.subcategory === activeSubcategory)
+                : rawItems;
+              return (
+                <div
+                  key={cat}
+                  style={{
+                    ...S.orderContent,
+                    width: `${paneWidthPct}%`,
+                    height: "100%",
+                    flex: "none",
+                    paddingBottom: (unsent.length > 0 || batches.length > 0) ? 220 : 36,
+                  }}
+                >
+                  <MenuGrid
+                    filteredItems={paneItems}
+                    subcategoryConfig={SUBCATEGORY_CONFIG[cat] ?? []}
+                    searchQuery=""
+                    unsent={unsent}
+                    onTap={handleCardTap}
+                    onLongPress={handleCardLongPress}
+                  />
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -233,6 +250,53 @@ export function OrderView() {
           }}
           variants={selectedItemForVariant.variants!}
         />
+      )}
+
+      {/* Filter Bottom Sheet */}
+      {showFilterSheet && (
+        <>
+          <div style={S.variantSheetOverlay} onClick={() => setShowFilterSheet(false)} />
+          <div style={S.variantSheet}>
+            <div style={S.variantSheetHeader}>Filter: {activeCategory}</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+              <button
+                style={{
+                  padding: "10px 18px",
+                  borderRadius: 20,
+                  border: `1.5px solid ${activeSubcategory === null ? "var(--c-fg)" : "var(--c-border)"}`,
+                  background: activeSubcategory === null ? "var(--c-fg)" : "var(--c-bg)",
+                  color: activeSubcategory === null ? "var(--c-surface)" : "var(--c-subtle)",
+                  fontWeight: 600,
+                  fontSize: 14,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                }}
+                onClick={() => { setActiveSubcategory(null); setShowFilterSheet(false); }}
+              >
+                All
+              </button>
+              {subcategoryConfig.map((sub) => (
+                <button
+                  key={sub.id}
+                  style={{
+                    padding: "10px 18px",
+                    borderRadius: 20,
+                    border: `1.5px solid ${activeSubcategory === sub.id ? "var(--c-fg)" : "var(--c-border)"}`,
+                    background: activeSubcategory === sub.id ? "var(--c-fg)" : "var(--c-bg)",
+                    color: activeSubcategory === sub.id ? "var(--c-surface)" : "var(--c-subtle)",
+                    fontWeight: 600,
+                    fontSize: 14,
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                  }}
+                  onClick={() => { setActiveSubcategory(sub.id); setShowFilterSheet(false); }}
+                >
+                  {sub.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
       )}
 
       {/* Note Bottom Sheet */}

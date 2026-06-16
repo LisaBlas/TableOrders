@@ -281,3 +281,9 @@ export const MoonIcon: React.FC<IconProps> = ({ size = 20, color = 'currentColor
     <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
   </svg>
 );
+
+export const FilterIcon: React.FC<IconProps> = ({ size = 20, color = 'currentColor', style }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={style}>
+    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+  </svg>
+);
