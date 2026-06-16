@@ -2026,9 +2026,8 @@ export const S = {
   // Subcategory divider (in grid)
   subcategoryDivider: {
     gridColumn: "1 / -1",
-    marginTop: 12,
-    padding: "8px 8px 6px",
-    background: colors.surface,
+    marginTop: 8,
+    padding: "6px 4px 4px",
     borderTop: `1px solid ${colors.border}`,
     fontSize: 12,
     fontWeight: 500,
