@@ -433,6 +433,39 @@ export function computeTipVoucher(bills: Bill[]): TipVoucherData {
   };
 }
 
+// ── Zero-sales items ─────────────────────────────────────────────────────────
+
+export interface DeadItemData {
+  name: string;
+  category: string;
+}
+
+export function getZeroSalesItems(
+  bills: Bill[],
+  menu: Record<string, { name: string; variants?: { label: string }[] }[]>,
+): DeadItemData[] {
+  const soldNames = new Set<string>();
+  for (const bill of bills) {
+    for (const item of bill.items) {
+      soldNames.add(item.name);
+    }
+  }
+
+  const dead: DeadItemData[] = [];
+  for (const [category, items] of Object.entries(menu)) {
+    for (const item of items) {
+      if (item.variants && item.variants.length > 0) {
+        const anySold = item.variants.some((v) => soldNames.has(`${item.name} (${v.label})`));
+        if (!anySold) dead.push({ name: item.name, category });
+      } else {
+        if (!soldNames.has(item.name)) dead.push({ name: item.name, category });
+      }
+    }
+  }
+
+  return dead.sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name));
+}
+
 // ── Formatting helpers ───────────────────────────────────────────────────────
 
 export function fmtEur(value: number): string {

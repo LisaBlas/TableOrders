@@ -17,7 +17,9 @@ import { WeekdayPattern } from "../components/analytics/WeekdayPattern";
 import { PeakHoursChart } from "../components/analytics/PeakHoursChart";
 import { TopTablesTable } from "../components/analytics/TopTablesTable";
 import { TipsVouchersCard } from "../components/analytics/TipsVouchersCard";
+import { ZeroSalesCard } from "../components/analytics/ZeroSalesCard";
 import { fetchBillsByDateRange, todayBusinessDate } from "../services/directusBills";
+import { useMenu } from "../contexts/MenuContext";
 import {
   type AnalyticsPeriod,
   addDays,
@@ -32,6 +34,7 @@ import {
   groupByHour,
   groupByTable,
   computeTipVoucher,
+  getZeroSalesItems,
 } from "../utils/analytics";
 
 function SkeletonBlock({ height = 80 }: { height?: number }) {
@@ -50,6 +53,7 @@ function SkeletonBlock({ height = 80 }: { height?: number }) {
 export function AnalyticsView() {
   const { setView } = useApp();
   const { resolveTableDisplayId } = useTable();
+  const { menu } = useMenu();
   const { isTablet, isTabletLandscape, isDesktop } = useBreakpoint();
   const isWide = isDesktop || isTabletLandscape;
   const kpiWide = isTablet || isWide;
@@ -89,6 +93,7 @@ export function AnalyticsView() {
   const peakHours = groupByHour(currentBills);
   const topTables = groupByTable(currentBills);
   const tipVoucher = computeTipVoucher(currentBills);
+  const zeroSalesItems = getZeroSalesItems(currentBills, menu);
 
   const isEmpty = !loading && currentBills.length === 0;
 
@@ -271,6 +276,7 @@ export function AnalyticsView() {
               <TopTablesTable tables={topTables} resolveLabel={resolveTableDisplayId} />
             </div>
             <TipsVouchersCard data={tipVoucher} />
+            <ZeroSalesCard items={zeroSalesItems} />
           </div>
         ) : (
           // ── Mobile single-column stack ──
@@ -283,6 +289,7 @@ export function AnalyticsView() {
             <PeakHoursChart hours={peakHours} />
             <TopTablesTable tables={topTables} resolveLabel={resolveTableDisplayId} />
             <TipsVouchersCard data={tipVoucher} />
+            <ZeroSalesCard items={zeroSalesItems} />
           </div>
         )
       )}
