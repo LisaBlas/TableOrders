@@ -11,11 +11,29 @@ const PAGE_SIZE = 5;
 export function TopItemsTable({ items }: Props) {
   const [sortBy, setSortBy] = useState<"revenue" | "qty">("revenue");
   const [expanded, setExpanded] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
-  const sorted = [...items].sort((a, b) =>
+  const categories = Array.from(
+    items.reduce((map, item) => {
+      map.set(item.category, (map.get(item.category) ?? 0) + item.revenue);
+      return map;
+    }, new Map<string, number>()),
+  )
+    .sort((a, b) => b[1] - a[1])
+    .map(([cat]) => cat);
+
+  const filtered =
+    selectedCategory === "all" ? items : items.filter((i) => i.category === selectedCategory);
+
+  const sorted = [...filtered].sort((a, b) =>
     sortBy === "revenue" ? b.revenue - a.revenue : b.qty - a.qty,
   );
   const visible = expanded ? sorted : sorted.slice(0, PAGE_SIZE);
+
+  function selectCategory(cat: string) {
+    setSelectedCategory(cat);
+    setExpanded(false);
+  }
 
   return (
     <div
@@ -26,7 +44,7 @@ export function TopItemsTable({ items }: Props) {
         padding: "16px",
       }}
     >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: categories.length > 0 ? 10 : 14 }}>
         <span style={{ fontSize: 13, fontWeight: 600 }}>Top Items</span>
         <div style={{ display: "flex", gap: 6 }}>
           {(["revenue", "qty"] as const).map((mode) => (
@@ -50,6 +68,44 @@ export function TopItemsTable({ items }: Props) {
           ))}
         </div>
       </div>
+
+      {categories.length > 0 && (
+        <div
+          style={{
+            display: "flex",
+            gap: 6,
+            overflowX: "auto",
+            marginBottom: 14,
+            paddingBottom: 2,
+            scrollbarWidth: "none",
+          }}
+        >
+          {(["all", ...categories] as const).map((cat) => {
+            const active = selectedCategory === cat;
+            return (
+              <button
+                key={cat}
+                onClick={() => selectCategory(cat)}
+                style={{
+                  padding: "3px 10px",
+                  borderRadius: radii.pill,
+                  border: `1px solid ${active ? colors.fg : colors.border}`,
+                  background: active ? colors.fg : "none",
+                  color: active ? colors.surface : colors.muted,
+                  fontSize: 11,
+                  fontWeight: active ? 600 : 400,
+                  fontFamily: "inherit",
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                  flexShrink: 0,
+                }}
+              >
+                {cat === "all" ? "All" : cat}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {sorted.length === 0 ? (
         <p style={{ fontSize: 13, color: colors.muted, margin: 0 }}>No items in this period.</p>
