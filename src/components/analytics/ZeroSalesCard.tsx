@@ -40,34 +40,18 @@ export function ZeroSalesCard({ items }: Props) {
         padding: "16px",
       }}
     >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-        <span style={{ fontSize: 13, fontWeight: 600 }}>No Sales This Period</span>
-        <span
-          style={{
-            fontSize: 11,
-            fontWeight: 600,
-            color: colors.muted,
-            background: colors.inputBg,
-            border: `1px solid ${colors.border}`,
-            borderRadius: radii.pill,
-            padding: "2px 8px",
-          }}
-        >
-          {filtered.length} item{filtered.length !== 1 ? "s" : ""}
-        </span>
-      </div>
-
-      {categories.length > 0 && (
-        <div
-          style={{
-            display: "flex",
-            gap: 6,
-            overflowX: "auto",
-            marginBottom: 14,
-            paddingBottom: 2,
-            scrollbarWidth: "none",
-          }}
-        >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "stretch",
+          borderBottom: `1px solid ${colors.border}`,
+          marginBottom: 14,
+          marginLeft: -16,
+          marginRight: -16,
+        }}
+      >
+        {/* Category tabs — scrollable */}
+        <div style={{ display: "flex", flex: 1, overflowX: "auto", scrollbarWidth: "none", paddingLeft: 16 }}>
           {(["all", ...categories] as const).map((cat) => {
             const active = selectedCategory === cat;
             return (
@@ -75,13 +59,14 @@ export function ZeroSalesCard({ items }: Props) {
                 key={cat}
                 onClick={() => selectCategory(cat)}
                 style={{
-                  padding: "3px 10px",
-                  borderRadius: radii.pill,
-                  border: `1px solid ${active ? colors.fg : colors.border}`,
-                  background: active ? colors.fg : "none",
-                  color: active ? colors.surface : colors.muted,
-                  fontSize: 11,
+                  padding: "9px 10px",
+                  background: "none",
+                  border: "none",
+                  borderBottom: `2px solid ${active ? colors.fg : "transparent"}`,
+                  marginBottom: -1,
+                  fontSize: 13,
                   fontWeight: active ? 600 : 400,
+                  color: active ? colors.fg : colors.muted,
                   fontFamily: "inherit",
                   cursor: "pointer",
                   whiteSpace: "nowrap",
@@ -93,7 +78,32 @@ export function ZeroSalesCard({ items }: Props) {
             );
           })}
         </div>
-      )}
+
+        {/* Count badge — pinned right */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            padding: "0 16px",
+            borderLeft: `1px solid ${colors.border}`,
+            flexShrink: 0,
+          }}
+        >
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              color: colors.muted,
+              background: colors.inputBg,
+              border: `1px solid ${colors.border}`,
+              borderRadius: radii.pill,
+              padding: "2px 8px",
+            }}
+          >
+            {filtered.length} item{filtered.length !== 1 ? "s" : ""}
+          </span>
+        </div>
+      </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
         {visible.map((item) => (
