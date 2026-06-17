@@ -87,7 +87,7 @@ export function DailySalesView() {
     const knownCats = new Set(CATEGORY_ORDER as readonly string[]);
     const categoryGroups = CATEGORY_ORDER.map(cat => ({
       label: cat,
-      items: withPosId.filter(item => item.category === cat).sort(sortFn),
+      items: [...withPosId, ...missingPosId].filter(item => item.category === cat).sort(sortFn),
     }));
     const allUncategorised = [
       ...uncategorised,
