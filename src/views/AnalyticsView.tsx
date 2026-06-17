@@ -267,7 +267,7 @@ export function AnalyticsView() {
           <div
             style={!isWide ? {
               position: "sticky",
-              top: 0,
+              top: 64,
               zIndex: 10,
               background: colors.bg,
               paddingBottom: 4,
@@ -345,13 +345,13 @@ export function AnalyticsView() {
           {/* Operations tab */}
           {activeTab === "ops" && (isWide ? (
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, alignItems: "start" }}>
-              <TopTablesTable tables={topTables} resolveLabel={resolveTableDisplayId} />
               <TipsVouchersCard data={tipVoucher} />
+              <TopTablesTable tables={topTables} resolveLabel={resolveTableDisplayId} />
             </div>
           ) : (
             <>
-              <TopTablesTable tables={topTables} resolveLabel={resolveTableDisplayId} />
               <TipsVouchersCard data={tipVoucher} />
+              <TopTablesTable tables={topTables} resolveLabel={resolveTableDisplayId} />
             </>
           ))}
         </div>
