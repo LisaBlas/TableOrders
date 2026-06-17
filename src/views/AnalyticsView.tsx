@@ -64,6 +64,7 @@ export function AnalyticsView() {
   const [customStart, setCustomStart] = useState(() => addDays(today, -6));
   const [customEnd, setCustomEnd] = useState(today);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"revenue" | "menu" | "ops">("revenue");
 
   const bounds = getPeriodBounds(period, customStart, customEnd);
   const { current, prior } = bounds;
@@ -259,39 +260,91 @@ export function AnalyticsView() {
 
       {/* Content */}
       {!loading && !isEmpty && (
-        isWide ? (
-          // ── Desktop two-column layout ──
-          <div style={{ padding: "16px 16px 40px", display: "flex", flexDirection: "column", gap: 12 }}>
-            {dashboardSummary}
-            <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 12 }}>
-              <RevenueTrendChart days={dayTimeline} />
-              <CategoryBreakdown categories={categories} />
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 12 }}>
-              <TopItemsTable items={topItems} />
-              <WeekdayPattern weekdays={weekdays} start={current.start} end={current.end} />
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0, alignItems: "start" }}>
+        <div style={{ padding: isWide ? "16px 16px 40px" : "12px 16px 40px", display: "flex", flexDirection: "column", gap: 12 }}>
+          {dashboardSummary}
+
+          {/* Tab bar */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, 1fr)",
+              gap: 1,
+              background: colors.border,
+              borderRadius: radii.sm,
+              overflow: "hidden",
+            }}
+          >
+            {(["revenue", "menu", "ops"] as const).map((t) => {
+              const label = t === "revenue" ? "Revenue" : t === "menu" ? "Menu" : "Operations";
+              const active = activeTab === t;
+              return (
+                <button
+                  key={t}
+                  onClick={() => setActiveTab(t)}
+                  style={{
+                    padding: "9px 0",
+                    background: active ? colors.surface : colors.bg,
+                    border: "none",
+                    fontSize: 13,
+                    fontWeight: active ? 600 : 400,
+                    color: active ? colors.fg : colors.muted,
+                    fontFamily: "inherit",
+                    cursor: "pointer",
+                  }}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Revenue tab */}
+          {activeTab === "revenue" && (isWide ? (
+            <>
+              <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 12 }}>
+                <RevenueTrendChart days={dayTimeline} />
+                <WeekdayPattern weekdays={weekdays} start={current.start} end={current.end} />
+              </div>
               <PeakHoursChart hours={peakHours} />
+            </>
+          ) : (
+            <>
+              <RevenueTrendChart days={dayTimeline} />
+              <WeekdayPattern weekdays={weekdays} start={current.start} end={current.end} />
+              <PeakHoursChart hours={peakHours} />
+            </>
+          ))}
+
+          {/* Menu tab */}
+          {activeTab === "menu" && (isWide ? (
+            <>
+              <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 12 }}>
+                <TopItemsTable items={topItems} />
+                <CategoryBreakdown categories={categories} />
+              </div>
+              <ZeroSalesCard items={zeroSalesItems} />
+            </>
+          ) : (
+            <>
+              <CategoryBreakdown categories={categories} />
+              <TopItemsTable items={topItems} />
+              <ZeroSalesCard items={zeroSalesItems} />
+            </>
+          ))}
+
+          {/* Operations tab */}
+          {activeTab === "ops" && (isWide ? (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, alignItems: "start" }}>
               <TopTablesTable tables={topTables} resolveLabel={resolveTableDisplayId} />
+              <TipsVouchersCard data={tipVoucher} />
             </div>
-            <TipsVouchersCard data={tipVoucher} />
-            <ZeroSalesCard items={zeroSalesItems} />
-          </div>
-        ) : (
-          // ── Mobile single-column stack ──
-          <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: "12px 16px 40px" }}>
-            {dashboardSummary}
-            <RevenueTrendChart days={dayTimeline} />
-            <CategoryBreakdown categories={categories} />
-            <TopItemsTable items={topItems} />
-            <WeekdayPattern weekdays={weekdays} start={current.start} end={current.end} />
-            <PeakHoursChart hours={peakHours} />
-            <TopTablesTable tables={topTables} resolveLabel={resolveTableDisplayId} />
-            <TipsVouchersCard data={tipVoucher} />
-            <ZeroSalesCard items={zeroSalesItems} />
-          </div>
-        )
+          ) : (
+            <>
+              <TopTablesTable tables={topTables} resolveLabel={resolveTableDisplayId} />
+              <TipsVouchersCard data={tipVoucher} />
+            </>
+          ))}
+        </div>
       )}
     </div>
   );
