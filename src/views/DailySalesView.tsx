@@ -159,10 +159,10 @@ export function DailySalesView() {
           >
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <span style={{ fontSize: 16, color: colors.faint, lineHeight: 1, userSelect: "none", display: "inline-block", transform: isCollapsed ? "rotate(0deg)" : "rotate(90deg)", transition: "transform 0.18s ease", flexShrink: 0 }}>›</span>
-              {isInfo && <CheckIcon size={12} color={colors.info} />}
               <span style={{ fontSize: 13, fontWeight: 700, color: isMissing ? colors.danger : isInfo ? colors.info : colors.fg }}>
                 {title}
               </span>
+              {isInfo && <CheckIcon size={12} color={colors.info} />}
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ fontSize: 12, color: colors.muted }}>
