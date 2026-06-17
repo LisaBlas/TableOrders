@@ -158,6 +158,7 @@ export function DailySalesView() {
             style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginBottom: isCollapsed ? 0 : 4, cursor: "pointer", userSelect: "none" }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: 16, color: colors.faint, lineHeight: 1, userSelect: "none", display: "inline-block", transform: isCollapsed ? "rotate(0deg)" : "rotate(90deg)", transition: "transform 0.18s ease", flexShrink: 0 }}>›</span>
               {isInfo && <CheckIcon size={12} color={colors.info} />}
               <span style={{ fontSize: 13, fontWeight: 700, color: isMissing ? colors.danger : isInfo ? colors.info : colors.fg }}>
                 {title}
@@ -166,9 +167,6 @@ export function DailySalesView() {
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ fontSize: 12, color: colors.muted }}>
                 {items.reduce((sum, item) => sum + item.qty, 0)} items
-              </span>
-              <span style={{ fontSize: 10, color: colors.muted, lineHeight: 1, transition: "transform 0.2s", display: "inline-block", transform: isCollapsed ? "rotate(-90deg)" : "rotate(0deg)" }}>
-                ▼
               </span>
             </div>
           </div>
