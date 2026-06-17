@@ -397,6 +397,42 @@ export function groupByTable(bills: Bill[]): TableData[] {
   return [...map.values()].sort((a, b) => b.revenue - a.revenue);
 }
 
+// ── Tips & vouchers ───────────────────────────────────────────────────────────
+
+export interface TipVoucherData {
+  totalTips: number;
+  avgTipPct: number;
+  billsWithTips: number;
+  totalVouchers: number;
+  billsWithVouchers: number;
+}
+
+export function computeTipVoucher(bills: Bill[]): TipVoucherData {
+  let totalTips = 0;
+  let billsWithTips = 0;
+  let totalVouchers = 0;
+  let billsWithVouchers = 0;
+  let totalRevenue = 0;
+
+  for (const bill of bills) {
+    const tip = bill.tip ?? 0;
+    const gutschein = bill.gutschein ?? 0;
+    totalRevenue += billRevenue(bill);
+    totalTips += tip;
+    if (tip > 0) billsWithTips++;
+    totalVouchers += gutschein;
+    if (gutschein > 0) billsWithVouchers++;
+  }
+
+  return {
+    totalTips,
+    avgTipPct: totalRevenue > 0 ? (totalTips / totalRevenue) * 100 : 0,
+    billsWithTips,
+    totalVouchers,
+    billsWithVouchers,
+  };
+}
+
 // ── Formatting helpers ───────────────────────────────────────────────────────
 
 export function fmtEur(value: number): string {

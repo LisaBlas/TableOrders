@@ -16,6 +16,7 @@ import { WeekdayPattern } from "../components/analytics/WeekdayPattern";
 
 import { PeakHoursChart } from "../components/analytics/PeakHoursChart";
 import { TopTablesTable } from "../components/analytics/TopTablesTable";
+import { TipsVouchersCard } from "../components/analytics/TipsVouchersCard";
 import { fetchBillsByDateRange, todayBusinessDate } from "../services/directusBills";
 import {
   type AnalyticsPeriod,
@@ -30,6 +31,7 @@ import {
   groupByWeekday,
   groupByHour,
   groupByTable,
+  computeTipVoucher,
 } from "../utils/analytics";
 
 function SkeletonBlock({ height = 80 }: { height?: number }) {
@@ -86,6 +88,7 @@ export function AnalyticsView() {
   const weekdays = groupByWeekday(currentBills, current.start, current.end);
   const peakHours = groupByHour(currentBills);
   const topTables = groupByTable(currentBills);
+  const tipVoucher = computeTipVoucher(currentBills);
 
   const isEmpty = !loading && currentBills.length === 0;
 
@@ -267,6 +270,7 @@ export function AnalyticsView() {
               <PeakHoursChart hours={peakHours} />
               <TopTablesTable tables={topTables} resolveLabel={resolveTableDisplayId} />
             </div>
+            <TipsVouchersCard data={tipVoucher} />
           </div>
         ) : (
           // ── Mobile single-column stack ──
@@ -278,6 +282,7 @@ export function AnalyticsView() {
             <WeekdayPattern weekdays={weekdays} start={current.start} end={current.end} />
             <PeakHoursChart hours={peakHours} />
             <TopTablesTable tables={topTables} resolveLabel={resolveTableDisplayId} />
+            <TipsVouchersCard data={tipVoucher} />
           </div>
         )
       )}
