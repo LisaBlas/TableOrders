@@ -6,7 +6,7 @@ import { colors, radii } from "../styles/tokens";
 import { BillCard } from "../components/BillCard";
 import { SalesSummary } from "../components/SalesSummary";
 import { ScreenHeader } from "../components/ScreenHeader";
-import { CalendarIcon } from "../components/icons";
+import { CalendarIcon, CheckIcon } from "../components/icons";
 import { todayBusinessDate } from "../services/directusBills";
 import { aggregateDailySales, comparePosEntries, isMissingPosId, type PosEntry } from "../utils/salesAggregation";
 
@@ -29,7 +29,7 @@ export function DailySalesView() {
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
   const [articleSortMode, setArticleSortMode] = useState<ArticleSortMode>("qty");
-  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set(["In POS"]));
   const [expandedBillKey, setExpandedBillKey] = useState<string | null>(null);
 
   const getBillKey = (bill: { directusId?: string; tempId?: string }, idx: number) =>
@@ -141,14 +141,14 @@ export function DailySalesView() {
       );
     };
 
-    const renderPanel = (title: string, items: PosEntry[], isMissing = false) => {
+    const renderPanel = (title: string, items: PosEntry[], isMissing = false, isInfo = false) => {
       if (items.length === 0) return null;
       const isCollapsed = collapsedSections.has(title);
       return (
         <div
           style={{
             background: colors.surface,
-            border: `1px solid ${isMissing ? "#f0d1cd" : colors.border}`,
+            border: `1px solid ${isMissing ? "#f0d1cd" : isInfo ? colors.infoBg : colors.border}`,
             borderRadius: radii.lg,
             padding: "14px 16px",
           }}
@@ -157,9 +157,12 @@ export function DailySalesView() {
             onClick={() => toggleSection(title)}
             style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginBottom: isCollapsed ? 0 : 4, cursor: "pointer", userSelect: "none" }}
           >
-            <span style={{ fontSize: 13, fontWeight: 700, color: isMissing ? colors.danger : colors.fg }}>
-              {title}
-            </span>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              {isInfo && <CheckIcon size={12} color={colors.info} />}
+              <span style={{ fontSize: 13, fontWeight: 700, color: isMissing ? colors.danger : isInfo ? colors.info : colors.fg }}>
+                {title}
+              </span>
+            </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ fontSize: 12, color: colors.muted }}>
                 {items.reduce((sum, item) => sum + item.qty, 0)} items
@@ -210,15 +213,13 @@ export function DailySalesView() {
                 {remainingItemsCount > 0
                   ? `${remainingItemsCount} item${remainingItemsCount !== 1 ? "s" : ""} to cross`
                   : "All articles crossed"}
-                {addedItemsCount > 0 && (
-                  <> · {addedItemsCount} item{addedItemsCount !== 1 ? "s" : ""} excluded from {excludedTableCount} table{excludedTableCount !== 1 ? "s" : ""}</>
-                )}
               </span>
               <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                 {allItems.length > 0 && renderSortButton("qty", "Sales")}
                 {allItems.length > 0 && renderSortButton("posId", "POS ID")}
               </div>
             </div>
+            {addedToPOSItems.length > 0 && renderPanel("In POS", addedToPOSItems.sort(sortFn), false, true)}
             {allItems.length > 0 && (
               (isDesktop || isTabletLandscape) ? (
                 <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
