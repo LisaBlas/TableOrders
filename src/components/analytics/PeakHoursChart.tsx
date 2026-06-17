@@ -18,11 +18,10 @@ export function PeakHoursChart({ hours }: Props) {
         background: colors.surface,
         borderRadius: radii.lg,
         border: `1px solid ${colors.border}`,
-        margin: "12px 16px 0",
         padding: "16px",
       }}
     >
-      <span style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 14 }}>
+      <span style={{ fontSize: 12, fontWeight: 500, color: colors.muted, display: "block", marginBottom: 14 }}>
         Peak Hours
       </span>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

@@ -17,7 +17,7 @@ export function TipsVouchersCard({ data }: Props) {
         padding: "16px",
       }}
     >
-      <span style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 14 }}>
+      <span style={{ fontSize: 12, fontWeight: 500, color: colors.muted, display: "block", marginBottom: 14 }}>
         Tips & Vouchers
       </span>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1, background: colors.border, borderRadius: radii.sm, overflow: "hidden" }}>

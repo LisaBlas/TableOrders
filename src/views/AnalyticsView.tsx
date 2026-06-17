@@ -265,6 +265,15 @@ export function AnalyticsView() {
 
           {/* Tab bar */}
           <div
+            style={!isWide ? {
+              position: "sticky",
+              top: 0,
+              zIndex: 10,
+              background: colors.bg,
+              paddingBottom: 4,
+            } : {}}
+          >
+          <div
             style={{
               display: "grid",
               gridTemplateColumns: "repeat(3, 1fr)",
@@ -296,6 +305,7 @@ export function AnalyticsView() {
                 </button>
               );
             })}
+          </div>
           </div>
 
           {/* Revenue tab */}

@@ -24,7 +24,7 @@ export function WeekdayPattern({ weekdays, start, end }: Props) {
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-        <span style={{ fontSize: 13, fontWeight: 600 }}>Weekday Pattern</span>
+        <span style={{ fontSize: 12, fontWeight: 500, color: colors.muted }}>Weekday Pattern</span>
         {lowData && (
           <span style={{ fontSize: 12, color: colors.danger, fontWeight: 500 }}>Not enough data</span>
         )}

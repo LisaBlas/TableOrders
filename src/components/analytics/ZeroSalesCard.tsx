@@ -40,6 +40,9 @@ export function ZeroSalesCard({ items }: Props) {
         padding: "16px",
       }}
     >
+      <span style={{ fontSize: 12, fontWeight: 500, color: colors.muted, display: "block", marginBottom: 10 }}>
+        No Sales
+      </span>
       <div
         style={{
           display: "flex",

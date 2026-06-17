@@ -44,6 +44,9 @@ export function TopItemsTable({ items }: Props) {
         padding: "16px",
       }}
     >
+      <span style={{ fontSize: 12, fontWeight: 500, color: colors.muted, display: "block", marginBottom: 10 }}>
+        Top Items
+      </span>
       <div
         style={{
           display: "flex",
