@@ -165,7 +165,7 @@ export function SplitEqualView() {
           onClick={closeSplitTable}
           disabled={state.equalPayments.some((p) => !!p.amount && !p.confirmed)}
         >
-          Close table
+          Payment
         </button>
         </div>
       </div>
@@ -287,7 +287,7 @@ export function SplitEqualView() {
             onClick={closeSplitTable}
             disabled={state.equalPayments.some((p) => !!p.amount && !p.confirmed)}
           >
-            Close table
+            Payment
           </button>
         </div>
       </div>

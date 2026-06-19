@@ -124,7 +124,7 @@ export function BillTab({ tableId, sent }: BillTabProps) {
                 onClick={handleCloseClick}
                 disabled={isCloseDisabled}
               >
-                {confirmingClose ? "Confirm close" : "Close table"}
+                {confirmingClose ? "Confirm Payment" : "Payment"}
               </button>
             </>
           )}
@@ -187,7 +187,7 @@ export function BillTab({ tableId, sent }: BillTabProps) {
             onClick={handleCloseClick}
             disabled={isCloseDisabled}
           >
-            {confirmingClose ? "Confirm close" : "Close table"}
+            {confirmingClose ? "Confirm Payment" : "Payment"}
           </button>
         )}
       </div>
