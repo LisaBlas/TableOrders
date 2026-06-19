@@ -99,7 +99,7 @@ function LoadingScreen() {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          height: "100vh",
+          height: "100dvh",
           gap: "20px",
         }}
       >
@@ -143,6 +143,15 @@ function Router() {
   useEffect(() => { splitStateRef.current = splitState; }, [splitState]);
 
   useEffect(() => { window.scrollTo(0, 0); }, [view]);
+
+  // iOS Safari restores scroll position after JS runs, so reset it once the full
+  // layout first appears — rAF fires after paint, past the restoration window.
+  useEffect(() => {
+    if (!menuLoading && isAuthenticated) {
+      const id = requestAnimationFrame(() => window.scrollTo(0, 0));
+      return () => cancelAnimationFrame(id);
+    }
+  }, [menuLoading, isAuthenticated]);
 
   // Hardware/browser back button interception
   useEffect(() => {

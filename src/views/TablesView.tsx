@@ -126,12 +126,9 @@ export function TablesView() {
       />
 
       <div style={{ ...styles.grid, paddingBottom: swap.isActive ? 160 : styles.isBig ? 20 : 16 }}>
-        {(() => {
-          let cardIndex = 0;
-          return allTables.map((t) => {
+        {allTables.map((t) => {
             const status = getTableStatus(t.id, orders, seatedTables, sentBatches, markedBatches);
             const destinations = status === "unconfirmed" ? getTableDestinations(t.id, orders, sentBatches) : [];
-            const staggerIndex = cardIndex++;
 
             const isSource = swap.sourceTable === t.id;
             const isTarget = swap.targetTable === t.id;
@@ -148,7 +145,6 @@ export function TablesView() {
                 style={{
                   base: styles.card,
                   isWide: styles.isWide,
-                  staggerIndex,
                 }}
                 handlers={{
                   onPointerDown: !swap.isActive ? () => startLongPress(t.id) : undefined,
@@ -159,8 +155,7 @@ export function TablesView() {
                 }}
               />
             );
-          });
-        })()}
+          })}
       </div>
 
       {showNewTableModal && (

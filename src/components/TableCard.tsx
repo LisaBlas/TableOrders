@@ -43,7 +43,6 @@ function getSwapStyles(swapStatus: SwapStatus, cfg: StatusConfig) {
 interface TableCardStyle {
   base: CSSProperties;
   isWide: boolean;
-  staggerIndex: number;
 }
 
 interface TableCardHandlers {
@@ -86,8 +85,7 @@ export function TableCard({
         transition: "opacity 0.2s ease, border 0.15s ease",
         userSelect: "none",
         WebkitUserSelect: "none",
-        animation: "slideUpFade 0.2s ease-out",
-        animationDelay: `${style.staggerIndex * 0.035}s`,
+        animation: "slideUpFade 0.15s ease-out",
         animationFillMode: "backwards",
       }}
       onPointerDown={handlers.onPointerDown}
