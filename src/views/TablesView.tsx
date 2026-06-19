@@ -12,6 +12,7 @@ import { Modal } from "../components/Modal";
 import { ScreenHeader } from "../components/ScreenHeader";
 
 import { S } from "../styles/appStyles";
+import { colors } from "../styles/tokens";
 
 import type { TableId, TableConfig } from "../types";
 
@@ -120,7 +121,7 @@ export function TablesView() {
             style={S.headerActionBtn}
             aria-label="Create new table"
           >
-            + extra table
+            + Extra table
           </button>
         }
       />
@@ -186,7 +187,7 @@ export function TablesView() {
                 width: "100%",
                 padding: "10px 12px",
                 fontSize: 15,
-                border: "1.5px solid #ddd",
+                border: `1.5px solid ${colors.border}`,
                 borderRadius: 8,
                 outline: "none",
                 fontFamily: "inherit",

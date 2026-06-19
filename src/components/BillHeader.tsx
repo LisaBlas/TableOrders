@@ -1,5 +1,6 @@
 import { useTable } from "../contexts/TableContext";
 import { S } from "../styles/appStyles";
+import { colors } from "../styles/tokens";
 import { EditIcon, VoucherIcon } from "./icons";
 import type { TableId } from "../types";
 
@@ -37,7 +38,7 @@ export function BillHeader({ tableId, editingBill, onEditToggle, onGutscheinOpen
               fontSize: 12,
               fontWeight: 600,
               cursor: "default",
-              color: "#888",
+              color: colors.muted,
             }}
           >
             Editing...

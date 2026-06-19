@@ -1,5 +1,5 @@
 import type { CategoryData } from "../../utils/analytics";
-import { colors, radii } from "../../styles/tokens";
+import { colors, radii, chartColors } from "../../styles/tokens";
 
 interface Props {
   categories: CategoryData[];
@@ -42,7 +42,7 @@ export function CategoryBreakdown({ categories }: Props) {
                 style={{
                   height: "100%",
                   width: `${(cat.revenue / maxRevenue) * 100}%`,
-                  background: cat.revenue > 0 ? "#b0a898" : colors.border,
+                  background: cat.revenue > 0 ? chartColors.accent : colors.border,
                   borderRadius: 3,
                   transition: "width 0.3s ease",
                 }}

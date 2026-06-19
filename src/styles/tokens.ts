@@ -22,6 +22,10 @@ export const colors = {
   overlay:       "var(--c-overlay)",
   info:          "var(--c-info)",
   infoBg:        "var(--c-info-bg)",
+  dangerBorder:  "var(--c-danger-border)",
+  shadowSm:      "var(--c-shadow-sm)",
+  shadowMd:      "var(--c-shadow-md)",
+  shadowLg:      "var(--c-shadow-lg)",
 };
 
 export const statusColors = {

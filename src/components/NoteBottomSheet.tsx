@@ -1,4 +1,5 @@
 import { S } from "../styles/appStyles";
+import { colors } from "../styles/tokens";
 import type { MenuItem } from "../types";
 
 interface NoteBottomSheetProps {
@@ -30,9 +31,9 @@ export function NoteBottomSheet({ item, note, onNoteChange, onConfirm, onClose }
             width: "100%",
             padding: "14px 16px",
             fontSize: 15,
-            border: "1.5px solid #ebe9e3",
+            border: `1.5px solid ${colors.border}`,
             borderRadius: 10,
-            background: "#f5f4f0",
+            background: colors.bg,
             boxSizing: "border-box",
             outline: "none",
             fontFamily: "inherit",
@@ -43,8 +44,8 @@ export function NoteBottomSheet({ item, note, onNoteChange, onConfirm, onClose }
           style={{
             width: "100%",
             padding: "14px 0",
-            background: "#1a1a1a",
-            color: "#fff",
+            background: colors.fg,
+            color: colors.surface,
             border: "none",
             borderRadius: 10,
             fontSize: 15,

@@ -2,6 +2,7 @@ import { useTable } from "../contexts/TableContext";
 import { groupByDestination, DESTINATIONS, DEST_LABELS } from "../utils/batchGrouping";
 import { batchMarkId } from "../utils/batchMarks";
 import { S } from "../styles/appStyles";
+import { statusColors } from "../styles/tokens";
 import type { Batch, TableId } from "../types";
 
 interface SentBatchCardProps {
@@ -23,7 +24,7 @@ export function SentBatchCard({ batches, tableId }: SentBatchCardProps) {
 
         const batchByDest = groupByDestination(batch.items);
         const ts = typeof batch.timestamp === "string" ? new Date(batch.timestamp) : batch.timestamp;
-        const accentColor = isMarked ? "#b8e6c8" : "#f0bfbf";
+        const accentColor = isMarked ? statusColors.confirmed.border : statusColors.unconfirmed.border;
         const sectionStyle = { ...S.sentSection, ...(isMarked ? S.sentSectionMarked : S.sentSectionPending) };
 
         return (

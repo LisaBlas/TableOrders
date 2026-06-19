@@ -40,7 +40,7 @@ function SplashScreen() {
         alignItems: "center",
         justifyContent: "center",
         height: "100vh",
-        background: "#f5f4f0",
+        background: colors.bg,
         gap: "20px",
       }}
     >
@@ -67,7 +67,7 @@ function SplashScreen() {
           fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
           fontSize: 20,
           fontWeight: 500,
-          color: "#222",
+          color: colors.fg,
           letterSpacing: "0.01em",
           animation: "splashFadeIn 0.7s ease-out 0.7s forwards",
           opacity: 0,

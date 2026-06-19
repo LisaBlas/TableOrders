@@ -1,6 +1,6 @@
 import type { WeekdayData } from "../../utils/analytics";
 import { daysBetween } from "../../utils/analytics";
-import { colors, radii } from "../../styles/tokens";
+import { colors, radii, chartColors } from "../../styles/tokens";
 
 interface Props {
   weekdays: WeekdayData[];
@@ -55,7 +55,7 @@ export function WeekdayPattern({ weekdays, start, end }: Props) {
                 style={{
                   height: "100%",
                   width: `${(wd.avgRevenue / maxAvg) * 100}%`,
-                  background: wd.avgRevenue > 0 ? "#b0a898" : colors.border,
+                  background: wd.avgRevenue > 0 ? chartColors.accent : colors.border,
                   borderRadius: 4,
                   transition: "width 0.3s ease",
                 }}

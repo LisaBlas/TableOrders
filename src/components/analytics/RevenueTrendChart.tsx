@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import type { DayData } from "../../utils/analytics";
 import { fmtEurFull } from "../../utils/analytics";
-import { colors, radii } from "../../styles/tokens";
+import { colors, radii, chartColors } from "../../styles/tokens";
 
 interface Props {
   days: DayData[];
@@ -129,7 +129,7 @@ export function RevenueTrendChart({ days }: Props) {
                   background: isSelected
                     ? colors.fg
                     : hasData
-                    ? "#b0a898"
+                    ? chartColors.accent
                     : colors.border,
                   borderRadius: "2px 2px 0 0",
                   transition: "background 0.1s",

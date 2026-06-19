@@ -1,5 +1,5 @@
 import type { HourData } from "../../utils/analytics";
-import { colors, radii } from "../../styles/tokens";
+import { colors, radii, chartColors } from "../../styles/tokens";
 
 interface Props {
   hours: HourData[];
@@ -43,7 +43,7 @@ export function PeakHoursChart({ hours }: Props) {
                 style={{
                   height: "100%",
                   width: `${(h.revenue / maxRevenue) * 100}%`,
-                  background: "#b0a898",
+                  background: chartColors.accent,
                   borderRadius: 4,
                   transition: "width 0.3s ease",
                 }}

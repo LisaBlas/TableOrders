@@ -11,6 +11,7 @@ import { PaymentPanel } from "./PaymentPanel";
 import { SplitOptions } from "./SplitOptions";
 import { GutscheinModal } from "./GutscheinModal";
 import { S } from "../styles/appStyles";
+import { colors } from "../styles/tokens";
 import type { OrderItem, TableId } from "../types";
 
 interface BillTabProps {
@@ -98,7 +99,7 @@ export function BillTab({ tableId, sent }: BillTabProps) {
               <button style={S.billSecondaryAction} onClick={cancelBillEdit}>
                 Cancel
               </button>
-              <button style={{ ...S.closeBtn, background: "#2d5a35" }} onClick={confirmBillEdit}>
+              <button style={{ ...S.closeBtn, background: colors.success }} onClick={confirmBillEdit}>
                 Confirm
               </button>
             </div>
@@ -173,7 +174,7 @@ export function BillTab({ tableId, sent }: BillTabProps) {
             <button style={S.billSecondaryAction} onClick={cancelBillEdit}>
               Cancel
             </button>
-            <button style={{ ...S.billPrimaryAction, flex: 1, background: "#2d5a35" }} onClick={confirmBillEdit}>
+            <button style={{ ...S.billPrimaryAction, flex: 1, background: colors.success }} onClick={confirmBillEdit}>
               Confirm
             </button>
           </div>
