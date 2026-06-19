@@ -73,7 +73,6 @@ export function DailySalesView() {
     const addedItemsCount = addedToPOSItems.reduce((sum, entry) => sum + entry.qty, 0);
 
     const allItems = [...withPosId, ...missingPosId, ...uncategorised].sort(comparePosEntries);
-    const remainingItemsCount = allItems.reduce((sum, entry) => sum + entry.qty, 0);
     const excludedTableCount = paidBills.filter((bill) =>
       bill.addedToPOS || bill.items.some((item) => {
         const crossedQty = item.crossedQty ?? (item.crossed ? item.qty : 0);
@@ -206,17 +205,12 @@ export function DailySalesView() {
 
         {(allItems.length > 0 || addedToPOSItems.length > 0) && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 14 }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-              <span style={{ fontSize: 12, color: colors.muted, minWidth: 0 }}>
-                {remainingItemsCount > 0
-                  ? `${remainingItemsCount} item${remainingItemsCount !== 1 ? "s" : ""} to cross`
-                  : "All articles crossed"}
-              </span>
-              <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                {allItems.length > 0 && renderSortButton("qty", "Sales")}
-                {allItems.length > 0 && renderSortButton("posId", "POS ID")}
+            {allItems.length > 0 && (
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 6 }}>
+                {renderSortButton("qty", "Sales")}
+                {renderSortButton("posId", "POS ID")}
               </div>
-            </div>
+            )}
             {addedToPOSItems.length > 0 && renderPanel("In POS", addedToPOSItems.sort(sortFn), false, true)}
             {allItems.length > 0 && (
               (isDesktop || isTabletLandscape) ? (

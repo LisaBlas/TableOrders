@@ -12,7 +12,19 @@ export function SalesSummary({ paidBills }: SalesSummaryProps) {
   const totalGutschein = billsWithGutschein.reduce((sum, bill) => sum + (bill.gutschein || 0), 0);
   const totalRevenue = paidBills.reduce((sum, bill) => sum + bill.total, 0);
   const tipSign = totalTips >= 0 ? "+" : "";
-  const hasVouchers = totalGutschein > 0;
+
+  const totalItems = paidBills.reduce((total, bill) =>
+    total + bill.items.reduce((sum, item) => sum + item.qty, 0), 0);
+
+  const itemsInPOS = paidBills.reduce((total, bill) => {
+    if (bill.addedToPOS) {
+      return total + bill.items.reduce((sum, item) => sum + item.qty, 0);
+    }
+    return total + bill.items.reduce((sum, item) => {
+      const crossedQty = item.crossedQty ?? (item.crossed ? item.qty : 0);
+      return sum + crossedQty;
+    }, 0);
+  }, 0);
 
   const tiles = [
     { label: "Revenue", value: `${totalRevenue.toFixed(2)}\u20ac`, strong: true },
@@ -21,12 +33,14 @@ export function SalesSummary({ paidBills }: SalesSummaryProps) {
       value: `${tipSign}${totalTips.toFixed(2)}\u20ac`,
       tone: totalTips >= 0 ? colors.success : colors.danger,
     },
-    { label: "Tables", value: String(paidBills.length) },
-    ...(hasVouchers ? [{
+    {
       label: "Vouchers",
-      value: `-${totalGutschein.toFixed(2)}\u20ac`,
-      sub: `${billsWithGutschein.length} bill${billsWithGutschein.length !== 1 ? "s" : ""}`,
-    }] : []),
+      value: totalGutschein > 0 ? `-${totalGutschein.toFixed(2)}\u20ac` : "\u2014",
+      sub: totalGutschein > 0 ? `${billsWithGutschein.length} bill${billsWithGutschein.length !== 1 ? "s" : ""}` : undefined,
+    },
+    { label: "Tables", value: String(paidBills.length) },
+    { label: "Total items", value: String(totalItems) },
+    { label: "In POS", value: String(itemsInPOS), tone: itemsInPOS === totalItems && totalItems > 0 ? colors.success : undefined },
   ];
 
   return (
