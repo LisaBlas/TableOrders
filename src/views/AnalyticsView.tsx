@@ -19,6 +19,7 @@ import { TopTablesTable } from "../components/analytics/TopTablesTable";
 import { TipsVouchersCard } from "../components/analytics/TipsVouchersCard";
 import { ZeroSalesCard } from "../components/analytics/ZeroSalesCard";
 import { PairingsCard } from "../components/analytics/PairingsCard";
+import { TableTurnoverCard } from "../components/analytics/TableTurnoverCard";
 import { fetchBillsByDateRange, todayBusinessDate } from "../services/directusBills";
 import { useMenu } from "../contexts/MenuContext";
 import {
@@ -37,6 +38,7 @@ import {
   computeTipVoucher,
   getZeroSalesItems,
   getTopPairings,
+  getTableTurnover,
 } from "../utils/analytics";
 
 function SkeletonBlock({ height = 80 }: { height?: number }) {
@@ -98,6 +100,7 @@ export function AnalyticsView() {
   const tipVoucher = computeTipVoucher(currentBills);
   const zeroSalesItems = getZeroSalesItems(currentBills, menu);
   const topPairings = getTopPairings(currentBills);
+  const tableTurnover = getTableTurnover(currentBills, current.start, current.end);
 
   const isEmpty = !loading && currentBills.length === 0;
 
@@ -349,14 +352,18 @@ export function AnalyticsView() {
 
           {/* Operations tab */}
           {activeTab === "ops" && (isWide ? (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, alignItems: "start" }}>
-              <TipsVouchersCard data={tipVoucher} />
-              <TopTablesTable tables={topTables} resolveLabel={resolveTableDisplayId} />
-            </div>
+            <>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, alignItems: "start" }}>
+                <TipsVouchersCard data={tipVoucher} />
+                <TopTablesTable tables={topTables} resolveLabel={resolveTableDisplayId} />
+              </div>
+              <TableTurnoverCard tables={tableTurnover} resolveLabel={resolveTableDisplayId} />
+            </>
           ) : (
             <>
               <TipsVouchersCard data={tipVoucher} />
               <TopTablesTable tables={topTables} resolveLabel={resolveTableDisplayId} />
+              <TableTurnoverCard tables={tableTurnover} resolveLabel={resolveTableDisplayId} />
             </>
           ))}
         </div>

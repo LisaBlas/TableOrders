@@ -466,6 +466,65 @@ export function getZeroSalesItems(
   return dead.sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name));
 }
 
+// ── Table turnover ───────────────────────────────────────────────────────────
+
+export interface TableTurnoverData {
+  tableId: TableId;
+  sessions: number;          // distinct table visits in the period
+  turnsPerDay: number;       // sessions / days — normalises across period lengths
+  totalCovers: number;
+  coversPerSession: number;  // avg party size per visit
+  totalRevenue: number;
+  revenuePerSession: number; // avg revenue per visit
+}
+
+export function getTableTurnover(bills: Bill[], start: string, end: string): TableTurnoverData[] {
+  const days = daysBetween(start, end);
+
+  // Per-table, per-session aggregation (groups split bills together)
+  const tableMap = new Map<
+    string,
+    Map<string, { covers: number; revenue: number }>
+  >();
+
+  for (const bill of bills) {
+    const tableKey = String(bill.tableId);
+    const sessionKey =
+      bill.session_id ??
+      bill.directusId ??
+      bill.tempId ??
+      `${bill.timestamp}:${tableKey}`;
+
+    const sessionMap = tableMap.get(tableKey) ?? new Map<string, { covers: number; revenue: number }>();
+    const sess = sessionMap.get(sessionKey) ?? { covers: 0, revenue: 0 };
+    sess.covers += billCovers(bill);
+    sess.revenue += billRevenue(bill);
+    sessionMap.set(sessionKey, sess);
+    tableMap.set(tableKey, sessionMap);
+  }
+
+  return [...tableMap.entries()]
+    .map(([tableIdStr, sessionMap]) => {
+      const sessions = sessionMap.size;
+      let totalCovers = 0;
+      let totalRevenue = 0;
+      for (const s of sessionMap.values()) {
+        totalCovers += s.covers;
+        totalRevenue += s.revenue;
+      }
+      return {
+        tableId: tableIdStr as TableId,
+        sessions,
+        turnsPerDay: sessions / days,
+        totalCovers,
+        coversPerSession: sessions > 0 ? totalCovers / sessions : 0,
+        totalRevenue,
+        revenuePerSession: sessions > 0 ? totalRevenue / sessions : 0,
+      };
+    })
+    .sort((a, b) => b.turnsPerDay - a.turnsPerDay);
+}
+
 // ── Top pairings (market basket lift) ────────────────────────────────────────
 
 export interface PairingData {
