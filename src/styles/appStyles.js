@@ -268,6 +268,7 @@ export const S = {
     fontWeight: 700,
     fontSize: 22,
     lineHeight: 1,
+    color: colors.fg,
   },
   tableStatus: {
     fontSize: 11,
@@ -769,6 +770,7 @@ export const S = {
     border: `1.5px solid ${colors.border}`,
     background: colors.inputBg,
     cursor: "pointer",
+    color: colors.fg,
   },
   splitOptionIcon: {
     fontSize: 20,
@@ -828,6 +830,7 @@ export const S = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
+    color: colors.fg,
   },
   guestCountNum: {
     fontSize: 22,
@@ -931,10 +934,12 @@ export const S = {
     flex: 1,
     fontSize: 15,
     fontWeight: 500,
+    color: colors.fg,
   },
   splitItemPrice: {
     fontSize: 15,
     fontWeight: 600,
+    color: colors.fg,
   },
 
   // Split confirm
@@ -1755,6 +1760,7 @@ export const S = {
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
+    color: colors.fg,
   },
   billIconBtnActive: {
     width: 32,
@@ -2024,6 +2030,7 @@ export const S = {
     WebkitLineClamp: 3,
     WebkitBoxOrient: "vertical",
     wordBreak: "break-word",
+    color: colors.fg,
   },
   menuCardPrice: {
     fontSize: 12,
@@ -2122,6 +2129,7 @@ export const S = {
     fontWeight: 600,
     cursor: "pointer",
     marginLeft: 8,
+    color: colors.fg,
   },
   sentSectionPending: {
     background: statusColors.unconfirmed.bg,
