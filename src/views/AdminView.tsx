@@ -901,7 +901,7 @@ function FilterPills<T extends string>({
             borderRadius: 20,
             border: `1.5px solid ${value === o.value ? colors.fg : colors.border}`,
             background: value === o.value ? colors.fg : "none",
-            color: value === o.value ? "#fff" : colors.secondary,
+            color: value === o.value ? colors.bg : colors.secondary,
             cursor: "pointer",
             fontFamily: "inherit",
             whiteSpace: "nowrap",

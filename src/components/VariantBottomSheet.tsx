@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { S } from "../styles/appStyles";
+import { colors } from "../styles/tokens";
 import type { MenuItem, MenuItemVariant, OrderItem } from "../types";
 
 interface VariantBottomSheetProps {
@@ -68,9 +69,10 @@ export function VariantBottomSheet({ item, unsent, onSelectVariant, onClose, var
             width: "100%",
             padding: "14px 16px",
             fontSize: 15,
-            border: "1.5px solid #ebe9e3",
+            border: `1.5px solid ${colors.border}`,
             borderRadius: 10,
-            background: "#f5f4f0",
+            background: colors.inputBg,
+            color: colors.fg,
             boxSizing: "border-box",
             outline: "none",
             fontFamily: "inherit",

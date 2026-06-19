@@ -1543,6 +1543,7 @@ export const S = {
   billTableNum: {
     fontSize: 15,
     fontWeight: 700,
+    color: colors.fg,
   },
   billTotal: {
     fontSize: 17,
@@ -1731,6 +1732,7 @@ export const S = {
     border: `1.5px solid ${colors.border}`,
     borderRadius: radii.sm,
     background: colors.inputBg,
+    color: colors.fg,
     outline: "none",
     fontFamily: "inherit",
   },
@@ -1946,7 +1948,8 @@ export const S = {
     fontSize: 15,
     border: `1.5px solid ${statusColors.confirmed.border}`,
     borderRadius: radii.sm,
-    background: colors.surface,
+    background: colors.inputBg,
+    color: colors.fg,
     outline: "none",
     fontFamily: "inherit",
   },
@@ -2108,10 +2111,12 @@ export const S = {
     fontWeight: 600,
     minHeight: 60,
     position: "relative",
+    color: colors.fg,
   },
   variantBtnLabel: {
     fontSize: 14,
     fontWeight: 600,
+    color: colors.fg,
   },
   variantBtnPrice: {
     fontSize: 14,
@@ -2132,14 +2137,14 @@ export const S = {
     color: colors.fg,
   },
   sentSectionPending: {
-    background: statusColors.unconfirmed.bg,
-    border: `1px solid ${colors.border}`,
-    borderLeft: `3px solid ${statusColors.unconfirmed.dot}`,
+    background: colors.chipBg,
+    border: `1px solid ${statusColors.unconfirmed.dot}`,
+    borderLeft: `4px solid ${statusColors.unconfirmed.dot}`,
   },
   sentSectionMarked: {
-    background: statusColors.confirmed.bg,
-    border: `1px solid ${colors.border}`,
-    borderLeft: `3px solid ${statusColors.confirmed.dot}`,
+    background: colors.chipBg,
+    border: `1px solid ${statusColors.confirmed.dot}`,
+    borderLeft: `4px solid ${statusColors.confirmed.dot}`,
   },
 
   // Login
