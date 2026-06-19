@@ -1,3 +1,5 @@
+import { useRef, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { S } from "../styles/appStyles";
 import { colors, radii } from "../styles/tokens";
 import { CheckIcon, ReopenIcon } from "./icons";
@@ -17,6 +19,41 @@ export function BillCard({
   bill, isExpanded, onToggle,
   onMarkAll, onRestoreAll, onMarkItem, onRestoreItem,
 }: BillCardProps) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const expandedPanelRef = useRef<HTMLDivElement>(null);
+  const onToggleRef = useRef(onToggle);
+  onToggleRef.current = onToggle;
+  const [cardRect, setCardRect] = useState<DOMRect | null>(null);
+
+  useEffect(() => {
+    if (!isExpanded) {
+      setCardRect(null);
+      return;
+    }
+    const update = () => {
+      if (cardRef.current) setCardRect(cardRef.current.getBoundingClientRect());
+    };
+    update();
+    window.addEventListener("scroll", update, { passive: true, capture: true });
+    return () => window.removeEventListener("scroll", update, { capture: true });
+  }, [isExpanded]);
+
+  // Close on outside pointerdown so the same gesture can open another card via its click event.
+  useEffect(() => {
+    if (!isExpanded) return;
+    const handlePointerDown = (e: PointerEvent) => {
+      if (expandedPanelRef.current && !expandedPanelRef.current.contains(e.target as Node)) {
+        onToggleRef.current();
+      }
+    };
+    // Defer one tick so the pointerdown that opened this card isn't immediately caught.
+    const timer = setTimeout(() => document.addEventListener("pointerdown", handlePointerDown), 0);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, [isExpanded]);
+
   const allItemsCrossed = bill.items.length > 0 && bill.items.every((item) => {
     const cQty = item.crossedQty ?? (item.crossed ? item.qty : 0);
     return cQty === item.qty;
@@ -47,20 +84,19 @@ export function BillCard({
   const timeStr = new Date(bill.timestamp).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
   const billSubtitle = `${timeStr} · ${shortPaymentLabel}${totalItemCount > 0 ? ` · ${totalItemCount} item${totalItemCount !== 1 ? "s" : ""}` : ""}`;
 
-  const chevron = (expanded: boolean) => (
+  const chevron = (
     <span style={{
       fontSize: 16,
       color: colors.faint,
       lineHeight: 1,
       userSelect: "none",
       display: "inline-block",
-      transform: expanded ? "rotate(90deg)" : "rotate(0deg)",
+      transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)",
       transition: "transform 0.18s ease",
       flexShrink: 0,
     }}>›</span>
   );
 
-  // Circle mark button — right side of the card header
   const markBtn = (
     <button
       onClick={(e) => { e.stopPropagation(); isFullyMarked ? onRestoreAll() : onMarkAll(); }}
@@ -91,30 +127,21 @@ export function BillCard({
     </button>
   );
 
-  const headerContent = (expanded: boolean) => (
+  const headerContent = (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          {chevron(expanded)}
+          {chevron}
           <span style={S.billTableNum}>{bill.tableId}</span>
         </div>
-        <div style={{ fontSize: 12, color: colors.muted, marginTop: expanded ? 2 : 1 }}>{billSubtitle}</div>
+        <div style={{ fontSize: 12, color: colors.muted, marginTop: 1 }}>{billSubtitle}</div>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
-          {expanded && bill.gutschein && bill.gutschein > 0 ? (
-            <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-              <span style={{ fontSize: 13, color: colors.danger, fontWeight: 600 }}>(-{bill.gutschein.toFixed(2)}€)</span>
-              <span style={S.billTotal}>{bill.total.toFixed(2)}€</span>
-            </div>
-          ) : (
-            <span style={S.billTotal}>{bill.total.toFixed(2)}€</span>
-          )}
+          <span style={S.billTotal}>{bill.total.toFixed(2)}€</span>
           {bill.tip !== undefined && (
             <span style={{ fontSize: 12, color: colors.muted }}>
-              {expanded
-                ? `Tip: ${bill.tip >= 0 ? `+${bill.tip.toFixed(2)}€` : `${bill.tip.toFixed(2)}€`}`
-                : `Tip €${Math.abs(bill.tip).toFixed(2)}`}
+              Tip €{Math.abs(bill.tip).toFixed(2)}
             </span>
           )}
         </div>
@@ -123,15 +150,6 @@ export function BillCard({
     </div>
   );
 
-  if (!isExpanded) {
-    return (
-      <div style={{ ...S.billCard, padding: "14px 16px", cursor: "pointer" }} onClick={onToggle}>
-        {headerContent(false)}
-      </div>
-    );
-  }
-
-  // Build item lists for expanded view
   type DisplayItem = (typeof bill.items)[0] & { displayQty: number };
   const activeItems: DisplayItem[] = [];
   const crossedItems: DisplayItem[] = [];
@@ -172,70 +190,117 @@ export function BillCard({
     </button>
   );
 
-  return (
-    <div
-      style={{ ...S.billCard, padding: 0, cursor: "pointer" }}
-      onClick={onToggle}
-    >
-      <div style={{ padding: "14px 16px" }}>
-        {headerContent(true)}
-
-        {bill.items.length === 0 ? (
-          <div style={{ padding: "20px 0", textAlign: "center" as const, color: colors.faint, fontSize: 14, fontStyle: "italic" }}>
-            No items in this bill
-          </div>
-        ) : (
-          <div style={{ marginTop: 10 }}>
-            <div style={S.billItemsList}>
-              {/* Active items */}
-              {activeItems.map((item, idx) => (
-                <div key={`active-${item.directusId || item.id}-${idx}`} style={S.billItemEditable}>
-                  {stepperBtn(() => onMarkItem(item.id), false)}
-                  <span style={{ ...S.billItemName, flex: "none" }}>
+  const itemsPanel = (
+    <div style={{ padding: "0 16px 14px" }}>
+      {bill.gutschein && bill.gutschein > 0 && (
+        <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 8 }}>
+          <span style={{ fontSize: 13, color: colors.danger, fontWeight: 600 }}>
+            (-{bill.gutschein.toFixed(2)}€)
+          </span>
+          <span style={S.billTotal}>{bill.total.toFixed(2)}€</span>
+        </div>
+      )}
+      {bill.tip !== undefined && (
+        <div style={{ fontSize: 12, color: colors.muted, marginBottom: 8 }}>
+          Tip: {bill.tip >= 0 ? `+${bill.tip.toFixed(2)}€` : `${bill.tip.toFixed(2)}€`}
+        </div>
+      )}
+      {bill.items.length === 0 ? (
+        <div style={{ padding: "20px 0", textAlign: "center" as const, color: colors.faint, fontSize: 14, fontStyle: "italic" }}>
+          No items in this bill
+        </div>
+      ) : (
+        <div style={S.billItemsList}>
+          {activeItems.map((item, idx) => (
+            <div key={`active-${item.directusId || item.id}-${idx}`} style={S.billItemEditable}>
+              {stepperBtn(() => onMarkItem(item.id), false)}
+              <span style={{ ...S.billItemName, flex: "none" }}>
+                <span style={S.billItemQty}>{item.displayQty}×</span>
+                {item.name}
+              </span>
+              <span style={{ flex: 1, borderBottom: `1px dotted ${colors.faint}`, margin: "0 6px", alignSelf: "flex-end", marginBottom: 3 }} />
+              <span style={S.billItemPrice}>{(item.price * item.displayQty).toFixed(2)}€</span>
+            </div>
+          ))}
+          {crossedItems.length > 0 && (
+            <>
+              <div style={{
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: 1,
+                color: colors.info,
+                textTransform: "uppercase" as const,
+                marginTop: activeItems.length > 0 ? 8 : 0,
+                marginBottom: 2,
+              }}>
+                In POS
+              </div>
+              {crossedItems.map((item, idx) => (
+                <div
+                  key={`crossed-${item.directusId || item.id}-${idx}`}
+                  style={bill.addedToPOS ? S.billItem : S.billItemEditable}
+                >
+                  {!bill.addedToPOS && stepperBtn(() => onRestoreItem(item.id), true)}
+                  <span style={{ ...S.billItemName, flex: "none", textDecoration: "line-through", color: colors.info }}>
                     <span style={S.billItemQty}>{item.displayQty}×</span>
                     {item.name}
                   </span>
-                  <span style={{ flex: 1, borderBottom: `1px dotted ${colors.faint}`, margin: "0 6px", alignSelf: "flex-end", marginBottom: 3 }} />
-                  <span style={S.billItemPrice}>{(item.price * item.displayQty).toFixed(2)}€</span>
+                  <span style={{ flex: 1, borderBottom: `1px dotted ${colors.info}`, margin: "0 6px", alignSelf: "flex-end", marginBottom: 3, opacity: 0.4 }} />
+                  <span style={{ ...S.billItemPrice, textDecoration: "line-through", color: colors.info }}>
+                    {(item.price * item.displayQty).toFixed(2)}€
+                  </span>
                 </div>
               ))}
-
-              {/* Crossed / in POS items */}
-              {crossedItems.length > 0 && (
-                <>
-                  <div style={{
-                    fontSize: 10,
-                    fontWeight: 700,
-                    letterSpacing: 1,
-                    color: colors.info,
-                    textTransform: "uppercase" as const,
-                    marginTop: activeItems.length > 0 ? 8 : 0,
-                    marginBottom: 2,
-                  }}>
-                    In POS
-                  </div>
-                  {crossedItems.map((item, idx) => (
-                    <div
-                      key={`crossed-${item.directusId || item.id}-${idx}`}
-                      style={bill.addedToPOS ? S.billItem : S.billItemEditable}
-                    >
-                      {!bill.addedToPOS && stepperBtn(() => onRestoreItem(item.id), true)}
-                      <span style={{ ...S.billItemName, flex: "none", textDecoration: "line-through", color: colors.info }}>
-                        <span style={S.billItemQty}>{item.displayQty}×</span>
-                        {item.name}
-                      </span>
-                      <span style={{ flex: 1, borderBottom: `1px dotted ${colors.info}`, margin: "0 6px", alignSelf: "flex-end", marginBottom: 3, opacity: 0.4 }} />
-                      <span style={{ ...S.billItemPrice, textDecoration: "line-through", color: colors.info }}>
-                        {(item.price * item.displayQty).toFixed(2)}€
-                      </span>
-                    </div>
-                  ))}
-                </>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
+            </>
+          )}
+        </div>
+      )}
     </div>
+  );
+
+  return (
+    <>
+      {/* Grid placeholder — always reserves the cell space; hidden when portal takes over */}
+      <div
+        ref={cardRef}
+        style={{
+          ...S.billCard,
+          padding: "14px 16px",
+          cursor: "pointer",
+          visibility: isExpanded ? "hidden" : "visible",
+        }}
+        onClick={onToggle}
+      >
+        {headerContent}
+      </div>
+
+      {isExpanded && cardRect && createPortal(
+        <div
+          ref={expandedPanelRef}
+          style={{
+            position: "fixed",
+            top: cardRect.top,
+            left: cardRect.left,
+            width: cardRect.width,
+            zIndex: 100,
+            background: colors.surface,
+            borderRadius: radii.lg,
+            border: `1px solid ${colors.info}`,
+            boxShadow: "0 8px 24px rgba(0,0,0,0.18)",
+            maxHeight: `calc(100vh - ${cardRect.top}px - 16px)`,
+            overflowY: "auto",
+          }}
+        >
+          <div
+            style={{ padding: "14px 16px", cursor: "pointer" }}
+            onClick={onToggle}
+          >
+            {headerContent}
+          </div>
+          {itemsPanel}
+        </div>,
+        document.body
+      )}
+    </>
   );
 }
