@@ -466,6 +466,99 @@ export function getZeroSalesItems(
   return dead.sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name));
 }
 
+// ── Top pairings (market basket lift) ────────────────────────────────────────
+
+export interface PairingData {
+  itemA: string;
+  categoryA: DisplayCategory;
+  itemB: string;
+  categoryB: DisplayCategory;
+  count: number; // sessions containing both items
+  lift: number;  // lift = P(A∩B) / (P(A)·P(B)) — how much more likely than chance
+}
+
+const MIN_PAIR_SUPPORT = 3;
+const MIN_LIFT = 1.5;
+
+export function getTopPairings(bills: Bill[], limit = 10): PairingData[] {
+  // Group items by session (table visit) so split bills are analyzed together
+  const sessionItems = new Map<string, Map<string, DisplayCategory>>();
+
+  for (const bill of bills) {
+    const key =
+      bill.session_id ??
+      bill.directusId ??
+      bill.tempId ??
+      `${bill.timestamp}:${String(bill.tableId)}`;
+    const itemMap = sessionItems.get(key) ?? new Map<string, DisplayCategory>();
+    for (const item of bill.items) {
+      if (!itemMap.has(item.name)) {
+        itemMap.set(item.name, toDisplayCategory(item.category));
+      }
+    }
+    sessionItems.set(key, itemMap);
+  }
+
+  const sessions = [...sessionItems.values()];
+  const N = sessions.length;
+  if (N < 2) return [];
+
+  // Count how many sessions contain each individual item
+  const itemCount = new Map<string, number>();
+  const itemCategory = new Map<string, DisplayCategory>();
+
+  for (const itemMap of sessions) {
+    for (const [name, cat] of itemMap) {
+      itemCount.set(name, (itemCount.get(name) ?? 0) + 1);
+      if (!itemCategory.has(name)) itemCategory.set(name, cat);
+    }
+  }
+
+  // Count co-occurrences for every pair within each session
+  const pairCount = new Map<string, number>();
+
+  for (const itemMap of sessions) {
+    const names = [...itemMap.keys()].sort();
+    for (let i = 0; i < names.length - 1; i++) {
+      for (let j = i + 1; j < names.length; j++) {
+        const key = `${names[i]}\x00${names[j]}`;
+        pairCount.set(key, (pairCount.get(key) ?? 0) + 1);
+      }
+    }
+  }
+
+  // lift = (count × N) / (countA × countB) — algebraic simplification of P(A∩B)/(P(A)·P(B))
+  const pairings: PairingData[] = [];
+
+  for (const [key, count] of pairCount) {
+    if (count < MIN_PAIR_SUPPORT) continue;
+
+    const sep = key.indexOf("\x00");
+    const nameA = key.slice(0, sep);
+    const nameB = key.slice(sep + 1);
+
+    const countA = itemCount.get(nameA) ?? 0;
+    const countB = itemCount.get(nameB) ?? 0;
+    if (countA === 0 || countB === 0) continue;
+
+    const lift = (count * N) / (countA * countB);
+    if (lift < MIN_LIFT) continue;
+
+    pairings.push({
+      itemA: nameA,
+      categoryA: itemCategory.get(nameA) ?? "Food",
+      itemB: nameB,
+      categoryB: itemCategory.get(nameB) ?? "Food",
+      count,
+      lift,
+    });
+  }
+
+  return pairings
+    .sort((a, b) => b.lift - a.lift || b.count - a.count)
+    .slice(0, limit);
+}
+
 // ── Formatting helpers ───────────────────────────────────────────────────────
 
 export function fmtEur(value: number): string {

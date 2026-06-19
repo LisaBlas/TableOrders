@@ -18,6 +18,7 @@ import { PeakHoursChart } from "../components/analytics/PeakHoursChart";
 import { TopTablesTable } from "../components/analytics/TopTablesTable";
 import { TipsVouchersCard } from "../components/analytics/TipsVouchersCard";
 import { ZeroSalesCard } from "../components/analytics/ZeroSalesCard";
+import { PairingsCard } from "../components/analytics/PairingsCard";
 import { fetchBillsByDateRange, todayBusinessDate } from "../services/directusBills";
 import { useMenu } from "../contexts/MenuContext";
 import {
@@ -35,6 +36,7 @@ import {
   groupByTable,
   computeTipVoucher,
   getZeroSalesItems,
+  getTopPairings,
 } from "../utils/analytics";
 
 function SkeletonBlock({ height = 80 }: { height?: number }) {
@@ -95,6 +97,7 @@ export function AnalyticsView() {
   const topTables = groupByTable(currentBills);
   const tipVoucher = computeTipVoucher(currentBills);
   const zeroSalesItems = getZeroSalesItems(currentBills, menu);
+  const topPairings = getTopPairings(currentBills);
 
   const isEmpty = !loading && currentBills.length === 0;
 
@@ -332,12 +335,14 @@ export function AnalyticsView() {
                 <TopItemsTable items={topItems} />
                 <CategoryBreakdown categories={categories} />
               </div>
+              <PairingsCard pairings={topPairings} />
               <ZeroSalesCard items={zeroSalesItems} />
             </>
           ) : (
             <>
               <CategoryBreakdown categories={categories} />
               <TopItemsTable items={topItems} />
+              <PairingsCard pairings={topPairings} />
               <ZeroSalesCard items={zeroSalesItems} />
             </>
           ))}
