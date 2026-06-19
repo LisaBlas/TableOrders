@@ -174,7 +174,7 @@ export function BillCard({
 
   return (
     <div
-      style={{ ...S.billCard, padding: 0, overflow: "hidden", cursor: "pointer" }}
+      style={{ ...S.billCard, padding: 0, cursor: "pointer" }}
       onClick={onToggle}
     >
       <div style={{ padding: "14px 16px" }}>

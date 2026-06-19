@@ -6,8 +6,8 @@
   "homepage": "https://LisaBlas.github.io/TableOrders",
   "scripts": {
     "dev": "vite",
-    "build": "NODE_OPTIONS=--experimental-global-webcrypto vite build",
-    "build:demo": "NODE_OPTIONS=--experimental-global-webcrypto vite build --mode demo",
+    "build": "vite build",
+    "build:demo": "vite build --mode demo",
     "preview": "vite preview",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",

@@ -9,6 +9,19 @@ import { useDirectusSync } from "../hooks/useDirectusSync";
 import { parseTableId } from "../services/directusSessions";
 import { fetchPermanentTables } from "../services/directusTables";
 import { TABLES } from "../data/constants";
+
+const TABLES_CACHE_KEY = "permanent_tables_cache";
+
+function loadCachedTables(): TableConfig[] {
+  try {
+    const stored = localStorage.getItem(TABLES_CACHE_KEY);
+    if (stored) {
+      const parsed: unknown = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed as TableConfig[];
+    }
+  } catch { /* ignore */ }
+  return TABLES;
+}
 import {
   markSessionDirty,
   readDirtySessionRecords,
@@ -122,14 +135,19 @@ export function TableProvider({ children }: { children: ReactNode }) {
   const [gutscheinAmounts, setGutscheinAmounts] = useState<GutscheinAmounts>(() => initialState.gutscheinAmounts);
   const [markedBatches, setMarkedBatches] = useState<Record<string, Set<MarkedBatchId>>>(() => initialState.markedBatches);
   const [dynamicTables, setDynamicTables] = useLocalStorage<DynamicTable[]>("dynamic_tables", []);
-  const [permanentTables, setPermanentTables] = useState<TableConfig[]>(TABLES);
+  const [permanentTables, setPermanentTables] = useState<TableConfig[]>(() => loadCachedTables());
   const [tablesLoadKey, setTablesLoadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     fetchPermanentTables()
-      .then((tables) => { if (!cancelled && tables.length > 0) setPermanentTables(tables); })
-      .catch(() => { /* keep TABLES fallback */ });
+      .then((tables) => {
+        if (!cancelled && tables.length > 0) {
+          setPermanentTables(tables);
+          try { localStorage.setItem(TABLES_CACHE_KEY, JSON.stringify(tables)); } catch { /* ignore */ }
+        }
+      })
+      .catch(() => { /* keep cached/TABLES fallback */ });
     return () => { cancelled = true; };
   }, [tablesLoadKey]);
 
