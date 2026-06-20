@@ -5,6 +5,7 @@ import { useBreakpoint } from "../hooks/useBreakpoint";
 import { Receipt } from "../components/Receipt";
 import { ScreenHeader } from "../components/ScreenHeader";
 import { S } from "../styles/appStyles";
+import { colors } from "../styles/tokens";
 import type { ExpandedItem } from "../types";
 
 export function SplitConfirmView() {
@@ -169,6 +170,7 @@ export function SplitConfirmView() {
             <button
               style={{
                 ...S.closeBtn,
+                background: colors.danger,
                 ...(guestPayment?.amount && !guestPayment?.confirmed ? { opacity: 0.5, cursor: "not-allowed" } : {}),
               }}
               onClick={settleItemPayment}
@@ -179,6 +181,7 @@ export function SplitConfirmView() {
             <button
               style={{
                 ...S.sendBtn,
+                background: colors.success,
                 ...(guestPayment?.amount && !guestPayment?.confirmed ? { opacity: 0.5, cursor: "not-allowed" } : {}),
               }}
               onClick={nextSplitGuest}
@@ -191,6 +194,7 @@ export function SplitConfirmView() {
           <button
             style={{
               ...S.sendBtn,
+              background: colors.success,
               ...(guestPayment?.amount && !guestPayment?.confirmed ? { opacity: 0.5, cursor: "not-allowed" } : {}),
             }}
             onClick={settleItemPayment}
@@ -283,6 +287,7 @@ export function SplitConfirmView() {
               <button
                 style={{
                   ...S.billPrimaryAction,
+                  background: colors.success,
                   ...(guestPayment?.amount && !guestPayment?.confirmed ? { opacity: 0.5, cursor: "not-allowed" } : {}),
                 }}
                 onClick={nextSplitGuest}
@@ -292,7 +297,8 @@ export function SplitConfirmView() {
               </button>
               <button
                 style={{
-                  ...S.closeBtn,
+                  ...S.billPrimaryAction,
+                  background: colors.danger,
                   ...(guestPayment?.amount && !guestPayment?.confirmed ? { opacity: 0.5, cursor: "not-allowed" } : {}),
                 }}
                 onClick={settleItemPayment}
@@ -305,6 +311,7 @@ export function SplitConfirmView() {
             <button
               style={{
                 ...S.billPrimaryAction,
+                background: colors.success,
                 ...(guestPayment?.amount && !guestPayment?.confirmed ? { opacity: 0.5, cursor: "not-allowed" } : {}),
               }}
               onClick={settleItemPayment}

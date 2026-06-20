@@ -159,13 +159,13 @@ export function SplitEqualView() {
         </div>
         <button
           style={{
-            ...S.closeBtn,
+            ...S.confirmCloseBtn,
             ...(state.equalPayments.some((p) => p.amount && !p.confirmed) ? { opacity: 0.5, cursor: "not-allowed" } : {}),
           }}
           onClick={closeSplitTable}
           disabled={state.equalPayments.some((p) => !!p.amount && !p.confirmed)}
         >
-          Payment
+          Confirm {state.equalGuests} payment{state.equalGuests !== 1 ? "s" : ""}
         </button>
         </div>
       </div>
@@ -281,13 +281,13 @@ export function SplitEqualView() {
 
           <button
             style={{
-              ...S.billPrimaryAction,
+              ...S.billPrimaryActionConfirm,
               ...(state.equalPayments.some((p) => p.amount && !p.confirmed) ? { opacity: 0.5, cursor: "not-allowed" } : {}),
             }}
             onClick={closeSplitTable}
             disabled={state.equalPayments.some((p) => !!p.amount && !p.confirmed)}
           >
-            Payment
+            Confirm {state.equalGuests} payment{state.equalGuests !== 1 ? "s" : ""}
           </button>
         </div>
       </div>
