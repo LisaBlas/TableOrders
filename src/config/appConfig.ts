@@ -1,4 +1,4 @@
-export const RESTAURANT_NAME = "Käserei Camidi";
+export const RESTAURANT_NAME = "Restaurant"; // TODO: set client restaurant name before go-live
 export const TIMEZONE = "Europe/Berlin";
 export const LOCALE = "en-GB";
 // Orders before this hour (Berlin time) belong to the previous business day,

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import logoImg from "./assets/camidi_logo.jpg";
+import logoImg from "./assets/camidi_logo.jpg"; // TODO: replace with client logo before go-live
 import { IS_DEMO_MODE, initDemoState } from "./demo";
+import { RESTAURANT_NAME } from "./config/appConfig";
 import { DemoBanner } from "./components/DemoBanner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
@@ -52,7 +53,7 @@ function SplashScreen() {
       `}</style>
       <img
         src={logoImg}
-        alt="Camidi logo"
+        alt={`${RESTAURANT_NAME} logo`}
         style={{
           width: 120,
           height: 120,
@@ -73,7 +74,7 @@ function SplashScreen() {
           opacity: 0,
         }}
       >
-        Camidi – TableOrders
+        {RESTAURANT_NAME} – TableOrders
       </p>
     </div>
   );

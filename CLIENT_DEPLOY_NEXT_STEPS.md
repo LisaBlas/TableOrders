@@ -13,9 +13,9 @@
 - `dist/` — build output, regenerated on deploy, don't commit
 
 ### Modify before deploy
-- `package.json` — remove `gh-pages` dep, remove `predeploy`/`deploy` scripts (no longer deploying to GitHub Pages)
-- `vite.config.js` — change `base: '/TableOrders/'` to `base: '/'` (served from root on VPS)
-- `package.json` → `homepage` field — remove or update (GitHub Pages URL won't apply)
+- ~~`package.json` — remove `gh-pages` dep, remove `predeploy`/`deploy` scripts~~ ✅ Done
+- ~~`vite.config.js` — change `base: '/TableOrders/'` to `base: '/'`~~ ✅ Done
+- ~~`package.json` → `homepage` field — remove~~ ✅ Done
 - `.env` / `VITE_DIRECTUS_URL` — point to the client's new Directus instance URL
 
 ### Security: scope the Directus token
@@ -54,8 +54,10 @@
 
 ### 4. Update and build the React app
 - [ ] `git pull origin main`
-- [ ] Update `vite.config.js`: `base: '/'`
-- [ ] Remove `gh-pages` from package.json scripts/devDeps
+- [x] Update `vite.config.js`: `base: '/'` ✅
+- [x] Remove `gh-pages` from package.json scripts/devDeps ✅
+- [ ] Set `RESTAURANT_NAME` in `src/config/appConfig.ts` to the client's name
+- [ ] Replace `src/assets/camidi_logo.jpg` with the client's logo file
 - [ ] Create `.env.production` with `VITE_DIRECTUS_URL=https://cms.restaurant.com`
 - [ ] `npm run build` — outputs to `dist/`
 
@@ -97,13 +99,6 @@ A self-contained demo build for the portfolio landing page. No Directus connecti
 - [x] Add GitHub Pages demo build: `npm run build:demo` outputs `dist-demo` with `/TableOrders/demo/` asset base
 - [ ] Deploy static output to GitHub Pages demo path: `npm run deploy:demo`
 - [ ] Test full flow on mobile: seat -> order -> send -> bill -> split
-
-### Notes
-- No VPS or Directus instance needed — purely static
-- Visitors can't corrupt each other's demo (localStorage is per-browser)
-- Reset timer ensures a clean state for every new visitor session
-
----
 
 ## Notes
 - Keep personal VPS Directus (`cms.blasalviz.com`) running as the test/dev environment

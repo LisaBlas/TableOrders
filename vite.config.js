@@ -37,7 +37,7 @@ export default defineConfig(({ mode }) => {
         },
       }),
     ],
-    base: isDemo ? '/TableOrders/demo/' : '/TableOrders/',
+    base: isDemo ? '/TableOrders/demo/' : '/',
     build: {
       outDir: isDemo ? 'dist-demo' : 'dist'
     },
