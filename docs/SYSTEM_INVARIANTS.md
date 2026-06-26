@@ -28,6 +28,9 @@ Table IDs are reused across sessions. When a table is closed, the following must
 `VITE_DIRECTUS_URL` only; Directus auth is user/JWT based and no static Directus
 token should be added to `.env`, source, or service files.
 
-## SI-5: Always pull before changes, deploy after push
+## SI-5: Always pull before changes, deploy demo after push
 
-Per agent workflow: `git pull origin main` before any code change. After committing and pushing: `npm run deploy` to publish to GitHub Pages. Never skip either step.
+Per agent workflow: `git pull origin main` before any code change. After
+committing and pushing: `npm run deploy:demo` to update the GitHub Pages demo
+build. Production deployment to Hetzner is TBD — do not run `npm run deploy`
+as a production step.

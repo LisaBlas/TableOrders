@@ -25,9 +25,9 @@ calculation, legal receipt formatting, and fiscal compliance are out of scope.
 - Styling uses inline JS objects in `src/styles/appStyles.js` plus CSS custom
   properties from `src/index.css` and tokens in `src/styles/tokens.ts`. Do not
   introduce CSS-in-JS libraries or broad CSS rewrites.
-- Directus at `https://cms.blasalviz.com` stores menu items, variants, paid
-  bills, bill items, and table sessions. CORS is configured on Directus;
-  `VITE_DIRECTUS_URL` points to the instance.
+- Directus at `https://cms.blasalviz.com` is the dev/staging instance. Production
+  will run on the client's Hetzner server (URL TBD). CORS is configured on
+  Directus; `VITE_DIRECTUS_URL` points to the active instance.
 - Auth is Directus-native: typed usernames are mapped to
   `{username}@camidi.com`, `/auth/login` returns a JWT stored as
   `sessionToken`, and `/users/me?fields=role.name` resolves `staff` or `admin`.
@@ -51,8 +51,9 @@ Notes:
 - Use `npm ci`, not `npm install`, unless the user explicitly approves
   dependency changes.
 - Vite dev server defaults to `localhost:3000`.
-- `npm run deploy` builds production and publishes `dist` to GitHub Pages.
-- `npm run deploy:demo` publishes `dist-demo` to the `demo/` subfolder.
+- `npm run deploy` is the legacy GitHub Pages script; do not use for production.
+  Production deployment to Hetzner (nginx + static files) is TBD.
+- `npm run deploy:demo` publishes the demo build to the GitHub Pages `demo/` subfolder; this remains the demo deploy target.
 - Run `npm run build` before considering code changes complete unless the task
   is docs-only. Use `npm.cmd` on PowerShell if `npm.ps1` is blocked.
 
@@ -61,7 +62,8 @@ Notes:
   working tree allows it. Do not overwrite or revert unrelated dirty work.
 - Ask before installing dependencies, deleting files, clearing data, touching
   secrets/auth/production data, committing, pushing, or deploying.
-- After an approved commit and push to `main`, run `npm run deploy`.
+- After an approved commit and push to `main`, run `npm run deploy:demo` for the
+  demo build. Production Hetzner deployment workflow is TBD.
 - Avoid changing generated `dist/` or `dist-demo/` unless the task is deployment
   or build-artifact related.
 - Keep docs and implementation aligned. If sync, deployment, data model, auth,

@@ -19,18 +19,11 @@
 ---
 
 ### Exposed Directus Token
-**Status**: 🚨 Production risk
-**Location**: `.env` (VITE_DIRECTUS_TOKEN)
+**Status**: ✅ Resolved — Directus user auth implemented
 
-- `VITE_` prefix exposes token in client bundle (visible in DevTools)
-- Grants full read/write access to Directus collections
-- **Must fix before public deployment**
-
-**Solutions**:
-1. **Backend proxy** (Cloudflare Worker, Vercel serverless) — holds real token, exposes limited endpoints
-2. **Directus user auth** — per-user session tokens instead of static admin token
-
-**Priority**: High if app is public-facing; medium if internal/VPN-only
+- Auth is now per-user JWT via `/auth/login`; no static token in the bundle
+- JWT is scoped to the logged-in user's Directus role (staff or admin)
+- `VITE_DIRECTUS_TOKEN` is no longer used
 ## ⚠️ Reliability (Partially Addressed)
 
 ### Error Handling & Offline Resilience
@@ -55,18 +48,11 @@
 ---
 
 ### No Backup Strategy
-**Status**: 🚨 Data loss risk
+**Status**: ✅ Resolved — formalised in contract (Section 6)
 
-- Directus uses SQLite (single file)
-- File corruption or accidental deletion = total data loss
-- No automated backups currently configured
-
-**Solutions**:
-1. **Directus snapshots** — built-in backup tool, run daily via cron
-2. **Replicate bills** — periodic export to secondary store (S3, localStorage archive, CSV)
-3. **Managed Directus Cloud** — automatic backups included
-
-**Priority**: High for production revenue-generating system
+- Daily automated database backups to Hetzner Object Storage under Client account
+- 30-day retention; Provider notifies Client if backups fail for more than 48 hours
+- Setup is part of the Hetzner VPS provisioning work (TBD)
 ---
 
 ## 📊 Observability (Missing)
@@ -128,9 +114,9 @@
 ## 📋 Summary & Next Steps
 
 ### Production Blockers (Must Fix)
-1. **Exposed Directus token** — backend proxy or user auth
-2. **No backup strategy** — automated snapshots
-3. **Monitoring** — uptime + error tracking
+1. ~~**Exposed Directus token**~~ — ✅ resolved via user JWT auth
+2. ~~**No backup strategy**~~ — ✅ resolved via Hetzner Object Storage (contract Section 6)
+3. **Monitoring** — uptime + error tracking (TBD, part of Hetzner setup)
 
 ### High Priority (Should Fix)
 4. **Error handling gaps** — see [REVIEW_PLAN.md Quick Wins](REVIEW_PLAN.md#quick-wins--30-min-each)

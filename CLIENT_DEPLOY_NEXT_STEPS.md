@@ -30,8 +30,8 @@
 ## Step-by-step: Client VPS Setup
 
 ### 1. Contract signed + VPS provisioned
-- [ ] Client signs contract
-- [ ] Provision VPS (DigitalOcean, Hetzner, etc.) — Ubuntu 24.04
+- [x] Client signs contract (26 June 2026)
+- [ ] Provision Hetzner Cloud VPS — Ubuntu 24.04
 - [ ] Point client domain (e.g. `orders.restaurant.com`) to VPS IP
 - [ ] Add subdomain for CMS (e.g. `cms.restaurant.com`)
 
