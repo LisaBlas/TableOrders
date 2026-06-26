@@ -19,6 +19,7 @@ dist-ssr
 
 DETAILED_REFACTOR_PLAN.md
 DIRECTUS_SETUP.md
+docs/CLIENT_SETUP.md
 
 # Editor directories and files
 .vscode/*
