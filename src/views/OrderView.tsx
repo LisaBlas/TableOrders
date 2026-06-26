@@ -5,7 +5,6 @@ import { useTable } from "../contexts/TableContext";
 import { useTableOrder } from "../hooks/useTableOrder";
 import { useMenuItems } from "../hooks/useMenuItems";
 import { useBreakpoint } from "../hooks/useBreakpoint";
-import { FOOD_SUBCATEGORIES, DRINKS_SUBCATEGORIES, BOTTLES_SUBCATEGORIES, SHOP_SUBCATEGORIES } from "../data/constants";
 import { S } from "../styles/appStyles";
 import { MenuGrid } from "../components/MenuGrid";
 import { VariantBottomSheet } from "../components/VariantBottomSheet";
@@ -20,17 +19,14 @@ import type { MenuCategory, MenuItem, MenuItemVariant } from "../types";
 export function OrderView() {
   const app = useApp();
   const table = useTable();
-  const { menu: MENU } = useMenu();
+  const { menu: MENU, subcategories } = useMenu();
   const tableId = app.activeTable!;
   const { unsent, sent, batches } = useTableOrder(tableId);
 
   // Local UI state
   const [activeCategory, setActiveCategory] = useState<string>("Food");
   const [searchQuery, setSearchQuery] = useState("");
-  const SUBCATEGORY_CONFIG: Record<string, typeof FOOD_SUBCATEGORIES> = {
-    Food: FOOD_SUBCATEGORIES, Drinks: DRINKS_SUBCATEGORIES, Wines: BOTTLES_SUBCATEGORIES, Shop: SHOP_SUBCATEGORIES,
-  };
-  const subcategoryConfig = SUBCATEGORY_CONFIG[activeCategory] ?? [];
+  const subcategoryConfig = subcategories[activeCategory] ?? [];
   const [orderBarExpanded, setOrderBarExpanded] = useState(false);
   const [showCustomModal, setShowCustomModal] = useState(false);
   const [showVariantSheet, setShowVariantSheet] = useState(false);
@@ -193,7 +189,7 @@ export function OrderView() {
               >
                 <MenuGrid
                   filteredItems={categoryItems[cat] ?? []}
-                  subcategoryConfig={SUBCATEGORY_CONFIG[cat] ?? []}
+                  subcategoryConfig={subcategories[cat] ?? []}
                   searchQuery=""
                   unsent={unsent}
                   onTap={handleCardTap}

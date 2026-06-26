@@ -83,10 +83,11 @@ Notes:
   to avoid zoom clipping.
 - `ScreenHeader` centralizes top bars. On shell views, wide layouts suppress
   redundant back/profile controls because navigation lives in the sidebar.
-- `TABLES` is a flat hardcoded fallback of 18 permanent tables with short
-  display labels: 1-4, MUT, 10-15, To Go, A, B, C, Left, Mid, Right. When
-  Directus `restaurant_tables` has data, `permanentTables` in `TableContext`
-  replaces this fallback. The old Inside/Outside grouping is removed.
+- `TABLES` is an empty fallback. Permanent tables are fetched from Directus
+  `restaurant_tables`, cached in `permanent_tables_cache` (localStorage), and
+  exposed as `permanentTables` in `TableContext`. The hardcoded list has been
+  removed; the only scenario where `TABLES` matters is a cold-cache device with
+  Directus unreachable on first load.
 - Staff can add temporary overflow tables during service. They are local-only in
   `dynamic_tables`, use `ext-*` ids, are resolved through
   `resolveTableDisplayId`, and are removed when the table closes. Permanent
@@ -131,9 +132,26 @@ Notes:
   restores the snapshot.
 
 ## Menu, Admin, Analytics, And Demo
-- Menu data loads from Directus on app start, retries, then falls back to static
-  constants. Admin edits write through `directusAdmin.ts`; leaving `AdminView`
-  after dirty edits calls `MenuContext.reloadMenu()`.
+- `MenuContext` fetches menu and subcategories in parallel on app start (3
+  retries, 800ms backoff). Both are cached in localStorage: `menu_cache` and
+  `subcategories_cache`. On Directus failure the cached values are used; on
+  cold-cache with no Directus, menu falls back to the empty `MENU` constant and
+  subcategories fall back to `{}` (no filter chips shown).
+- Subcategories live in the Directus `subcategories` collection and are fetched
+  by `directusSubcategories.ts`. IDs use a compound slug convention:
+  `{category}_{name}` (e.g. `food_warm`, `drinks_cocktail`, `wines_red`).
+  This guarantees uniqueness across categories for multi-client use. The four
+  constant arrays in `constants.ts` are now empty fallbacks only.
+- `menu_items.subcategory` stores compound slugs matching `subcategories.id`.
+  Do not use short slugs (`warm`, `cocktail`) — they are ambiguous across
+  categories. `WINE_TYPES` in `AdminView` is a separate hardcoded list for
+  `menu_item_variants.bottle_subcategory` and is intentionally not part of the
+  subcategories collection.
+- Subcategory management UI (add/rename/archive via AdminView) is not yet built.
+  Currently subcategories are managed directly in Directus.
+- Admin edits write through `directusAdmin.ts`; leaving `AdminView` after dirty
+  edits calls `MenuContext.reloadMenu()` which re-fetches both menu and
+  subcategories.
 - `AdminView` groups menu items as Food, Wines, Drinks, Shop; supports search,
   collapse, optimistic availability toggles with rollback, item edits, variant
   price edits/additions/deletions, and new item creation.
@@ -167,8 +185,8 @@ Notes:
 - Confirm destructive user actions in UI, especially closing tables and clearing
   sales.
 - Be careful with Directus field names. They mirror production collections:
-  `categories`, `menu_items`, `menu_item_variants`, `bills`, `bill_items`, and
-  `table_sessions`.
+  `categories`, `subcategories`, `menu_items`, `menu_item_variants`, `bills`,
+  `bill_items`, and `table_sessions`.
 
 ## Verification
 - Primary verification for code changes: `npm run build`.

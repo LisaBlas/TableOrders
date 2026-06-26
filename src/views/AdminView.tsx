@@ -16,24 +16,12 @@ import {
 import { colors, radii } from "../styles/tokens";
 import { S } from "../styles/appStyles";
 import { FilterIcon } from "../components/icons";
-import {
-  FOOD_SUBCATEGORIES,
-  DRINKS_SUBCATEGORIES,
-  SHOP_SUBCATEGORIES,
-  BOTTLES_SUBCATEGORIES,
-} from "../data/constants";
 import { directusFetch } from "../services/directusFetch";
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
 const WINE_TYPES = ["white", "rosé", "red", "sparkling", "natural"];
 
-const SUBCATEGORY_OPTIONS: Record<string, string[]> = {
-  Food: FOOD_SUBCATEGORIES.map((s) => s.id),
-  Drinks: DRINKS_SUBCATEGORIES.map((s) => s.id),
-  Wines: WINE_TYPES,
-  Shop: SHOP_SUBCATEGORIES.map((s) => s.id),
-};
 
 const VARIANT_OPTIONS: Record<string, { label: string; posIdSuffix: string }[]> = {
   Wines: [
@@ -727,7 +715,8 @@ function SubcategoryField({
   value: string;
   onChange: (v: string) => void;
 }) {
-  const options = SUBCATEGORY_OPTIONS[categoryName] ?? [];
+  const { subcategories } = useMenu();
+  const options = subcategories[categoryName] ?? [];
   const fieldLabel = categoryName === "Wines" ? "Wine type" : "Subcategory";
   if (options.length === 0) {
     return (
@@ -744,7 +733,7 @@ function SubcategoryField({
       >
         <option value="">—</option>
         {options.map((o) => (
-          <option key={o} value={o}>{o}</option>
+          <option key={o.id} value={o.id}>{o.label}</option>
         ))}
       </select>
     </div>
@@ -868,13 +857,6 @@ function VariantRowInput({
 }
 
 // ── FilterBar ──────────────────────────────────────────────────────────────
-
-const SUBCATEGORY_LABELS: Record<string, { value: string; label: string }[]> = {
-  Food: FOOD_SUBCATEGORIES.map((s) => ({ value: s.id, label: s.label })),
-  Drinks: DRINKS_SUBCATEGORIES.map((s) => ({ value: s.id, label: s.label })),
-  Wines: BOTTLES_SUBCATEGORIES.map((s) => ({ value: s.id, label: s.label })),
-  Shop: SHOP_SUBCATEGORIES.map((s) => ({ value: s.id, label: s.label })),
-};
 
 type AvailFilter = "all" | "available" | "unavailable";
 type VariantFilter = "all" | "variants" | "simple";
@@ -1465,7 +1447,7 @@ const SECTION_ORDER = ["Food", "Wines", "Drinks", "Shop"] as const;
 
 export function AdminView() {
   const { setView, showToast } = useApp();
-  const { reloadMenu } = useMenu();
+  const { reloadMenu, subcategories } = useMenu();
   const { isTabletLandscape, isLaptop, isDesktop } = useBreakpoint();
   const isWideShell = isDesktop || isLaptop || isTabletLandscape;
   const isTableView = isWideShell;
@@ -1506,6 +1488,13 @@ export function AdminView() {
 
   const [sortKey, setSortKey] = useState("sort_order");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+
+  const subcatOptions = useMemo(
+    () => Object.fromEntries(
+      Object.entries(subcategories).map(([cat, subs]) => [cat, subs.map((s) => ({ value: s.id, label: s.label }))])
+    ),
+    [subcategories]
+  );
 
   const groups = useMemo(() => groupByCategory(items), [items]);
   const sectionMap = useMemo(
@@ -1621,7 +1610,7 @@ export function AdminView() {
 
   const renderFilterSections = (showCategory = true) => {
     const subcatKey = showCategory ? categoryFilter : activeCategory;
-    const showSubcat = (showCategory ? subcatKey !== "all" : true) && !!SUBCATEGORY_LABELS[subcatKey];
+    const showSubcat = (showCategory ? subcatKey !== "all" : true) && !!subcatOptions[subcatKey]?.length;
     return (
       <>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
@@ -1649,7 +1638,7 @@ export function AdminView() {
           <div style={{ marginBottom: 14 }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: colors.muted, textTransform: "uppercase" as const, letterSpacing: "0.06em", marginBottom: 8 }}>Subcategory</div>
             <FilterPills
-              options={[{ value: "all", label: "All" }, ...SUBCATEGORY_LABELS[subcatKey]]}
+              options={[{ value: "all", label: "All" }, ...(subcatOptions[subcatKey] ?? [])]}
               value={subcategoryFilter}
               onChange={setSubcategoryFilter}
             />
@@ -1799,7 +1788,7 @@ export function AdminView() {
                   style={{
                     ...S.tabIndicator,
                     width: "25%",
-                    transform: `translateX(${SECTION_ORDER.indexOf(activeCategory) * 100}%)`,
+                    transform: `translateX(${SECTION_ORDER.findIndex((s) => s === activeCategory) * 100}%)`,
                   }}
                 />
               </div>

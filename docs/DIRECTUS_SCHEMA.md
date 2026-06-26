@@ -9,6 +9,7 @@
 | Collection | Purpose | Lifecycle |
 |---|---|---|
 | `categories` | Menu categories (Food, Drinks, Wines, Shop) | Static structure |
+| `subcategories` | Filterable subcategories per category | Editable via Directus |
 | `menu_items` | Menu items with pricing and POS mapping | Editable via CMS |
 | `menu_item_variants` | Size/type variants (0.1L, 0.2L, bottle here/to-go) | Editable via CMS |
 | `bills` | Paid bills (one per payment) | Never deleted (persistent) |
@@ -18,6 +19,27 @@
 ---
 
 ## Schema Details
+
+### `subcategories`
+**Purpose:** Filterable groupings within each category; displayed as filter chips in OrderView and as a select field in AdminView item editing.
+
+```typescript
+{
+  id: string (PK),        // Compound slug: "{category}_{name}" e.g. "food_warm", "drinks_cocktail"
+  category_id: number,    // FK → categories.id (1=Food, 2=Drinks, 3=Wines, 4=Shop)
+  label: string,          // Display label shown in UI e.g. "🍽️ Warm Dishes"
+  sort_order: number,     // Display order within category
+  active: boolean,        // false = hidden from app (archived)
+}
+```
+
+**Compound slug convention:** `{category_slug}_{subcategory_slug}` guarantees uniqueness across categories for multi-client deployments. Never use short slugs (`warm`, `cocktail`) — they are ambiguous. `menu_items.subcategory` must always store the compound form.
+
+**Fetched by:** `src/services/directusSubcategories.ts`; cached in localStorage as `subcategories_cache`.
+
+**Note:** `menu_item_variants.bottle_subcategory` is a separate field (wine type for bottle variants: "white", "red", etc.) and is not part of this collection.
+
+---
 
 ### `categories`
 **Purpose:** Top-level menu organization
@@ -52,7 +74,7 @@
   name: string,           // "Aperol", "Picpoul", "Cheese Plate"
   short_name: string,     // Abbreviated display name; also used as posName in frontend
   category_id: number,    // FK → categories
-  subcategory: string,    // "cheese", "wine", "cocktail" (not normalized)
+  subcategory: string,    // Compound slug matching subcategories.id e.g. "food_cheese", "drinks_cocktail"
   price: decimal,         // Price if no variants (null if item has variants)
   pos_id: string,         // POS system ID (e.g., "73", "251")
   destination: string,    // "bar" | "counter" | "kitchen" (order routing)
@@ -324,35 +346,6 @@ const inventory = await directus.request(
 
 ---
 
-### Modifying Relationships
-**Example: Normalize subcategories (future improvement)**
-
-```sql
--- 1. Create subcategories table
-CREATE TABLE subcategories (
-  id TEXT PRIMARY KEY,
-  category_id INTEGER NOT NULL,
-  name TEXT NOT NULL,
-  emoji TEXT,
-  sort_order INTEGER DEFAULT 0,
-  FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
-);
-
--- 2. Migrate data
-INSERT INTO subcategories (id, category_id, name)
-SELECT DISTINCT subcategory, category_id, subcategory
-FROM menu_items
-WHERE subcategory IS NOT NULL;
-
--- 3. Update menu_items schema
-ALTER TABLE menu_items RENAME COLUMN subcategory TO subcategory_id;
--- (SQLite limitation: ALTER COLUMN type requires table recreation)
-
--- 4. Add foreign key constraint
--- (Requires table recreation in SQLite — see migration guides)
-```
-
----
 
 ## Common Queries
 
@@ -448,7 +441,6 @@ const posEntries = bills.flatMap(b => b.items).reduce((acc, item) => {
 ## Future Schema Extensions
 
 ### Planned (Not Yet Implemented)
-- `subcategories` table (normalize subcategory strings)
 - `restaurant_tables` collection (dynamic table config)
 - `allergens` field on `menu_items`
 - `inventory` collection (stock tracking)

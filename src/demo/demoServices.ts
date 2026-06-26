@@ -1,5 +1,5 @@
 import type { TableSession } from "../services/directusSessions";
-import type { Bill } from "../types";
+import type { Bill, Subcategory } from "../types";
 import { MENU, MIN_QTY_2_IDS } from "../data/constants";
 import { DEMO_SESSIONS_KEY, DEMO_BILLS_KEY } from "./index";
 import { BUSINESS_DAY_START_HOUR } from "../config/appConfig";
@@ -116,4 +116,37 @@ export async function patchBillItem(directusId: string, data: object): Promise<v
 
 export async function fetchMenu(): Promise<{ menu: Record<string, unknown[]>; minQty2Ids: Set<string> }> {
   return { menu: MENU as Record<string, unknown[]>, minQty2Ids: MIN_QTY_2_IDS as Set<string> };
+}
+
+export async function fetchSubcategories(): Promise<Record<string, Subcategory[]>> {
+  return {
+    Food: [
+      { id: "food_cheese", label: "🧀 Cheese Counter" },
+      { id: "food_salads", label: "🥗 Salads" },
+      { id: "food_warm", label: "🍽️ Warm Dishes" },
+      { id: "food_extras", label: "🥔 Extras" },
+      { id: "food_snacks", label: "🫒 Snacks" },
+    ],
+    Drinks: [
+      { id: "drinks_soft", label: "🥤 Soft" },
+      { id: "drinks_bier", label: "🍺 Bier" },
+      { id: "drinks_cocktail", label: "🍸 Cocktail" },
+      { id: "drinks_schnaps", label: "🥃 Schnaps" },
+      { id: "drinks_warm", label: "☕ Warm" },
+    ],
+    Wines: [
+      { id: "wines_by_the_glass", label: "🍷 By the glass" },
+      { id: "wines_natural", label: "🌿 Natural" },
+      { id: "wines_red", label: "🔴 Red" },
+      { id: "wines_white", label: "⚪ White" },
+      { id: "wines_rosé", label: "🌸 Rosé" },
+      { id: "wines_sparkling", label: "✨ Sparkling" },
+    ],
+    Shop: [
+      { id: "shop_fish", label: "🐟 Fish" },
+      { id: "shop_spreads", label: "🍯 Spreads" },
+      { id: "shop_snacks", label: "🍪 Snacks" },
+      { id: "shop_bottles", label: "🍾 Bottles" },
+    ],
+  };
 }
