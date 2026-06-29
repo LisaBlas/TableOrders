@@ -79,7 +79,8 @@ const remoteToCachedSession = (session: Omit<TableSession, "id">): CachedSession
 export function useDirectusSync(
   state: SyncState,
   setters: SyncSetters,
-  showToast: (msg: string) => void
+  showToast: (msg: string) => void,
+  enabled = true
 ) {
   const { orders, seatedTablesArr, sentBatches, gutscheinAmounts, markedBatches } = state;
   const { setOrders, setSeatedTablesArr, setSentBatches, setGutscheinAmounts, setMarkedBatches } = setters;
@@ -126,7 +127,8 @@ export function useDirectusSync(
   const { data: remoteSessions, isError: syncError, refetch: refetchSessions } = useQuery({
     queryKey: ["table_sessions"],
     queryFn: fetchAllSessions,
-    refetchInterval: POLL_INTERVAL_MS,
+    enabled,
+    refetchInterval: enabled ? POLL_INTERVAL_MS : false,
     refetchOnReconnect: true,
     refetchOnWindowFocus: true,
     staleTime: 1000,

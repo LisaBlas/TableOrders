@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "./AuthContext";
 import { migratePaidBills } from "../utils/migration";
 import {
   fetchBillsByDate,
@@ -58,6 +59,7 @@ const AppContext = createContext<AppContextValue | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
+  const { isAuthenticated } = useAuth();
   const [view, setView] = useState<View>("tables");
   const [activeTable, setActiveTable] = useState<TableId | null>(null);
   const [ticketTable, setTicketTable] = useState<TableId | null>(null);
@@ -87,8 +89,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return [];
       }
     },
+    enabled: isAuthenticated,
     staleTime: 5_000,
-    refetchInterval: isToday ? 5_000 : false,
+    refetchInterval: isAuthenticated && isToday ? 5_000 : false,
     refetchOnWindowFocus: true,
   });
 

@@ -1,6 +1,14 @@
 const DIRECTUS_URL = import.meta.env.VITE_DIRECTUS_URL ?? "https://directus-proxy.alvizblas.workers.dev";
 
 const SESSION_KEY = "sessionToken";
+const SESSION_URL_KEY = "sessionDirectusUrl";
+
+// Clear token if it was issued by a different Directus instance
+if (localStorage.getItem(SESSION_URL_KEY) !== DIRECTUS_URL) {
+  localStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem("authRole");
+  localStorage.setItem(SESSION_URL_KEY, DIRECTUS_URL);
+}
 
 export { DIRECTUS_URL };
 

@@ -5,6 +5,7 @@ import {
 import { flushSync, unstable_batchedUpdates } from "react-dom";
 import { useApp } from "./AppContext";
 import { useMenu } from "./MenuContext";
+import { useAuth } from "./AuthContext";
 import { useDirectusSync } from "../hooks/useDirectusSync";
 import { parseTableId } from "../services/directusSessions";
 import { fetchPermanentTables } from "../services/directusTables";
@@ -125,6 +126,7 @@ function loadStoredTableState() {
 export function TableProvider({ children }: { children: ReactNode }) {
   const { showToast } = useApp();
   const { minQty2Ids } = useMenu();
+  const { isAuthenticated } = useAuth();
   const initialState = useMemo(() => loadStoredTableState(), []);
 
   // ── State ─────────────────────────────────────────────────────────────────
@@ -159,7 +161,8 @@ export function TableProvider({ children }: { children: ReactNode }) {
   const { scheduleWrite, cancelAndDelete, syncError, conflicts, resolveConflict, markAsLocallyOwned } = useDirectusSync(
     { orders, seatedTablesArr, sentBatches, gutscheinAmounts, markedBatches },
     { setOrders, setSeatedTablesArr, setSentBatches, setGutscheinAmounts, setMarkedBatches },
-    showToast
+    showToast,
+    isAuthenticated
   );
 
   const persistDirtySession = useCallback((
