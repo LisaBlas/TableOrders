@@ -44,7 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await fetch(`${DIRECTUS_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, mode: "json" }),
       });
       if (!res.ok) return false;
       const { data: { access_token } } = await res.json();
