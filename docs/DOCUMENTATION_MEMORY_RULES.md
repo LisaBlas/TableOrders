@@ -27,13 +27,6 @@ They should not contain:
   violated.
 - `docs/DIRECTUS_SCHEMA.md`: Directus collections, fields, query assumptions,
   and schema/data integrity rules.
-- `docs/MEMORY.md`: durable sync architecture notes and historical gotchas that
-  are too detailed for session memory.
-- `docs/TABLE_MANAGEMENT_DECISION.md`: table-management product direction.
-- `docs/RECENT_CHANGES.md`: short historical notes only when useful for future
-  debugging or audit context.
-- Feature-specific docs: use only when a feature needs more detail than belongs
-  in session memory.
 
 ## Audit Workflow
 1. Inspect source code and focused docs before editing memory files.

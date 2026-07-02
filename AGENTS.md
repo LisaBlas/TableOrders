@@ -26,8 +26,9 @@ calculation, legal receipt formatting, and fiscal compliance are out of scope.
   properties from `src/index.css` and tokens in `src/styles/tokens.ts`. Do not
   introduce CSS-in-JS libraries or broad CSS rewrites.
 - Directus at `https://cms.blasalviz.com` is the dev/staging instance. Production
-  will run on the client's Hetzner server (URL TBD). CORS is configured on
-  Directus; `VITE_DIRECTUS_URL` points to the active instance.
+  Directus runs at `https://cms.camidi.de` on the client's Hetzner VPS
+  (`167.233.138.109`). CORS is configured on Directus; `VITE_DIRECTUS_URL` points
+  to the active instance.
 - Auth is Directus-native: typed usernames are mapped to
   `{username}@camidi.com`, `/auth/login` returns a JWT stored as
   `sessionToken`, and `/users/me?fields=role.name` resolves `staff` or `admin`.
@@ -40,7 +41,7 @@ npm run dev
 npm run build
 npm run build:demo
 npm run preview
-npm run deploy
+npm run deploy:prod
 npm run deploy:demo
 npm test
 npm.cmd run build
@@ -51,8 +52,9 @@ Notes:
 - Use `npm ci`, not `npm install`, unless the user explicitly approves
   dependency changes.
 - Vite dev server defaults to `localhost:3000`.
-- `npm run deploy` is the legacy GitHub Pages script; do not use for production.
-  Production deployment to Hetzner (nginx + static files) is TBD.
+- `npm run deploy:prod` builds and SCPs `dist/` to the Hetzner VPS at
+  `167.233.138.109:/var/www/camidi/` via `~/.ssh/camidi-hetzner`. Requires the
+  SSH key to be present locally. Ask before running.
 - `npm run deploy:demo` publishes the demo build to the GitHub Pages `demo/` subfolder; this remains the demo deploy target.
 - Run `npm run build` before considering code changes complete unless the task
   is docs-only. Use `npm.cmd` on PowerShell if `npm.ps1` is blocked.
@@ -63,7 +65,7 @@ Notes:
 - Ask before installing dependencies, deleting files, clearing data, touching
   secrets/auth/production data, committing, pushing, or deploying.
 - After an approved commit and push to `main`, run `npm run deploy:demo` for the
-  demo build. Production Hetzner deployment workflow is TBD.
+  demo build. For production, run `npm run deploy:prod` (builds + SCPs to Hetzner).
 - Avoid changing generated `dist/` or `dist-demo/` unless the task is deployment
   or build-artifact related.
 - Keep docs and implementation aligned. If sync, deployment, data model, auth,
@@ -83,13 +85,14 @@ Notes:
   to avoid zoom clipping.
 - `ScreenHeader` centralizes top bars. On shell views, wide layouts suppress
   redundant back/profile controls because navigation lives in the sidebar.
-- `TABLES` is a flat hardcoded list of 18 permanent tables: 1-4, MUT, 10-15,
-  ToGo, A, B, C, Left, Mid, Right. The old Inside/Outside grouping is removed.
+- `TABLES` is an empty fallback. Permanent tables are fetched from Directus
+  `restaurant_tables`, cached in `permanent_tables_cache` (localStorage), and
+  exposed as `permanentTables` in `TableContext`. The hardcoded list has been
+  removed; the only scenario where `TABLES` matters is a cold-cache device with
+  Directus unreachable on first load.
 - Staff can add temporary overflow tables during service. They are local-only in
   `dynamic_tables`, use `ext-*` ids, are resolved through
-  `resolveTableDisplayId`, and are removed when the table closes. Permanent
-  table setup is a future admin/Directus feature; see
-  `docs/TABLE_MANAGEMENT_DECISION.md`.
+  `resolveTableDisplayId`, and are removed when the table closes.
 - Table swap uses a 500ms long press and swaps orders, sent batches, marked
   batches, Gutschein amounts, and seated status.
 - Sent items are locked; only unsent quantities can be edited. Item splits
@@ -152,10 +155,7 @@ Notes:
 ## Focused Docs
 - Directus schemas and query assumptions: `docs/DIRECTUS_SCHEMA.md`.
 - Hard sync/system invariants: `docs/SYSTEM_INVARIANTS.md`.
-- Durable sync architecture notes: `docs/MEMORY.md`.
 - Documentation memory rules: `docs/DOCUMENTATION_MEMORY_RULES.md`.
-- Table-management direction: `docs/TABLE_MANAGEMENT_DECISION.md`.
-- Recent historical notes: `docs/RECENT_CHANGES.md`.
 
 ## Implementation Guidelines
 - Keep the app mobile-first and touch-friendly.
