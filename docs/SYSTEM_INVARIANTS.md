@@ -28,9 +28,26 @@ Table IDs are reused across sessions. When a table is closed, the following must
 `VITE_DIRECTUS_URL` only; Directus auth is user/JWT based and no static Directus
 token should be added to `.env`, source, or service files.
 
-## SI-5: Always pull before changes, deploy after push
+## SI-5: Always pull before changes; prod deploy is manual and separate from `main`
 
 Per agent workflow: `git pull origin main` before any code change. After
 committing and pushing: `npm run deploy:demo` to update the GitHub Pages demo
-build. For production: `npm run deploy:prod` (builds + SCPs to
-`167.233.138.109:/var/www/camidi/`). Always ask before deploying to production.
+build. Production deployment (`npm run deploy:prod`) is a separate, manual
+step — it builds locally and `scp`s `dist/` to the prod Hetzner VPS
+(`167.233.138.109:/var/www/camidi/`) over SSH from the developer's local
+machine. Pushing to `main` does **not** deploy prod. Confirmed live in
+production since 2026-07-01 — never assume `main` reflects what the
+restaurant is running; ask before running `npm run deploy:prod`.
+
+## SI-6: `staging` branch is for headless/Slack sessions only; `deploy:prod` never builds from it
+
+`claude-runner` (headless `claude -p`, triggered via Slack/phone) works on the
+`staging` branch: commits, pushes, and runs `npm run deploy:staging` (rsyncs
+`dist/` to `/var/www/tableorders-staging/` on this VPS, served at
+`https://to-staging.blasalviz.com`) without asking for confirmation each time.
+This is safe because staging is isolated — it never touches `main` and
+`deploy:prod` is hardcoded to build from `main` only. Merging anything from
+`staging` into `main` requires an interactive session where the user reviews
+the commits; that merge is the actual "promote to production" decision, not
+the staging deploy itself. Do not let any automation fast-forward `main` to
+`staging` or point `deploy:prod` at anything other than `main`.

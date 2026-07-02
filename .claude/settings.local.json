@@ -23,7 +23,15 @@
       "Bash(npm run dev:*)",
       "Bash(timeout 5 tail:*)",
       "Bash(taskkill:*)",
-      "Bash(curl -s \"https://cms.blasalviz.com/items/menu_items?filter[name][_eq]=Picpoul&fields=name,subcategory,category.name,variants.*\")"
+      "Bash(curl -s \"https://cms.blasalviz.com/items/menu_items?filter[name][_eq]=Picpoul&fields=name,subcategory,category.name,variants.*\")",
+      "Read(//opt/**)",
+      "Read(//home/**)",
+      "Read(//var/**)",
+      "Bash(node_modules/.bin/directus database *)",
+      "Bash(curl -s https://cms.blasalviz.com/server/ping)",
+      "Bash(curl -s https://cms.blasalviz.com/server/info)",
+      "Bash(tee /tmp/diff-clean.json)",
+      "Bash(curl *)"
     ]
   }
 }

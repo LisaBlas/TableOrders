@@ -1,6 +1,9 @@
 # Directus Schema Reference — TableOrders
 
-**Current State:** Single-database Directus instance (SQLite) serving menu data, bills, and real-time table sessions.
+**Dev:** `https://cms.blasalviz.com` — Directus 12.0.2, SQLite
+**Prod:** `https://cms.camidi.de` — Directus 12.0.2, PostgreSQL (Hetzner)
+
+Schema and reference data migrated dev → prod on 2026-06-28.
 
 ---
 
@@ -12,6 +15,7 @@
 | `subcategories` | Filterable subcategories per category | Editable via Directus |
 | `menu_items` | Menu items with pricing and POS mapping | Editable via CMS |
 | `menu_item_variants` | Size/type variants (0.1L, 0.2L, bottle here/to-go) | Editable via CMS |
+| `restaurant_tables` | Permanent table configuration | Admin-managed |
 | `bills` | Paid bills (one per payment) | Never deleted (persistent) |
 | `bill_items` | Line items per bill (FK → bills) | Immutable after creation |
 | `table_sessions` | Real-time table state (orders, batches, gutschein) | Deleted on table close |
@@ -148,7 +152,7 @@ GET /items/menu_items
 
 ```typescript
 {
-  id: uuid (PK),
+  id: integer (PK, auto-increment),
   table_id: string,       // Static table id or temporary ext-* table id
   total: decimal,         // Final bill total (after gutschein)
   gutschein: decimal,     // Discount amount (nullable)
@@ -188,8 +192,8 @@ const bills = await directus.request(
 
 ```typescript
 {
-  id: uuid (PK),
-  bill_id: uuid,          // FK → bills.id
+  id: integer (PK, auto-increment),
+  bill_id: integer,       // FK → bills.id (integer on prod; char(36) on dev SQLite — known schema debt)
   item_id: string,        // Original menu item ID (e.g., "f1", "dr1")
   item_name: string,      // Snapshot at payment time
   pos_id: string,         // POS ID (nullable)
@@ -441,7 +445,6 @@ const posEntries = bills.flatMap(b => b.items).reduce((acc, item) => {
 ## Future Schema Extensions
 
 ### Planned (Not Yet Implemented)
-- `restaurant_tables` collection (dynamic table config)
 - `allergens` field on `menu_items`
 - `inventory` collection (stock tracking)
 - `shifts` collection (open/close shifts, cash reconciliation)
@@ -456,7 +459,7 @@ const posEntries = bills.flatMap(b => b.items).reduce((acc, item) => {
 
 ## Maintenance Notes
 
-**Directus Version:** 10.x (SQLite backend)
+**Directus Version:** 12.0.2 (dev: SQLite / prod: PostgreSQL)
 **Polling Intervals:**
 - Table sessions: 2 seconds
 - Bills (today only): 5 seconds

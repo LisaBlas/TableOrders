@@ -25,10 +25,10 @@ calculation, legal receipt formatting, and fiscal compliance are out of scope.
 - Styling uses inline JS objects in `src/styles/appStyles.js` plus CSS custom
   properties from `src/index.css` and tokens in `src/styles/tokens.ts`. Do not
   introduce CSS-in-JS libraries or broad CSS rewrites.
-- Directus at `https://cms.blasalviz.com` is the dev/staging instance. Production
-  Directus runs at `https://cms.camidi.de` on the client's Hetzner VPS
-  (`167.233.138.109`). CORS is configured on Directus; `VITE_DIRECTUS_URL` points
-  to the active instance.
+- Directus at `https://cms.blasalviz.com` (SQLite) is the dev/staging instance.
+  Production Directus runs at `https://cms.camidi.de` (PostgreSQL, Hetzner),
+  live since 2026-07-01. CORS is configured on Directus; `VITE_DIRECTUS_URL`
+  points to the active instance per environment.
 - Auth is Directus-native: typed usernames are mapped to
   `{username}@camidi.com`, `/auth/login` returns a JWT stored as
   `sessionToken`, and `/users/me?fields=role.name` resolves `staff` or `admin`.
@@ -43,6 +43,7 @@ npm run build:demo
 npm run preview
 npm run deploy:prod
 npm run deploy:demo
+npm run deploy:staging
 npm test
 npm.cmd run build
 npm.cmd exec tsc -- --noEmit
@@ -52,10 +53,20 @@ Notes:
 - Use `npm ci`, not `npm install`, unless the user explicitly approves
   dependency changes.
 - Vite dev server defaults to `localhost:3000`.
-- `npm run deploy:prod` builds and SCPs `dist/` to the Hetzner VPS at
-  `167.233.138.109:/var/www/camidi/` via `~/.ssh/camidi-hetzner`. Requires the
-  SSH key to be present locally. Ask before running.
+- `npm run deploy:prod` builds the app and `scp`s `dist/` to the prod Hetzner VPS
+  (`/var/www/camidi/` on `167.233.138.109`), then `chmod`s it over SSH using the
+  `camidi-hetzner` key (see `package.json`). It is a manual step run from the
+  developer's local machine (Windows — hence the `%USERPROFILE%` paths) and is
+  decoupled from `git push origin main`; pushing to `main` never deploys prod
+  by itself. Live in production since 2026-07-01.
 - `npm run deploy:demo` publishes the demo build to the GitHub Pages `demo/` subfolder; this remains the demo deploy target.
+- `npm run deploy:staging` builds (`.env` already points `VITE_DIRECTUS_URL` at
+  the dev Directus, `cms.blasalviz.com`, so no special mode is needed) and
+  `rsync`s `dist/` to `/var/www/tableorders-staging/`, served by nginx at
+  `https://to-staging.blasalviz.com` (HTTP basic auth, config at
+  `~/services/nginx-tableorders-staging.conf`). This runs locally on the VPS —
+  no SSH. It exists so Slack/`claude-runner` (headless, phone-driven) sessions
+  can build and deploy immediately for on-device testing.
 - Run `npm run build` before considering code changes complete unless the task
   is docs-only. Use `npm.cmd` on PowerShell if `npm.ps1` is blocked.
 
@@ -63,14 +74,34 @@ Notes:
 - Before source changes, pull latest `main` with `git pull origin main` when the
   working tree allows it. Do not overwrite or revert unrelated dirty work.
 - Ask before installing dependencies, deleting files, clearing data, touching
-  secrets/auth/production data, committing, pushing, or deploying.
+  secrets/auth/production data, committing, pushing, or deploying — **except**
+  `git commit`/`push` to the `staging` branch and `npm run deploy:staging`,
+  which are pre-approved for headless/Slack sessions (see Branch Model below).
+- Prod deployment (`npm run deploy:prod`) is decoupled from `main`: it runs
+  manually from the developer's local machine over SSH and never fires on
+  push or merge. Do not assume a merge to `main` is live in production —
+  confirm with the user whether `deploy:prod` has actually been run.
 - After an approved commit and push to `main`, run `npm run deploy:demo` for the
-  demo build. For production, run `npm run deploy:prod` (builds + SCPs to Hetzner).
+  demo build. Prod deploy is a separate, explicit action — ask before running
+  `npm run deploy:prod`, since it pushes to the live restaurant.
 - Avoid changing generated `dist/` or `dist-demo/` unless the task is deployment
   or build-artifact related.
 - Keep docs and implementation aligned. If sync, deployment, data model, auth,
   demo mode, or table-management behavior changes, update both session-memory
   files together.
+
+## Branch Model
+- `main`: reviewed, human-approved code only. The only branch `deploy:prod` is
+  ever built from. Interactive sessions (this VPS or the Windows machine) ask
+  before committing/pushing here, per the safety rules above.
+- `staging`: headless, phone/Slack-driven work via `claude-runner`. Those
+  sessions commit and push to `staging` (not `main`) and run
+  `npm run deploy:staging` after every change without asking, since staging is
+  disposable and isolated from prod. Interactive sessions review `staging`'s
+  commits and cherry-pick/merge what's worth keeping into `main` when the user
+  is at their local machine — that merge decision, not the staging deploy, is
+  the "what goes to production" gate.
+- `deploy:prod` never reads from `staging`, directly or indirectly.
 
 ## Durable App Behavior
 - Core views are `login`, `tables`, `order`, `ticket`, `split`,

@@ -13,6 +13,8 @@
     "postdeploy:prod": "ssh -i %USERPROFILE%\\.ssh\\camidi-hetzner root@167.233.138.109 chmod -R 755 /var/www/camidi",
     "predeploy:demo": "npm run build:demo",
     "deploy:demo": "gh-pages -d dist-demo --dest demo",
+    "predeploy:staging": "npm run build",
+    "deploy:staging": "rsync -a --delete dist/ /var/www/tableorders-staging/",
     "test": "vitest run",
     "test:watch": "vitest"
   },
